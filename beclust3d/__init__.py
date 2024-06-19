@@ -5,6 +5,8 @@ Date: 2024-06-18
 Description: Import functions from different files
 """
 
+from preprocess_be_results import parse_base_editing_results
+
 # added notebooks for all except 2, 3.2, 3.2.5, 4, 6 which are meant to be extra features
 # 2 is sequence conservation, 3.2 and 3.2.5 are also contingent on 2
 # 3.2 is prioritizing residues that are conserved
