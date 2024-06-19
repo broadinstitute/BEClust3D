@@ -2,7 +2,7 @@
 File: preprocess_be_results.py
 Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: Translated from Notebook 3.2
+Description: Translated from Notebook 3.1
 
 """
 
@@ -39,16 +39,16 @@ def parse_base_editing_results(df_InputGene, workdir,
                                ): 
     """
     Description
+        Parse raw data and create separate dataframes for each mutation type. 
 
     Params
 
-    Results
+    Returns
     
     """
 
-    """
-    Parse separate dataframes for each mutation type
-    """
+    ### figure out creating directories
+
     # df_InputGene_missense, df_InputGene_silent, df_InputGene_nonsense, df_InputGene_intron, df_InputGene_UTR
     mut_categories = ['Missense', 'Silent', 'Nonsense', 'Intron', 'UTR'] # based on the standard output from BEAGLE
     mut_dfs = [pd.DataFrame() for _ in mut_categories]
