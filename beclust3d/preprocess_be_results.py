@@ -12,8 +12,23 @@ from pathlib import Path
 
 def parse_edit_helper(mut_type, this_edit): 
     """
-    A helper function to take in a string and parse out the mutation information. 
-    For example, Met20Ala is interpreted as 'Met', 20, 'Ala'
+    Description
+        A helper function to take in a string and parse out the mutation information. 
+        For example, Met20Ala is interpreted as 'Met', 20, 'Ala'
+
+    Params
+        mut_type: str, required
+            one of the types of mutations ie Missense, Silent, Nonsense, etc
+        this_edit: str, required
+            a string in the approximate format of Met20Ala or M20A
+
+    Returns
+        edit_refAA: str
+            the original amino acid
+        edit_altAA: str
+            the new amino acid
+        edit_pos: int
+            the position of the base edit
     """
     ### different format types
     pattern = r'^([a-zA-Z*]{1,3})(\d{1,4})([a-zA-Z*]{1,3})$'
@@ -42,9 +57,27 @@ def parse_base_editing_results(df_InputGene, workdir,
         Parse raw data and create separate dataframes for each mutation type. 
 
     Params
+        df_InputGene: pandas dataframe
+            the raw dataset containing columns mut_col, val_col, gene_col, edits_col
+        workdir: str, required
+            the working directory
+        input_gene: str, required
+            the name of the input gene
+        input_screen: str, required
+            the name of the input screen
+        mut_col: str, optional
+            column name that indicates the type of mutation
+        val_col: str, optional
+            column name that indicates the log FC value
+        gene_col: str, optional
+            column name that indicates the name of the gene
+        edits_col: str, optional
+            column name that indicates the list of edits
 
     Returns
-    
+        mut_dfs: a list of pandas dataframes
+            each dataframe corresponds to data for Missense, Silent, Nonsense, Intron, UTR, No mutation
+            each dataframe with column headers edit, human_pos, refAA, altAA, LFC
     """
 
     ### figure out creating directories

@@ -19,9 +19,22 @@ def randomize_be_results(df_missense, workdir,
         Takes reformatted missense dataframe and randomizes them to provide a baseline signal. 
 
     Params
+        df_missense: pandas dataframe, required
+            a dataframe listing all missense mutations and their LFC values
+            with column headers edit, human_pos, refAA, altAA, LFC
+        workdir: str, required
+            the working directory
+        input_gene: str, required
+            the name of the input gene
+        input_screen: str, required
+            the name of the input screen
+        nRandom: int, optional
+            the number of randomize iterations
 
     Returns
-    
+        df_missense: pandas dataframe
+            a dataframe listing missense mutations with additional columns of randomized LFC values
+            with column headers edit, human_pos, refAA, altAA, LFC, LFCr1 ... LFCr{nRandom}
     """
 
     ### figure out creating directories
@@ -39,4 +52,3 @@ def randomize_be_results(df_missense, workdir,
     df_missense.to_csv(out_filename, sep='\t', index=False)
     
     return df_missense
-
