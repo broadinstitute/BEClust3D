@@ -133,4 +133,3 @@ def parse_base_editing_results(df_InputGene, workdir,
 
     mut_dfs = mut_dfs.append(df_InputGene_nomutation)
     return mut_dfs
-
