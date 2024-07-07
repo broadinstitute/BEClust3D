@@ -8,7 +8,8 @@ Description: Translated from Notebook 3.1.5
 
 import pandas as pd
 from pathlib import Path
-import random 
+import random
+import os
 
 def randomize_be_results(df_missense, workdir, 
                          input_gene, input_screen, 
@@ -37,15 +38,20 @@ def randomize_be_results(df_missense, workdir,
             with column headers edit, human_pos, refAA, altAA, LFC, LFCr1 ... LFCr{nRandom}
     """
 
-    ### figure out creating directories
-
-    edits_filedir = Path(workdir + input_gene)
+    edits_filedir = Path(workdir + '/' +  input_gene)
+    if not os.path.exists(edits_filedir):
+        os.mkdir(edits_filedir)
+    if not os.path.exists(edits_filedir / 'randomized_screendata'):
+        os.mkdir(edits_filedir / 'randomized_screendata')
 
     LFC_list = df_missense["LFC"].tolist()
+    dict_temp = {}
     for i in range(0, nRandom):
         LFC_list_random = random.sample(LFC_list, len(LFC_list))
         headertext_new = "LFCr" + str(i+1)
-        df_missense[headertext_new] = LFC_list_random
+        dict_temp[headertext_new] = LFC_list_random
+    # Using pd.concat does not throw a performance warning, but takes 6x the time if I pd.concat every step
+    df_missense = pd.concat((df_missense, pd.DataFrame(dict_temp)), axis=1) # Use dict instead
 
     # save results
     out_filename = edits_filedir / f"randomized_screendata/{input_gene}_{input_screen}_missense_edits_randomized.tsv"
