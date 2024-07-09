@@ -16,6 +16,26 @@ def randomize_by_conservation(
         input_gene, input_screen, structureid, 
         nRandom=1000, 
 ): 
+    """
+    Description
+        Randomizes the scores weighted by structural conservation fom previous step
+
+    Params
+        workdir: str, required
+            the working directory
+        input_gene: str, required
+            the name of the input human gene
+        input_screen: str, required
+            the name of the input screen
+        structureid: str, required
+            the name of the AF and uniprot input
+        nRandom: int, optional
+            the number of randomize iterations
+
+    Returns
+        df_struc_consvr: pandas dataframe
+            a dataframe listing randomized structural conservation data
+    """
 
     screen_name = input_screen.split('.')[0]
     edits_filedir = Path(workdir + '/' +  input_gene)
@@ -64,7 +84,9 @@ def randomize_by_conservation(
 
     return df_struc_consvr
 
-def calc_lfc_edits_helper(df_missense, human_res_pos, header_LFC_rN): 
+def calc_lfc_edits_helper(
+    df_missense, human_res_pos, header_LFC_rN
+): 
     unique_LFC_per_residue_human, all_edits_per_residue_human = '-', '-'
     df_pos_edits = df_missense.loc[df_missense['human_pos'] == int(human_res_pos), ].reset_index()
 
@@ -81,7 +103,9 @@ def calc_lfc_edits_helper(df_missense, human_res_pos, header_LFC_rN):
         
     return unique_LFC_per_residue_human, all_edits_per_residue_human, df_pos_edits
 
-def calc_lfc_helper(header_LFC_rN, df_pos_edits): 
+def calc_lfc_helper(
+    header_LFC_rN, df_pos_edits
+): 
     unique_LFC_per_residue_human = '-'
 
     if len(df_pos_edits) > 1:

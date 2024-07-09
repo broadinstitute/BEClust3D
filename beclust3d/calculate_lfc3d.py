@@ -16,6 +16,26 @@ def calculate_lfc3d(
         input_gene, input_screen, 
         nRandom=1000, 
 ): 
+    """
+    Description
+        Calculates LFC 3D scores from structural conservation data
+
+    Params
+        df_str_cons: pandas dataframe
+            from previous step randomize_by_conservation()
+        workdir: str, required
+            the working directory
+        input_gene: str, required
+            the name of the input human gene
+        input_screen: str, required
+            the name of the input screen
+        nRandom: int, optional
+            the number of randomize iterations
+
+    Returns
+        df_str_cons_3daggr: pandas dataframe
+            a dataframe listing calculated LFC3D scores and their randomizations
+    """
 
     screen_name = input_screen.split('.')[0]
     edits_filedir = Path(workdir + '/' +  input_gene)
@@ -63,7 +83,9 @@ def calculate_lfc3d(
 
     return df_str_cons_3daggr
 
-def helper(df_str_cons_edits, aa): 
+def helper(
+    df_str_cons_edits, aa
+): 
     naa_list = df_str_cons_edits.at[aa, 'Naa'].split(';') # neighboring amino acids
     naa_pos_list = df_str_cons_edits.at[aa, 'Naa_pos'].split(';') # neighboring residue positions
     taa_LFC = df_str_cons_edits.at[aa, 'mean_missense_LFC'] # target LFC

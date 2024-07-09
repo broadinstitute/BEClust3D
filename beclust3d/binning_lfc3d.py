@@ -14,6 +14,24 @@ def binning_lfc3d(
         workdir, 
         input_gene, input_screen, 
 ): 
+    """
+    Description
+        Bins LFC 3D scores into percentiles
+
+    Params
+        df_LFC_LFC3D: pandas dataframe
+            from previous step average_split_lfc3d()
+        workdir: str, required
+            the working directory
+        input_gene: str, required
+            the name of the input human gene
+        input_screen: str, required
+            the name of the input screen
+
+    Returns
+        df_LFC_LFC3D_dis: pandas dataframe
+            a dataframe listing how scores portion into quantiles
+    """
 
     screen_name = input_screen.split('.')[0]
     edits_filedir = Path(workdir + '/' + input_gene)

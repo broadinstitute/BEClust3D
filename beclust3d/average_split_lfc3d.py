@@ -11,10 +11,31 @@ from pathlib import Path
 
 def average_and_split(
         df_LFC_LFCrN_LFC3D_LFC3DrN, 
-        workdir, input_gene,
-        input_screen, 
+        workdir, 
+        input_gene, input_screen, 
         nRandom=1000, 
 ): 
+    """
+    Description
+        Averages the LFC3D scores, splits into positive and negative, 
+        and randomizes LFC3D scores
+
+    Params
+        df_LFC_LFCrN_LFC3D_LFC3DrN: pandas dataframe
+            from previous step calculate_lfc3d()
+        workdir: str, required
+            the working directory
+        input_gene: str, required
+            the name of the input human gene
+        input_screen: str, required
+            the name of the input screen
+        nRandom: int, optional
+            the number of randomize iterations
+
+    Returns
+        df_bidir: pandas dataframe
+            a dataframe listing the positive and negative components of df_LFC_LFCrN_LFC3D_LFC3DrN
+    """
     
     screen_name = input_screen.split('.')[0]
     edits_filedir = Path(workdir + '/' + input_gene)
