@@ -10,14 +10,13 @@ import pandas as pd
 from pathlib import Path
 import requests
 import sys
-# from Bio.Align.Applications import MuscleCommandline
-from Bio.Align import MultipleSeqAlignment
-from Bio.SeqRecord import SeqRecord
+import time
 
 def conservation(
         workdir, 
         input_human_gene, input_mouse_gene, 
         input_human_uniid, input_mouse_uniid, 
+        email, title, 
 ): 
     """
     Description
@@ -53,8 +52,10 @@ def conservation(
         text_file.write(mouse_seq)
 
     # alignment
-    alignment_file = edits_filedir / f"Human{input_human_gene}_Mouse{input_mouse_gene}.align"
-    alignment_muscle(edits_filedir)
+    muscle_id, alignment_file = alignment_muscle(edits_filedir, 
+                                                 email, title, 
+                                                 input_human_gene, input_mouse_gene, 
+                                                )
     
     # use MUSCLE to align human and mouse sequences
     iAlign = open(alignment_file, "r")
@@ -145,18 +146,54 @@ def query_protein_fasta(
 # from Bio import AlignIO
 
 def alignment_muscle(
-        edits_filedir,
+        edits_filedir, 
+        email, title, 
+        input_human_gene, input_mouse_gene, 
 ): 
-    # unaligned_filepath = edits_filedir / "sequences.fasta"
-    # out_filepath = edits_filedir / "aligned.fasta"
-    # muscle_exe = edits_filedir / "muscle3.8.31_i86darwin64"
-    # muscle_cline = MuscleCommandline(
-    #     muscle_exe,
-    #     input=unaligned_filepath, 
-    #     out=out_filepath
-    #     )
-    # stdout, stderr = muscle_cline()
-    # MultipleSeqAlignment = AlignIO.read(out_filepath, "fasta") 
-    # print(MultipleSeqAlignment)
-    return None
+    """
+    Description
+        Query ebi.ac.uk for MUSCLE alignment
 
+    Params
+        edits_filedir: str, required
+            the Path to the main directory
+        email: str, required
+            email
+        email: str, required
+            title for your queried job
+        input_human_gene: str, required
+            the name of the input human gene
+        input_mouse_gene: str, required
+            the name of the input mouse gene
+
+    Returns
+        job_url_code: str
+            a code for the MUSCLE job
+        outpath_name: str
+            a path for the output .align file
+    """
+
+    url = 'https://www.ebi.ac.uk/Tools/services/rest/muscle/run'
+    files = {'sequence': open('../tests/SETDB1/sequences.fasta', 'rb')}
+    data = {
+        'email': email, 
+        'title': title, 
+        'format': 'clw',
+        'tree': 'none',
+    }
+    response = requests.post(url, data=data, files=files)
+    assert response.status_code == 200, 'Error with MUSCLE query'
+    time.sleep(30)
+
+    job_id = response.text
+    job_url_code = job_id.split(' ')[-1]
+    print(f'Job ID: {job_url_code}')
+
+    url = f'https://www.ebi.ac.uk/Tools/services/rest/muscle/result/{job_url_code}/aln-clustalw'
+    response = requests.get(url)
+
+    outpath_name = edits_filedir / f"Human{input_human_gene}_Mouse{input_mouse_gene}.align"
+    with open(outpath_name, "wb") as f:
+        f.write(response.content)
+
+    return job_url_code, outpath_name
