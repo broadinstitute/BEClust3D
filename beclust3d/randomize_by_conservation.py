@@ -58,7 +58,7 @@ def randomize_by_conservation(
             arr_unique_LFC[i] = unique_LFC
         dict_temp[header] = arr_unique_LFC
 
-    df_struc_consvr = pd.concat((df_struc_consvr, pd.DataFrame(dict_temp)), axis=1) # Use dict instead
+    df_struc_consvr = pd.concat((df_struc_consvr, pd.DataFrame(dict_temp)), axis=1)
     out_filename = edits_filedir / f"randomized_screendata/{input_gene}_{screen_name}_struc_consrv_missenseedits_randomized.tsv"
     df_struc_consvr.to_csv(out_filename, sep = '\t', index=False)
 
