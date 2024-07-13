@@ -9,9 +9,12 @@ from preprocess_be_results import parse_base_editing_results
 from randomize_preprocessed_be_results import randomize_be_results
 from conservation import conservation
 from prioritize_by_conservation import prioritize_by_conservation
+from randomize_by_conservation import randomize_by_conservation
+from calculate_lfc3d import calculate_lfc3d
+from average_split_lfc3d import average_and_split
+from binning_lfc3d import binning_lfc3d
+from af_structural_features import af_structural_features
+from metaaggregation import metaaggregation
 
-# 2 is sequence conservation, 3.2 and 3.2.5 are also contingent on 2
-# 3.2 is prioritizing residues that are conserved
-# 3.2.5 is randomising based on 3.2
 # 4 is meta aggregating over multiple screens, also an optional function
 # 6 add uniprot annotations is another good extra feature
