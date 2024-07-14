@@ -10,96 +10,79 @@ import pandas as pd
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering
 import seaborn as sns
+from matplotlib.pyplot import figure
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.cluster import AgglomerativeClustering
-from matplotlib.pyplot import fig
 from pathlib import Path
+import os
 
 def clustering(
         df_struc_consvr, df_META, 
-        workdir, input_gene, input_uniprot, structureid, 
-        i_affn='euclidean', i_link='single', n_clusters=None,
+        workdir, 
+        input_gene, structureid, 
+        i_affn='euclidean', i_link='single', n_clusters=None, 
+        max_distances=20, 
 ):
 
-    filedir = Path(workdir + input_gene)
+    edits_filedir = Path(workdir + '/' + input_gene)
+    if not os.path.exists(edits_filedir):
+        os.mkdir(edits_filedir)
+    if not os.path.exists(edits_filedir / 'cluster_LFC3D'):
+        os.mkdir(edits_filedir / 'cluster_LFC3D')
 
-    df_META["x_coord"] = df_struc_consvr["x_coord"]
-    df_META["y_coord"] = df_struc_consvr["y_coord"]
-    df_META["z_coord"] = df_struc_consvr["z_coord"]
+    df_hits_clust = df_META.copy()
+    df_hits_clust["x_coord"] = df_struc_consvr["x_coord"]
+    df_hits_clust["y_coord"] = df_struc_consvr["y_coord"]
+    df_hits_clust["z_coord"] = df_struc_consvr["z_coord"]
 
     # CLUSTERING #
-    arr_d_thr = [float(i+1) for i in range(20)]
+    arr_d_thr = [float(i+1) for i in range(max_distances)]
+    hits = {'sensitizing': {'name':'SUM_LFC3D_neg_psig', 'arr':[]},
+            'resistant':   {'name':'SUM_LFC3D_pos_psig', 'arr':[]}, }
+    
+    for key, val in hits.items(): 
+        df_META_temp = df_hits_clust.loc[(df_hits_clust[val['name']] == 'p<0.001'), ]
+        df_META_temp = df_META_temp.reset_index(drop=True)
+        dict_hits = {}
+        dict_hits['unipos'] = list(df_META_temp['unipos'])
 
-    # SENSITIZING
-    df_sens_hits_clust = pd.DataFrame()
-    df_META_sens_hits = df_META.loc[(df_META['SUM_LFC3D_neg_psig'] == 'p<0.001'), ]
-    df_META_sens_hits = df_META_sens_hits.reset_index(drop=True)
-    arr_d_nc_sens = []
-    df_sens_hits_clust['unipos'] = df_META_sens_hits['unipos']
+        for thr_distance in arr_d_thr: # for every radius value 1.0 to 20.0
+            colname_hits = f"{key}_hit_clust_{str(round(thr_distance))}"
+            
+            df_META_hits_coord = pd.DataFrame()
+            df_META_hits_coord['x_coord'] = df_META_temp['x_coord']
+            df_META_hits_coord['y_coord'] = df_META_temp['y_coord']
+            df_META_hits_coord['z_coord'] = df_META_temp['z_coord']
+            np_META_hits_coord = np.array(df_META_hits_coord)
+            
+            func_clustering = AgglomerativeClustering(n_clusters=n_clusters, metric=i_affn, 
+                                                      linkage=i_link, distance_threshold=thr_distance)
+            clustering = func_clustering.fit(np_META_hits_coord)
+            clus_lbl = clustering.labels_
+            n_c_output = int(max(clus_lbl)+1)
+            print(f'Number of clusters of {key} hits:', '@ d = ', thr_distance, n_c_output)
+            val['arr'].append(n_c_output)
+            df_META_temp[colname_hits] = clus_lbl
+            dict_hits[colname_hits] = clus_lbl
 
-    for thr_distance in arr_d_thr: # for every radius value 1.0 to 20.0
-        colname_sens = "Sensitizing_hit_clust" + "_" + str(round(thr_distance))
-        
-        df_META_sens_hits_coord = pd.DataFrame()
-        df_META_sens_hits_coord['x_coord'] = df_META_sens_hits['x_coord']
-        df_META_sens_hits_coord['y_coord'] = df_META_sens_hits['y_coord']
-        df_META_sens_hits_coord['z_coord'] = df_META_sens_hits['z_coord']
-        np_META_sens_hits_coord = np.array(df_META_sens_hits_coord)
-        
-        func_clustering = AgglomerativeClustering(n_clusters=n_clusters, metric=i_affn, 
-                                                  linkage=i_link, distance_threshold=thr_distance)
-        clustering = func_clustering.fit(np_META_sens_hits_coord)
-        clus_lbl = clustering.labels_
-        n_c_output = int(max(clus_lbl)+1)
-        print('Number of clusters of sensitizing hits:', '@ d = ', thr_distance, n_c_output)
-        arr_d_nc_sens.append(n_c_output)
-        df_META_sens_hits[colname_sens] = clus_lbl
-        df_sens_hits_clust[colname_sens] = df_META_sens_hits[colname_sens]
+        df_hits_clust = df_hits_clust.merge(pd.DataFrame(dict_hits), how='left', on=['unipos'])
 
-    # RESISTANT
-    df_resi_hits_clust = pd.DataFrame()
-    df_META_resi_hits = df_META.loc[(df_META['SUM_LFC3D_pos_psig'] == 'p<0.001'), ]
-    df_META_resi_hits = df_META_resi_hits.reset_index(drop=True)
-    arr_d_nc_resi = [] 
-    df_resi_hits_clust['unipos'] = df_META_resi_hits['unipos']
+    df_hits_clust.fillna('-')
+    hits_clust_filename = edits_filedir / f"cluster_LFC3D/{structureid}_MetaAggr_Hits_Clust_p_l001.tsv"
+    df_hits_clust.to_csv(hits_clust_filename, sep='\t', index=False)
 
-    for thr_distance in arr_d_thr:
-        colname_resi = "Resistant_hit_clust" + "_" + str(round(thr_distance))
-        
-        df_META_resi_hits_coord = pd.DataFrame()
-        df_META_resi_hits_coord['x_coord'] = df_META_resi_hits['x_coord']
-        df_META_resi_hits_coord['y_coord'] = df_META_resi_hits['y_coord']
-        df_META_resi_hits_coord['z_coord'] = df_META_resi_hits['z_coord']
-        np_META_resi_hits_coord = np.array(df_META_resi_hits_coord)
+    # PLOT #
+    cluster_distance_filename = edits_filedir / f"{structureid}_MetaAggr_Hits_Clust_Dist_Stat_pl001.tsv"
+    plot_cluster_distance(arr_d_thr, [hits['sensitizing']['arr'], hits['resistant']['arr']], 
+                          cluster_distance_filename, edits_filedir)
 
-        func_clustering = AgglomerativeClustering(n_clusters=n_clusters, metric=i_affn, 
-                                                  linkage=i_link, distance_threshold=thr_distance)
-        clustering = func_clustering.fit(np_META_resi_hits_coord)
-        clus_lbl = clustering.labels_
-        n_c_output = int(max(clus_lbl)+1)
-        print('Number of clusters of resistant hits:', '@ d = ', thr_distance, n_c_output)
-        arr_d_nc_resi.append(n_c_output)
-        df_META_resi_hits[colname_resi] = clus_lbl
-        df_resi_hits_clust[colname_resi] = df_META_resi_hits[colname_resi]
+    return arr_d_thr, (hits['sensitizing']['arr'], hits['resistant']['arr'])
 
-    # COMBINE
-    df_META_sens_hits_clust = df_META.merge(df_sens_hits_clust, how='left', on=['unipos'])
-    df_META_sens_resi_hits_clust = df_META_sens_hits_clust.merge(df_resi_hits_clust, how='left', on=['unipos'])
-    df_META_sens_resi_hits_clust = df_META_sens_resi_hits_clust.fillna('-')
-
-    meta_clust_filename = filedir / f"cluster_LFC3D/{input_gene}_{input_uniprot}_{structureid}_MetaAggr_Hits_Clust_p_l001.tsv"
-    df_META_sens_resi_hits_clust.to_csv(meta_clust_filename, sep='\t', index=False)
-
-    # PLOT
-    cluster_distance_filename = filedir / f"cluster_LFC3D/{input_gene}_{input_uniprot}_{structureid}_MetaAggr_Hits_Clust_Dist_Stat_pl001.tsv"
-    plot_cluster_distance(arr_d_thr, [arr_d_nc_sens, arr_d_nc_resi], 
-                          cluster_distance_filename)
-
-    return arr_d_thr, arr_d_nc_sens, arr_d_nc_resi
 
 def plot_cluster_distance(
-        x, ys, out_filename,
+        x, ys, out_filename, 
+        edits_filedir, 
 ): 
     dist_stat = pd.DataFrame()
     dist_stat['cluster_distance'] = x
@@ -108,101 +91,74 @@ def plot_cluster_distance(
 
     sns.lineplot(data=dist_stat, x="cluster_distance", y="n_sens_clusters")
     sns.lineplot(data=dist_stat, x="cluster_distance", y="n_resi_clusters")
-    ### rename x and y axis as cluster radius and number of clusters
-    fig.savefig("cluster_distance.png") 
+
+    plt.xlabel('cluster radius')
+    plt.ylabel('number of clusters')
+    plt.title('sensitizing vs resistant clusters')
+    plt.savefig(edits_filedir / f"cluster_LFC3D/cluster_distance.png") 
     dist_stat.to_csv(out_filename, sep = '\t', index=False)
 
-
 def clustering_distance(
-        df_META, 
-        arr_d_nc_sens, arr_d_nc_resi, 
+        df_struc_consvr, df_META, 
         thr_distance, 
         workdir, input_gene, input_uniprot, structureid, 
         i_affn='euclidean', i_link='single', n_clusters=None,
 ):
     
-    filedir = Path(workdir + input_gene)
+    edits_filedir = Path(workdir + '/' + input_gene)
+    if not os.path.exists(edits_filedir):
+        os.mkdir(edits_filedir)
+    if not os.path.exists(edits_filedir / 'plots'):
+        os.mkdir(edits_filedir / 'plots')
+
+    df_hits_clust = df_META.copy()
+    df_hits_clust["x_coord"] = df_struc_consvr["x_coord"]
+    df_hits_clust["y_coord"] = df_struc_consvr["y_coord"]
+    df_hits_clust["z_coord"] = df_struc_consvr["z_coord"]
 
     # SENSITIZING
+    names = {'sensitizing':'SUM_LFC3D_neg_psig', 'resistant':'SUM_LFC3D_pos_psig'}
+    for name, col in names.items(): # for sensitizing and resistant
 
-    df_META_sens_hits_coord = pd.DataFrame()
-    df_META_sens_hits = df_META.loc[(df_META['SUM_LFC3D_neg_psig'] == 'p<0.001'), ]
-    df_META_sens_hits = df_META_sens_hits.reset_index(drop=True)
-    df_META_sens_hits_coord['x_coord'] = df_META_sens_hits['x_coord']
-    df_META_sens_hits_coord['y_coord'] = df_META_sens_hits['y_coord']
-    df_META_sens_hits_coord['z_coord'] = df_META_sens_hits['z_coord']
-    np_META_sens_hits_coord = np.array(df_META_sens_hits_coord)
+        df_META_hits_coord = pd.DataFrame()
+        df_META_temp = df_hits_clust.loc[(df_META[col] == 'p<0.001'), ]
+        df_META_temp = df_META_temp.reset_index(drop=True)
+        df_META_hits_coord['x_coord'] = df_META_temp['x_coord']
+        df_META_hits_coord['y_coord'] = df_META_temp['y_coord']
+        df_META_hits_coord['z_coord'] = df_META_temp['z_coord']
+        np_META_hits_coord = np.array(df_META_hits_coord)
 
-    func_clustering = AgglomerativeClustering(n_clusters=n_clusters, metric=i_affn, 
-                                              linkage=i_link, distance_threshold=thr_distance)
-    clustering = func_clustering.fit(np_META_sens_hits_coord)
-    clus_lbl = clustering.labels_
-    n_c_output = int(max(clus_lbl) + 1)
-    print('Number of clusters of sensitizing hits:', n_c_output)
-    arr_d_nc_sens.append(n_c_output)
+        func_clustering = AgglomerativeClustering(n_clusters=n_clusters, metric=i_affn, 
+                                                  linkage=i_link, distance_threshold=thr_distance)
+        clustering = func_clustering.fit(np_META_hits_coord)
+        clus_lbl = clustering.labels_
+        n_c_output = int(max(clus_lbl) + 1)
+        print(f'Number of clusters of {name} hits:', n_c_output)
 
-    figure = fig(figsize=(12, 8), dpi=300)
-    figure = plot_dendrogram(clustering, df_META_sens_hits)
+        # fig = figure(figsize=(12, 8), dpi=300)
+        dendogram_filename = edits_filedir / f"plots/{input_gene}_{input_uniprot}_{name}_hits_Dendogram_p_l001_{str(int(thr_distance))}A.png"
+        fig = plot_dendrogram(clustering, df_META_temp, dendogram_filename, name)
+        plt.savefig(dendogram_filename, dpi = 300)
 
-    sens_clust_dendogram_filename = filedir / f"plots/{input_gene}_{input_uniprot}_SensHits_Dendogram_p_l001_6A.png"
-    plt.savefig(sens_clust_dendogram_filename, dpi = 300) 
+        # CLUSTER INDEX AND LENGTH
+        hits_clust_filename = edits_filedir / f"cluster_LFC3D/{structureid}_MetaAggr_Hits_Clust_p_l001.tsv"
+        df_META_hits_clust = pd.read_csv(hits_clust_filename, sep = '\t')
+        df_META_clust = df_META_hits_clust.loc[(df_META_hits_clust[col] == 'p<0.001'), ]
+        df_META_clust = df_META_clust.reset_index(drop=True)
+        clust_indices = df_META_clust[f'{name}_hit_clust_{str(int(thr_distance))}'].unique()
 
-    # CLUSTER INDEX AND LENGTH
+        for c in clust_indices: 
+            this_c_data = df_META_clust.loc[df_META_clust[f'{name}_hit_clust_{str(int(thr_distance))}'] == c, ]
+            this_c_data = this_c_data.reset_index(drop=True)
+            this_c_len = len(this_c_data)
+            print(c, ':', this_c_len, ':', this_c_data.at[0, 'unipos'], '-', this_c_data.at[len(this_c_data)-1, 'unipos'])
 
-    meta_clust_filename = filedir / f"cluster_LFC3D/{input_gene}_{input_uniprot}_{structureid}_MetaAggr_Hits_Clust_p_l001.tsv"
-    df_META_sens_resi_hits_clust = pd.read_csv(meta_clust_filename, sep = '\t')
-    df_META_sens_clust = df_META_sens_resi_hits_clust.loc[(df_META_sens_resi_hits_clust['SUM_LFC3D_neg_psig'] == 'p<0.001'), ]
-    df_META_sens_clust = df_META_sens_clust.reset_index(drop=True)
-    sens_clust_indices = df_META_sens_clust['Sensitizing_hit_clust'].unique()
-
-    print('Sensitizing cluster index', ':', 'length')
-    for c in sens_clust_indices:
-        this_c_data = df_META_sens_clust.loc[df_META_sens_clust['Sensitizing_hit_clust'] == c, ]
-        this_c_data = this_c_data.reset_index(drop=True)
-        this_c_len = len(this_c_data)
-        print(c, ':', this_c_len, ':', this_c_data.at[0, 'unipos'], '-', this_c_data.at[len(this_c_data)-1, 'unipos'])
-
-    # RESISTANT
-
-    df_META_resi_hits_coord = pd.DataFrame()
-    df_META_resi_hits = df_META.loc[(df_META['SUM_LFC3D_pos_psig'] == 'p<0.001'), ]
-    df_META_resi_hits = df_META_resi_hits.reset_index(drop=True)
-    df_META_resi_hits_coord['x_coord'] = df_META_resi_hits['x_coord']
-    df_META_resi_hits_coord['y_coord'] = df_META_resi_hits['y_coord']
-    df_META_resi_hits_coord['z_coord'] = df_META_resi_hits['z_coord']
-    np_META_resi_hits_coord = np.array(df_META_resi_hits_coord)
-
-    func_clustering = AgglomerativeClustering(n_clusters=n_clusters, metric=i_affn, 
-                                              linkage=i_link, distance_threshold=thr_distance)
-    clustering = func_clustering.fit(np_META_resi_hits_coord)
-    clus_lbl = clustering.labels_
-    n_c_output = int(max(clus_lbl) + 1)
-    print('Number of clusters of resistant hits:', n_c_output)
-    arr_d_nc_resi.append(n_c_output)
-
-    figure = fig(figsize=(12, 8), dpi=300)
-    figure = plot_dendrogram(clustering, df_META_resi_hits)
-
-    resi_clust_dendogram_filename = filedir / f"plots/{input_gene}_{input_uniprot}_ResiHits_Dendogram_p_l001_6A.png"
-    plt.savefig(resi_clust_dendogram_filename, dpi = 300) 
-
-    # CLUSTER INDEX AND START/END
-
-    meta_clust_filename = filedir / f"cluster_LFC3D/{input_gene}_{input_uniprot}_{structureid}_MetaAggr_Hits_Clust_p_l001.tsv"
-    df_META_sens_resi_hits_clust = pd.read_csv(meta_clust_filename, sep = '\t')    
-    df_META_resi_clust = df_META_sens_resi_hits_clust.loc[(df_META_sens_resi_hits_clust['SUM_LFC3D_pos_psig'] == 'p<0.001'), ]
-    df_META_resi_clust = df_META_resi_clust.reset_index(drop=True)
-    resi_clust_indices = df_META_resi_clust['Resistant_hit_clust'].unique()
-
-    print('Resistant cluster index', ':', 'length')
-    for c in resi_clust_indices:
-        this_c_data = df_META_resi_clust.loc[df_META_resi_clust['Resistant_hit_clust'] == c, ]
-        this_c_data = this_c_data.reset_index(drop=True)
-        this_c_len = len(this_c_data)
-        print(c, ':', this_c_len, ':', this_c_data.at[0, 'unipos'], '-', this_c_data.at[len(this_c_data)-1, 'unipos'])
-
-
-def plot_dendrogram(clustering, df, **kwargs):
+def plot_dendrogram(
+        clustering, df, 
+        dendogram_filename, 
+        name
+):
+    
     # create the counts of samples under each node
     counts = np.zeros(clustering.children_.shape[0])
     n_samples = len(clustering.labels_)
@@ -219,6 +175,10 @@ def plot_dendrogram(clustering, df, **kwargs):
         [clustering.children_, clustering.distances_, counts]
     ).astype(float)
     xlbl = list(df['unipos'])
+
     # plot the corresponding dendrogram
     dendrogram(linkage_matrix, color_threshold=6.0, 
-               labels=xlbl, leaf_rotation=90., **kwargs)
+               labels=xlbl, leaf_rotation=90.)
+    plt.title(f'{name} clusters')
+    plt.show()
+    plt.savefig(dendogram_filename, dpi=300) 

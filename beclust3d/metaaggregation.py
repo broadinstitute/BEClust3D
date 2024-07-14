@@ -164,7 +164,7 @@ def metaaggregation(
     if not os.path.exists(edits_filedir / 'metaaggregation'):
         os.mkdir(edits_filedir / 'metaaggregation')
 
-    filename = edits_filedir / f"metaaggregation/{input_gene}_{input_uniprot}_{structureid}_MetaAggr_LFC3D_and_randomized_background.tsv"
+    filename = edits_filedir / f"metaaggregation/{structureid}_{screen_name}_MetaAggr_LFC3D_and_randomized_background.tsv"
     df_METAggregation.to_csv(filename, "\t", index=False)
 
     # CALL PLOTS #
@@ -173,7 +173,7 @@ def metaaggregation(
     for avg, sum, out in end_plots: 
         res = metaaggregation_histogram(
             df_METAggregation, 
-            edits_filedir, input_gene, 
+            edits_filedir, input_gene, screen_name, 
             avg_colname=avg, sum_colname=sum, out_keyword=out, 
         )
         print(res)
@@ -186,7 +186,7 @@ def metaaggregation(
                 ]
     for filter, x, hue, name in displots: 
         metaaggregation_displot(
-            df_METAggregation, 
+            df_METAggregation, screen_name, 
             filter_col=filter, x_col=x, hue_col=hue, 
             filedir=edits_filedir, input_gene=input_gene, out_keyword=name
         )
@@ -195,7 +195,7 @@ def metaaggregation(
                     ('SUM_LFC3D_pos_dis', 'SUM_LFC3D_pos_psig', 'SUM_LFC3D_pos', 'pos_dis')]
     for dis, pval, y, out in scatterplots: 
         metaaggregation_scatterplot(
-                df_METAggregation, 
+                df_METAggregation, screen_name, 
                 dis_col=dis, pval_col=pval, y_col=y,
                 filedir=edits_filedir, input_gene=input_gene, out_keyword=out,
         )
@@ -205,7 +205,7 @@ def metaaggregation(
 
 def metaaggregation_histogram(
         df_METAggregation, 
-        filedir, input_gene, 
+        filedir, input_gene, screen_name, 
         avg_colname, sum_colname, out_keyword, 
 ): 
     """
@@ -249,7 +249,7 @@ def metaaggregation_histogram(
     plt.axhline(y = mu-sigma, color = 'r', linestyle = '--')
     plt.title(out_keyword)
 
-    out_filename = filedir / f"plots/{input_gene}_signal_vs_background_{out_keyword}.png"
+    out_filename = filedir / f"plots/{input_gene}_{screen_name}_signal_vs_background_{out_keyword}.png"
     plt.savefig(out_filename, dpi = 300)
 
     return results
@@ -297,6 +297,7 @@ def binning_lfc3d(
 
 def metaaggregation_displot(
         df_METAggregation, 
+        screen_name, 
         filter_col, x_col, hue_col, 
         filedir, input_gene, out_keyword, 
 ): 
@@ -312,11 +313,12 @@ def metaaggregation_displot(
     sns.displot(df_combined_clean, x=x_col, hue=hue_col, bins=50, palette='tab10')
     plt.title(out_keyword)
 
-    out_name = filedir / f"plots/{input_gene}_Aggr_LFC3D_{out_keyword}_histogram.png"
+    out_name = filedir / f"plots/{input_gene}_{screen_name}_Aggr_LFC3D_{out_keyword}_histogram.png"
     plt.savefig(out_name, dpi=300) 
 
 def metaaggregation_scatterplot(
         df_METAggregation, 
+        screen_name, 
         dis_col, pval_col, y_col, 
         filedir, input_gene, out_keyword,
 ): 
@@ -336,5 +338,5 @@ def metaaggregation_scatterplot(
     plt.xticks(np.arange(0,len(df_METAggregation), 100))
     plt.title(out_keyword)
 
-    outname = filedir / f"plots/{input_gene}Aggr_LFC3D_{out_keyword}_dot_per_residue.png"
+    outname = filedir / f"plots/{input_gene}_{screen_name}_Aggr_LFC3D_{out_keyword}_dot_per_residue.png"
     plt.savefig(outname, dpi=300)

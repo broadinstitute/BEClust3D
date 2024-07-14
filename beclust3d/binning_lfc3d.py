@@ -70,14 +70,32 @@ def binning_lfc3d(
     print('POS_90p_v', POS_90p_v)
     print('NEG_05p_v', NEG_05p_v)
     print('POS_95p_v', POS_95p_v)
-    
+
+    arr_LFC3D_discrete, arr_LFC3D_weight = binning(df_LFC_LFC3D, 
+                                                   df_LFC3D_neg_stats, df_LFC3D_pos_stats, 
+                                                   NEG_10p_v, POS_90p_v, NEG_05p_v, POS_95p_v, 
+                                                   LFC3D_header)
+    df_LFC_LFC3D_dis[f"{screen_name}_LFC3D_dis"]  = arr_LFC3D_discrete
+    df_LFC_LFC3D_dis[f"{screen_name}_LFC3D_wght"] = arr_LFC3D_weight
+
+    out_filename = edits_filedir / f"LFC3D/{input_gene}_{screen_name}_LFC_LFC3D_dis_wght_Signal_Only_per_Screen.tsv"
+    df_LFC_LFC3D_dis.to_csv(out_filename, sep = '\t', index=False)
+
+    return df_LFC_LFC3D_dis
+
+def binning(
+        df_LFC_LFC3D, 
+        df_LFC3D_neg_stats, df_LFC3D_pos_stats, 
+        NEG_10p_v, POS_90p_v, NEG_05p_v, POS_95p_v, 
+        LFC3D_header
+):
     # binning and weighting 
     arr_LFC3D_discrete = []
     arr_LFC3D_weight = []
 
     for i in range(0, len(df_LFC_LFC3D)): 
         LFC3D = df_LFC_LFC3D.at[i, LFC3D_header]
-        if LFC3D == '-':
+        if LFC3D == '-' or LFC3D == 0.0:
             LFC3D_discrete = '-'
             LFC3D_weight = 0.0
         else:
@@ -110,10 +128,4 @@ def binning_lfc3d(
         arr_LFC3D_discrete.append(LFC3D_discrete)
         arr_LFC3D_weight.append(LFC3D_weight)
 
-    df_LFC_LFC3D_dis[f"{screen_name}_LFC3D_dis"]  = arr_LFC3D_discrete
-    df_LFC_LFC3D_dis[f"{screen_name}_LFC3D_wght"] = arr_LFC3D_weight
-
-    out_filename = edits_filedir / f"LFC3D/{input_gene}_{screen_name}_LFC_LFC3D_dis_wght_Signal_Only_per_Screen.tsv"
-    df_LFC_LFC3D_dis.to_csv(out_filename, sep = '\t', index=False)
-
-    return df_LFC_LFC3D_dis
+    return arr_LFC3D_discrete, arr_LFC3D_weight
