@@ -15,6 +15,7 @@ from average_split_lfc3d import average_and_split
 from binning_lfc3d import binning_lfc3d
 from af_structural_features import af_structural_features
 from metaaggregation import metaaggregation
+from annotate_spatial_clusters import clustering, clustering_distance
 
 # 4 is meta aggregating over multiple screens, also an optional function
 # 6 add uniprot annotations is another good extra feature
