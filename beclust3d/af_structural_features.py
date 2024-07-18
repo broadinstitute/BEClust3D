@@ -47,11 +47,12 @@ def query_uniprot(
                 filename of the output protein sequence .fasta                
         """
         
-        # fetch fasta #
-        ffile = input_uniprot + '.fasta'
-        _ = wget.download(f'https://rest.uniprot.org/uniprotkb/{ffile}', out=str(edits_filedir))
-
         # fasta to list file #
+        ffile = input_uniprot + '.fasta'
+        if not os.path.exists(edits_filedir / ffile): 
+                _ = wget.download(f'https://rest.uniprot.org/uniprotkb/{ffile}', 
+                                out=str(edits_filedir))
+
         uFasta_file = edits_filedir / ffile
         uFasta = open(uFasta_file, "r")
         header = uFasta.readline() # skip header
@@ -95,7 +96,8 @@ def query_af_and_process(
 
         # fetch alphafold #
         affile = structureid + '.pdb'
-        _ = wget.download(f'https://alphafold.ebi.ac.uk/files/{affile}', out='')
+        if not os.path.exists(edits_filedir / affile): 
+                _ = wget.download(f'https://alphafold.ebi.ac.uk/files/{affile}', out='')
         af_filename = f"AF_{input_uniprot}.pdb"
         os.rename(affile, edits_filedir / af_filename)
 
@@ -398,7 +400,10 @@ def af_structural_features(
                         a dataframe of coordinates and structural features
         """
         
-        edits_filedir = Path(workdir + '/' + input_gene)
+        edits_filedir = Path(f'{workdir}/{input_gene}'.strip('/'))
+        if not os.path.exists(edits_filedir):
+                os.mkdir(edits_filedir)
+        
         out_fasta = edits_filedir / f"{input_gene}_{input_uniprot}.tsv"
         uFasta_list = query_uniprot(input_uniprot, edits_filedir, out_fasta)
 
