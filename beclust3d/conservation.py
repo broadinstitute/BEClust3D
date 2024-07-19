@@ -9,7 +9,7 @@ Description: Translated from Notebook 2
 import pandas as pd
 from pathlib import Path
 import requests
-import sys
+import sys, os
 import time
 
 def conservation(
@@ -47,6 +47,7 @@ def conservation(
     edits_filedir = Path(workdir + '/' + input_human_gene)
     human_seq = query_protein_fasta(input_human_uniid, edits_filedir)
     mouse_seq = query_protein_fasta(input_mouse_uniid, edits_filedir)
+
     with open(edits_filedir / f"sequences.fasta", "w") as text_file:
         text_file.write(human_seq)
         text_file.write(mouse_seq)
@@ -64,7 +65,7 @@ def conservation(
 
     # parse .align file #
     ind = i_lines[0].rfind(' ')
-    cleaned_ilines = [s[ind:].strip().strip('\n') for s in i_lines]
+    cleaned_ilines = [s[ind+1:].strip('\n') for s in i_lines]
     cleaned_ilines = [s for s in cleaned_ilines if len(s) > 0]
     human_aligned_res = list(''.join([s for i, s in enumerate(cleaned_ilines) if i%3 == 0]))
     mouse_aligned_res = list(''.join([s for i, s in enumerate(cleaned_ilines) if (i-1)%3 == 0]))
@@ -174,7 +175,7 @@ def alignment_muscle(
     """
 
     url = 'https://www.ebi.ac.uk/Tools/services/rest/muscle/run'
-    files = {'sequence': open('../tests/SETDB1/sequences.fasta', 'rb')}
+    files = {'sequence': open(edits_filedir / 'sequences.fasta', 'rb')}
     data = {
         'email': email, 
         'title': title, 
@@ -184,6 +185,7 @@ def alignment_muscle(
     response = requests.post(url, data=data, files=files)
     assert response.status_code == 200, 'Error with MUSCLE query'
     time.sleep(30)
+    ### instead of waiting 30 s, should wait 5 s then check until received
 
     job_id = response.text
     job_url_code = job_id.split(' ')[-1]
