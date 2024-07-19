@@ -10,6 +10,7 @@ import pandas as pd
 from pathlib import Path
 import os
 from functools import lru_cache
+import warnings
 
 def randomize_by_conservation(
         workdir, 
@@ -49,6 +50,9 @@ def randomize_by_conservation(
     
     # for Missense load output from prioritize_by_conservation
     missense_filename = edits_filedir / f"randomized_screendata/{input_gene}_{screen_name}_missense_edits_randomized.tsv"
+    if not os.path.exists(missense_filename): 
+        warnings.warn(f"{missense_filename} does not exist")
+        return None
     df_missense = pd.read_csv(missense_filename, sep = '\t')
 
     arr_unique_LFC = [0.0] * len(df_struc_consvr)
