@@ -38,6 +38,7 @@ def randomize_be_results(df_missense, workdir,
             with column headers edit, human_pos, refAA, altAA, LFC, LFCr1 ... LFCr{nRandom}
     """
 
+    screen_name = input_screen.split('.')[0]
     edits_filedir = Path(workdir + '/' +  input_gene)
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
@@ -54,7 +55,7 @@ def randomize_be_results(df_missense, workdir,
     df_missense = pd.concat((df_missense, pd.DataFrame(dict_temp)), axis=1) # Use dict instead
 
     # save results
-    out_filename = edits_filedir / f"randomized_screendata/{input_gene}_{input_screen}_missense_edits_randomized.tsv"
+    out_filename = edits_filedir / f"randomized_screendata/{input_gene}_{screen_name}_missense_edits_randomized.tsv"
     df_missense.to_csv(out_filename, sep='\t', index=False)
     
     return df_missense
