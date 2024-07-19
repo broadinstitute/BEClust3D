@@ -7,18 +7,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from variables import *
 from beclust3d.conservation import conservation
 
-all_mouse_genes = [
-    'Setdb2', 'Pphln1', 'Mphosph8', 'Morc2a', 
-    'Atf7ip', 'Ehmt1', 'Fam208a', 'Suv39h2', 
-    'Setdb1', 'Ehmt2', 'Atf7ip2', 'Ptpn2', 
-    'Trim28', 'Suv39h1'
-]
-all_mouse_uniprots = [
-    'Q8C267', 'Q8K2H1', 'Q3TYA6', 'Q69ZX6', 
-    'Q7TT18', 'Q5DW34', 'Q69ZR9', 'Q9EQQ0', 
-    'D3YYC3', 'Q9Z148', 'Q3UL97', 'Q06180', 
-    'Q62318', 'O54864', 
-]
 email='xiaohu@g.harvard.edu'
 title='samplejob'
 
