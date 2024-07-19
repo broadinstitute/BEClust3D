@@ -18,7 +18,8 @@ import os
 def parse_base_editing_results(df_InputGene, workdir, 
                                input_gene, input_screen, 
                                mut_col='Mutation category', val_col='logFC', 
-                               gene_col='Target Gene Symbol', edits_col='Amino Acid Edits',
+                               gene_col='Target Gene Symbol', edits_col='Amino Acid Edits', 
+                               output_col='human_pos', 
                                ): 
     """
     Description
@@ -45,7 +46,7 @@ def parse_base_editing_results(df_InputGene, workdir,
     Returns
         mut_dfs: a list of pandas dataframes
             each dataframe corresponds to data for Missense, Silent, Nonsense, Intron, UTR, No mutation
-            each dataframe with column headers edit, human_pos, refAA, altAA, LFC
+            each dataframe with column headers edit, {output_col}, refAA, altAA, LFC
     """
 
     ### figure out creating directories
@@ -79,7 +80,7 @@ def parse_base_editing_results(df_InputGene, workdir,
         # open a file to write in list of mutations and their LFC values
         edits_filename = edits_filedir / f"screendata/{input_gene}_{screen_name}_{mut}_edits_list.tsv"
         edits_file = open(edits_filename, "w")
-        edits_file.write("edit\thuman_pos\trefAA\taltAA\tLFC\n")
+        edits_file.write("edit\t"+output_col+"\trefAA\taltAA\tLFC\n")
 
         # iterate through each cell of each list of edits
         for i in range(0, len(df)):
