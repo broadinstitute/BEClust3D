@@ -111,7 +111,7 @@ def binning(
             elif df_LFC3D_neg_stats['50%'] < LFC3Df <= df_LFC3D_neg_stats['75%']:
                 LFC3D_discrete, LFC3D_weight = 'NEG_75p', -0.25
             elif df_LFC3D_neg_stats['75%'] < LFC3Df <= df_LFC3D_neg_stats['max']: 
-                LFC3D_discrete = 'NEG_100p', -0.05
+                LFC3D_discrete, LFC3D_weight = 'NEG_100p', -0.05
             elif df_LFC3D_pos_stats['25%'] > LFC3Df >= df_LFC3D_pos_stats['min']:
                 LFC3D_discrete, LFC3D_weight = 'POS_0p', 0.05
             elif df_LFC3D_pos_stats['50%'] > LFC3Df >= df_LFC3D_pos_stats['25%']:

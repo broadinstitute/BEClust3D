@@ -8,8 +8,6 @@ from variables import *
 from beclust3d.average_split_lfc3d import average_and_split
 
 
-
-
 @pytest.mark.parametrize(("gene", "uniprot"), zip(all_genes, all_uniprots))
 @pytest.mark.parametrize("screen", all_human_screens)
 def test_afstructuralfeatures_human(gene, uniprot, screen): 
@@ -20,9 +18,7 @@ def test_afstructuralfeatures_human(gene, uniprot, screen):
         warnings.warn(f"{filename} does not exist")
         return True
     
-    df_str_cons_3daggr = pd.read_csv(filename, 
-                                    sep = "\t")
-                                    
+    df_str_cons_3daggr = pd.read_csv(filename, sep = "\t")                 
     res = average_and_split(
                 df_LFC_LFCrN_LFC3D_LFC3DrN=df_str_cons_3daggr, 
                 workdir=workdir, 
