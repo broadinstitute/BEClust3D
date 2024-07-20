@@ -9,6 +9,7 @@ Description: Translated from Notebook 3.3
 import pandas as pd
 from pathlib import Path
 import os
+import warnings
 
 def calculate_lfc3d(
         df_str_cons, 
@@ -45,6 +46,9 @@ def calculate_lfc3d(
         os.mkdir(edits_filedir / 'LFC3D')
     
     str_cons_filename = edits_filedir / f"randomized_screendata/{input_gene}_{screen_name}_struc_consrv_missenseedits_randomized.tsv"
+    if not os.path.exists(str_cons_filename): 
+        warnings.warn(f"{str_cons_filename} does not exist")
+        return None
     df_str_cons_edits = pd.read_csv(str_cons_filename, sep = "\t")
     
     df_str_cons_3daggr = pd.DataFrame()

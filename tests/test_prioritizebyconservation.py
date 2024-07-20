@@ -3,9 +3,6 @@ import filecmp
 import pytest
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 import warnings
 
 from variables import *
@@ -41,17 +38,3 @@ def test_afstructuralfeatures_human(gene, uniprot, structid, mouse_gene, screen)
                     # 0.9 is the arbitrary threshold of similarity
 
                     ### validate if this is a good threshold
-
-# use a fuzzy compare function because there are some minor discrepancies with capitalization and ordering
-# could also use difflib.SequenceMatcher, Levenshtein.ratio, ngrams word_tokenize (Jaccard similarity)
-# but the TfidfVectorizer cosine_similarity is the fastest for large documents
-def fuzzy_compare(file1, file2):
-    with open(file1, 'r') as f1, open(file2, 'r') as f2:
-        text1 = f1.read()
-        text2 = f2.read()
-
-    vectorizer = TfidfVectorizer().fit_transform([text1, text2])
-    vectors = vectorizer.toarray()
-    similarity = cosine_similarity(vectors)
-    score = similarity[0][1]
-    return score
