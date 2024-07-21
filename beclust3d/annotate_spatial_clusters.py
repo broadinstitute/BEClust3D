@@ -73,7 +73,7 @@ def clustering(
     df_hits_clust.to_csv(hits_clust_filename, sep='\t', index=False)
 
     # PLOT #
-    cluster_distance_filename = edits_filedir / f"{structureid}_MetaAggr_Hits_Clust_Dist_Stat_pl001.tsv"
+    cluster_distance_filename = edits_filedir / f"cluster_LFC3D/{structureid}_MetaAggr_Hits_Clust_Dist_Stat_pl001.tsv"
     plot_cluster_distance(arr_d_thr, [hits['sensitizing']['arr'], hits['resistant']['arr']], 
                           cluster_distance_filename, edits_filedir)
 
@@ -130,6 +130,7 @@ def clustering_distance(
 
         func_clustering = AgglomerativeClustering(n_clusters=n_clusters, metric=i_affn, 
                                                   linkage=i_link, distance_threshold=thr_distance)
+        ### if length of array is = 1
         clustering = func_clustering.fit(np_META_hits_coord)
         clus_lbl = clustering.labels_
         n_c_output = int(max(clus_lbl) + 1)
@@ -180,5 +181,4 @@ def plot_dendrogram(
     dendrogram(linkage_matrix, color_threshold=6.0, 
                labels=xlbl, leaf_rotation=90.)
     plt.title(f'{name} clusters')
-    plt.show()
     plt.savefig(dendogram_filename, dpi=300) 

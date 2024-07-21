@@ -181,8 +181,8 @@ def metaaggregation(
     # DISPLOTS #
     displots = [('SUM_LFC3D_neg_dis', 'SUM_LFC3D_neg', 'SUM_LFC3D_neg_psig', 'neg_pvalue'), 
                 ('SUM_LFC3D_neg_dis', 'SUM_LFC3D_neg', 'SUM_LFC3D_neg_dis', 'neg_pvalue'), 
-                ('SUM_LFC3D_pos_dis', 'SUM_LFC3D_pos', 'SUM_LFC3D_pos_psig', 'neg_pvalue'), 
-                ('SUM_LFC3D_pos_dis', 'SUM_LFC3D_pos', 'SUM_LFC3D_pos_dis', 'neg_pvalue'), 
+                ('SUM_LFC3D_pos_dis', 'SUM_LFC3D_pos', 'SUM_LFC3D_pos_psig', 'pos_pvalue'), 
+                ('SUM_LFC3D_pos_dis', 'SUM_LFC3D_pos', 'SUM_LFC3D_pos_dis', 'pos_pvalue'), 
                 ]
     for filter, x, hue, name in displots: 
         metaaggregation_displot(

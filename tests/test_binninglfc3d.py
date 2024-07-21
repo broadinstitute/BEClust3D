@@ -9,8 +9,6 @@ from variables import *
 from beclust3d.binning_lfc3d import binning_lfc3d
 
 
-
-
 @pytest.mark.parametrize(("gene", "uniprot", "structid", "mouse_gene"), zip(all_genes, all_uniprots, all_structureids, all_mouse_genes))
 @pytest.mark.parametrize("screen", all_human_screens)
 def test_afstructuralfeatures_human(gene, uniprot, structid, mouse_gene, screen): 
