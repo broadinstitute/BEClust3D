@@ -10,12 +10,12 @@ import pandas as pd
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering
 import seaborn as sns
-from matplotlib.pyplot import figure
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.cluster import AgglomerativeClustering
 from pathlib import Path
 import os
+import warnings
 
 def clustering(
         df_struc_consvr, df_META, 
@@ -58,6 +58,10 @@ def clustering(
             
             func_clustering = AgglomerativeClustering(n_clusters=n_clusters, metric=i_affn, 
                                                       linkage=i_link, distance_threshold=thr_distance)
+            
+            if np_META_hits_coord.shape[0] < 2: 
+                warnings.warn(f"Not enough data to perform agglomerative clustering")
+                return None, None
             clustering = func_clustering.fit(np_META_hits_coord)
             clus_lbl = clustering.labels_
             n_c_output = int(max(clus_lbl)+1)
@@ -130,7 +134,10 @@ def clustering_distance(
 
         func_clustering = AgglomerativeClustering(n_clusters=n_clusters, metric=i_affn, 
                                                   linkage=i_link, distance_threshold=thr_distance)
-        ### if length of array is = 1
+
+        if np_META_hits_coord.shape[0] < 2: 
+            warnings.warn(f"Not enough data to perform agglomerative clustering")
+            raise None
         clustering = func_clustering.fit(np_META_hits_coord)
         clus_lbl = clustering.labels_
         n_c_output = int(max(clus_lbl) + 1)
@@ -153,6 +160,8 @@ def clustering_distance(
             this_c_data = this_c_data.reset_index(drop=True)
             this_c_len = len(this_c_data)
             print(c, ':', this_c_len, ':', this_c_data.at[0, 'unipos'], '-', this_c_data.at[len(this_c_data)-1, 'unipos'])
+
+        return clust_indices
 
 def plot_dendrogram(
         clustering, df, 
