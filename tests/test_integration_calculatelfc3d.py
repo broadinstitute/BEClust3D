@@ -1,17 +1,14 @@
 import pandas as pd
-import filecmp
 import pytest
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import warnings
 
 from variables import *
 from beclust3d.calculate_lfc3d import calculate_lfc3d
 
 
 @pytest.mark.parametrize(("gene", "uniprot", "structid"), zip(all_genes, all_uniprots, all_structureids))
-@pytest.mark.parametrize("screen", all_human_screens)
-def test_afstructuralfeatures_human(gene, uniprot, structid, screen): 
+def test_afstructuralfeatures_human(gene, uniprot, structid): 
 
     df_str_cons = pd.read_csv(f"{workdir}/{gene}/{structid}_coord_struc_features.tsv", sep = "\t")
 
@@ -19,7 +16,7 @@ def test_afstructuralfeatures_human(gene, uniprot, structid, screen):
         df_str_cons  =df_str_cons, 
         workdir      =workdir, 
         input_gene   =gene, 
-        input_screens=[screen], 
+        input_screens=all_human_screens, 
     )
 
     if res is not None: 

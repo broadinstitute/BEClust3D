@@ -14,7 +14,7 @@ import warnings
 def calculate_lfc3d(
         df_str_cons, 
         workdir, 
-        input_gene, input_screen, 
+        input_gene, input_screens, 
         nRandom=1000, 
 ): 
     """
@@ -28,7 +28,7 @@ def calculate_lfc3d(
             the working directory
         input_gene: str, required
             the name of the input human gene
-        input_screen: str, required
+        input_screens: str, required
             the name of the input screen
         nRandom: int, optional
             the number of randomize iterations
@@ -38,51 +38,57 @@ def calculate_lfc3d(
             a dataframe listing calculated LFC3D scores and their randomizations
     """
 
-    screen_name = input_screen.split('.')[0]
     edits_filedir = Path(workdir + '/' +  input_gene)
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'LFC3D'):
         os.mkdir(edits_filedir / 'LFC3D')
-    
-    str_cons_filename = edits_filedir / f"randomized_screendata/{input_gene}_{screen_name}_struc_consrv_missenseedits_randomized.tsv"
-    if not os.path.exists(str_cons_filename): 
-        warnings.warn(f"{str_cons_filename} does not exist")
-        return None
-    df_str_cons_edits = pd.read_csv(str_cons_filename, sep = "\t")
-    
+
     df_str_cons_3daggr = pd.DataFrame()
     df_str_cons_3daggr['unipos'] = df_str_cons['unipos']
     df_str_cons_3daggr['unires'] = df_str_cons['unires']
-    taa_wise_norm_LFC = []
 
-    for aa in range(0, len(df_str_cons_edits)):
-        taa_naa_wBE_LFC, sum_taa_naa_LFC = helper(df_str_cons_edits, aa)
-        if taa_naa_wBE_LFC == 0:
-            taa_wise_norm_LFC.append('-')
-        else:
-            taa_wise_norm_LFC.append(str(round(sum_taa_naa_LFC/taa_naa_wBE_LFC, 3)))
-    
-    df_str_cons_3daggr[f"{screen_name}_LFC"] = df_str_cons_edits['mean_missense_LFC']
-    df_str_cons_3daggr[f"{screen_name}_LFC3D"] = taa_wise_norm_LFC
-    
-    dict_temp = {}
-    for r in range(0, nRandom):
-        col_head = 'mean_missense_LFCr' + str(r+1)
+    for input_screen in input_screens: # for every screen
+
+        screen_name = input_screen.split('.')[0]
+        str_cons_filename = edits_filedir / f"randomized_screendata/{input_gene}_{screen_name}_struc_consrv_missenseedits_randomized.tsv"
+        if not os.path.exists(str_cons_filename): 
+            warnings.warn(f"{str_cons_filename} does not exist")
+            if len(input_screens) == 1: 
+                return None
+            continue
+        df_str_cons_edits = pd.read_csv(str_cons_filename, sep = "\t")
+
         taa_wise_norm_LFC = []
 
-        for aa in range(0, len(df_str_cons_edits)):
+        for aa in range(0, len(df_str_cons_edits)): # for every residue
             taa_naa_wBE_LFC, sum_taa_naa_LFC = helper(df_str_cons_edits, aa)
             if taa_naa_wBE_LFC == 0:
                 taa_wise_norm_LFC.append('-')
-            else:
+            else: 
                 taa_wise_norm_LFC.append(str(round(sum_taa_naa_LFC/taa_naa_wBE_LFC, 3)))
+        
+        df_str_cons_3daggr[f"{screen_name}_LFC"] = df_str_cons_edits['mean_missense_LFC']
+        df_str_cons_3daggr[f"{screen_name}_LFC3D"] = taa_wise_norm_LFC
+    
+        dict_temp = {}
+        for r in range(0, nRandom):
+            taa_wise_norm_LFC = []
 
-        dict_temp[f"{screen_name}_LFC{str(r+1)}"] = df_str_cons_edits[col_head]
-        dict_temp[f"{screen_name}_LFC3D{str(r+1)}"] = taa_wise_norm_LFC
+            for aa in range(0, len(df_str_cons_edits)):
+                taa_naa_wBE_LFC, sum_taa_naa_LFC = helper(df_str_cons_edits, aa)
+                if taa_naa_wBE_LFC == 0:
+                    taa_wise_norm_LFC.append('-')
+                else: 
+                    taa_wise_norm_LFC.append(str(round(sum_taa_naa_LFC/taa_naa_wBE_LFC, 3)))
 
-    df_str_cons_3daggr = pd.concat((df_str_cons_3daggr, pd.DataFrame(dict_temp)), axis=1)
-    out_filename = edits_filedir / f"LFC3D/{input_gene}_{screen_name}_LFC_LFC3D_per_Random_LFC3Dr.tsv"
+            ### i think this randomization lookup just pull from previous shuffled data, so you don't need to call the dataframe but rather just copy over columns
+            dict_temp[f"{screen_name}_LFCr{str(r+1)}"] = df_str_cons_edits[f'mean_missense_LFCr{str(r+1)}'] ###
+            dict_temp[f"{screen_name}_LFC3Dr{str(r+1)}"] = taa_wise_norm_LFC
+
+        df_str_cons_3daggr = pd.concat((df_str_cons_3daggr, pd.DataFrame(dict_temp)), axis=1)
+
+    out_filename = edits_filedir / f"LFC3D/{input_gene}_LFC_LFC3D_per_Random_LFC3Dr.tsv"
     df_str_cons_3daggr.to_csv(out_filename, sep = '\t', index=False)
 
     return df_str_cons_3daggr
@@ -90,21 +96,19 @@ def calculate_lfc3d(
 def helper(
     df_str_cons_edits, aa
 ): 
-    naa_list = df_str_cons_edits.at[aa, 'Naa'].split(';') # neighboring amino acids
     naa_pos_list = df_str_cons_edits.at[aa, 'Naa_pos'].split(';') # neighboring residue positions
     taa_LFC = df_str_cons_edits.at[aa, 'mean_missense_LFC'] # target LFC
 
-    taa_naa_wBE_LFC = 0 # residues that are conserved and with a BE edit value
+    taa_naa_wBE_LFC = 0
     sum_taa_naa_LFC = 0.0
     if taa_LFC != '-':
         taa_naa_wBE_LFC = 1
         sum_taa_naa_LFC = float(taa_LFC)
 
-    for j in range(0, len(naa_list)):
-        naa_pos = int(naa_pos_list[j])
-        naa_LFC = df_str_cons_edits.at[naa_pos-1, 'mean_missense_LFC']
-        if naa_LFC != '-':
-            sum_taa_naa_LFC = sum_taa_naa_LFC + float(naa_LFC)
-            taa_naa_wBE_LFC = taa_naa_wBE_LFC + 1
+    for naa_pos in naa_pos_list: 
+        naa_LFC = df_str_cons_edits.at[int(naa_pos)-1, 'mean_missense_LFC']
+        if naa_LFC != '-': 
+            sum_taa_naa_LFC += float(naa_LFC)
+            taa_naa_wBE_LFC += 1
 
     return taa_naa_wBE_LFC, sum_taa_naa_LFC
