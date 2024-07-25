@@ -8,11 +8,12 @@ Description: Translated from Notebook 3.4
 
 import pandas as pd
 from pathlib import Path
+import warnings
 
 def binning_lfc3d(
         df_LFC_LFC3D, 
         workdir, 
-        input_gene, input_screen, 
+        input_gene, input_screens, 
 ): 
     """
     Description
@@ -25,7 +26,7 @@ def binning_lfc3d(
             the working directory
         input_gene: str, required
             the name of the input human gene
-        input_screen: str, required
+        input_screens: str, required
             the name of the input screen
 
     Returns
@@ -33,52 +34,59 @@ def binning_lfc3d(
             a dataframe listing how scores portion into quantiles
     """
 
-    screen_name = input_screen.split('.')[0]
     edits_filedir = Path(workdir + '/' + input_gene)
     df_LFC_LFC3D_dis = pd.DataFrame()
     df_LFC_LFC3D_dis['unipos'] = df_LFC_LFC3D['unipos']
     df_LFC_LFC3D_dis['unires'] = df_LFC_LFC3D['unires']
     
     # add this screen's LFC and LFC3D to the output
-    LFC_header = f"{screen_name}_LFC"
-    LFC3D_header = f"{screen_name}_LFC3D"
-    df_LFC_LFC3D_dis[LFC_header] = df_LFC_LFC3D[LFC_header]
-    df_LFC_LFC3D_dis[LFC3D_header] = df_LFC_LFC3D[LFC3D_header]
+    for input_screen in input_screens: 
+
+        screen_name = input_screen.split('.')[0]
+        LFC_header = f"{screen_name}_LFC"
+        LFC3D_header = f"{screen_name}_LFC3D"
+        if LFC_header not in df_LFC_LFC3D.columns: # make sure screen gene combo exists
+            warnings.warn(f'{screen_name} screen not found for {input_gene}')
+            continue
+
+        df_LFC_LFC3D_dis[LFC_header] = df_LFC_LFC3D[LFC_header]
+        df_LFC_LFC3D_dis[LFC3D_header] = df_LFC_LFC3D[LFC3D_header]
     
-    # generate bin thersholds
-    df_LFC_LFC3D_nodash = df_LFC_LFC3D.loc[df_LFC_LFC3D[LFC3D_header] != '-', ]
-    df_LFC_LFC3D_nodash = df_LFC_LFC3D_nodash.reset_index(drop=True)
-    df_LFC_LFC3D_nodash[LFC3D_header] = df_LFC_LFC3D_nodash[LFC3D_header].astype(float)
+        # generate bin thersholds
+        df_LFC_LFC3D_nodash = df_LFC_LFC3D.loc[df_LFC_LFC3D[LFC3D_header] != '-', ]
+        df_LFC_LFC3D_nodash = df_LFC_LFC3D_nodash.reset_index(drop=True)
+        df_LFC_LFC3D_nodash[LFC3D_header] = df_LFC_LFC3D_nodash[LFC3D_header].astype(float)
 
-    df_LFC3D_neg = df_LFC_LFC3D_nodash.loc[df_LFC_LFC3D_nodash[LFC3D_header] < 0, ]
-    df_LFC3D_neg = df_LFC3D_neg.reset_index(drop=True)
-    print("length of neg: " + str(len(df_LFC3D_neg)))
-    df_LFC3D_pos = df_LFC_LFC3D_nodash.loc[df_LFC_LFC3D_nodash[LFC3D_header] > 0, ]
-    df_LFC3D_pos = df_LFC3D_pos.reset_index(drop=True)
-    print("length of pos: " + str(len(df_LFC3D_pos)))
+        df_LFC3D_neg = df_LFC_LFC3D_nodash.loc[df_LFC_LFC3D_nodash[LFC3D_header] < 0, ]
+        df_LFC3D_neg = df_LFC3D_neg.reset_index(drop=True)
+        print("length of neg: " + str(len(df_LFC3D_neg)))
+        df_LFC3D_pos = df_LFC_LFC3D_nodash.loc[df_LFC_LFC3D_nodash[LFC3D_header] > 0, ]
+        df_LFC3D_pos = df_LFC3D_pos.reset_index(drop=True)
+        print("length of pos: " + str(len(df_LFC3D_pos)))
 
-    df_LFC3D_neg_stats = df_LFC3D_neg[LFC3D_header].describe()
-    # print(df_LFC3D_neg_stats)
-    df_LFC3D_pos_stats = df_LFC3D_pos[LFC3D_header].describe()
-    # print(df_LFC3D_pos_stats)
+        df_LFC3D_neg_stats = df_LFC3D_neg[LFC3D_header].describe()
+        # print(df_LFC3D_neg_stats)
+        df_LFC3D_pos_stats = df_LFC3D_pos[LFC3D_header].describe()
+        # print(df_LFC3D_pos_stats)
 
-    NEG_10p_v = round(df_LFC3D_neg[LFC3D_header].quantile(0.1), 4) # (bottom 10th percentile)
-    POS_90p_v = round(df_LFC3D_pos[LFC3D_header].quantile(0.9), 4) # (top 90th percentile)
-    NEG_05p_v = round(df_LFC3D_neg[LFC3D_header].quantile(0.05), 4) # (bottom 5th percentile)
-    POS_95p_v = round(df_LFC3D_pos[LFC3D_header].quantile(0.95), 4) # (top 95th percentile)
-    print('NEG_10p_v', NEG_10p_v)
-    print('POS_90p_v', POS_90p_v)
-    print('NEG_05p_v', NEG_05p_v)
-    print('POS_95p_v', POS_95p_v)
+        NEG_10p_v = round(df_LFC3D_neg[LFC3D_header].quantile(0.1), 4) # (bottom 10th percentile)
+        POS_90p_v = round(df_LFC3D_pos[LFC3D_header].quantile(0.9), 4) # (top 90th percentile)
+        NEG_05p_v = round(df_LFC3D_neg[LFC3D_header].quantile(0.05), 4) # (bottom 5th percentile)
+        POS_95p_v = round(df_LFC3D_pos[LFC3D_header].quantile(0.95), 4) # (top 95th percentile)
+        print('NEG_10p_v', NEG_10p_v)
+        print('POS_90p_v', POS_90p_v)
+        print('NEG_05p_v', NEG_05p_v)
+        print('POS_95p_v', POS_95p_v)
 
-    arr_LFC3D_discrete, arr_LFC3D_weight = binning(df_LFC_LFC3D, 
-                                                   df_LFC3D_neg_stats, df_LFC3D_pos_stats, 
-                                                   NEG_10p_v, POS_90p_v, NEG_05p_v, POS_95p_v, 
-                                                   LFC3D_header)
-    df_LFC_LFC3D_dis[f"{screen_name}_LFC3D_dis"]  = arr_LFC3D_discrete
-    df_LFC_LFC3D_dis[f"{screen_name}_LFC3D_wght"] = arr_LFC3D_weight
+        arr_LFC3D_discrete, arr_LFC3D_weight = binning(
+                                                    df_LFC_LFC3D, df_LFC3D_neg_stats, df_LFC3D_pos_stats, 
+                                                    NEG_10p_v, POS_90p_v, NEG_05p_v, POS_95p_v, 
+                                                    LFC3D_header
+                                                    )
+        df_LFC_LFC3D_dis[f"{screen_name}_LFC3D_dis"]  = arr_LFC3D_discrete
+        df_LFC_LFC3D_dis[f"{screen_name}_LFC3D_wght"] = arr_LFC3D_weight
 
-    out_filename = edits_filedir / f"LFC3D/{input_gene}_{screen_name}_LFC_LFC3D_dis_wght_Signal_Only_per_Screen.tsv"
+    out_filename = edits_filedir / f"LFC3D/{input_gene}_LFC_LFC3D_dis_wght_Signal_Only_per_Screen.tsv"
     df_LFC_LFC3D_dis.to_csv(out_filename, sep = '\t', index=False)
 
     return df_LFC_LFC3D_dis
