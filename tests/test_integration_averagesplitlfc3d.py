@@ -9,10 +9,8 @@ from beclust3d.average_split_lfc3d import average_and_split
 
 
 @pytest.mark.parametrize(("gene", "uniprot"), zip(all_genes, all_uniprots))
-@pytest.mark.parametrize("screen", all_human_screens)
-def test_averagesplitlfc3d_human(gene, uniprot, screen): 
+def test_averagesplitlfc3d_integration_human(gene, uniprot): 
 
-    screen_name = screen.split('.')[0]
     filename = f"{workdir}/{gene}/LFC3D/{gene}_LFC_LFC3D_per_Random_LFC3Dr.tsv"
     if not os.path.exists(filename): 
         warnings.warn(f"{filename} does not exist")
@@ -23,7 +21,7 @@ def test_averagesplitlfc3d_human(gene, uniprot, screen):
                 df_LFC_LFCrN_LFC3D_LFC3DrN=df_str_cons_3daggr, 
                 workdir=workdir, 
                 input_gene=gene,
-                input_screens=[screen], 
+                input_screens=all_human_screens, 
                 )
 
     if res is not None: 
