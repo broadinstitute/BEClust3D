@@ -11,7 +11,7 @@ from beclust3d.binning_lfc3d import binning_lfc3d
 
 @pytest.mark.parametrize(("gene", "uniprot", "structid", "mouse_gene"), zip(all_genes, all_uniprots, all_structureids, all_mouse_genes))
 @pytest.mark.parametrize("screen", all_human_screens)
-def test_binninglfc3d_human(gene, uniprot, structid, mouse_gene, screen): 
+def test_binninglfc3d_integration_human(gene, uniprot, structid, mouse_gene, screen): 
 
     screen_name = screen.split('.')[0]
     filename = f"{workdir}/{gene}/LFC3D/{gene}_{screen_name}_LFC_LFC3D_LFC3Dr_bidirectional.tsv"
