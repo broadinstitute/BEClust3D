@@ -8,8 +8,8 @@ from variables import *
 from beclust3d.average_split_lfc3d import average_and_split
 
 
-@pytest.mark.parametrize(("gene", "uniprot"), zip(all_genes, all_uniprots))
-def test_averagesplitlfc3d_integration_human(gene, uniprot): 
+@pytest.mark.parametrize("gene", all_genes)
+def test_averagesplitlfc3d_integration_human(gene): 
 
     filename = f"{workdir}/{gene}/LFC3D/{gene}_LFC_LFC3D_per_Random_LFC3Dr.tsv"
     if not os.path.exists(filename): 
