@@ -7,8 +7,8 @@ from variables import *
 from beclust3d.calculate_lfc3d import calculate_lfc3d
 
 
-@pytest.mark.parametrize(("gene", "uniprot", "structid"), zip(all_genes, all_uniprots, all_structureids))
-def test_afstructuralfeatures_human(gene, uniprot, structid): 
+@pytest.mark.parametrize(("gene", "structid"), zip(all_genes, all_structureids))
+def test_afstructuralfeatures_human(gene, structid): 
 
     df_str_cons = pd.read_csv(f"{workdir}/{gene}/{structid}_coord_struc_features.tsv", sep = "\t")
 

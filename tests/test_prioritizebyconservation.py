@@ -8,9 +8,9 @@ import warnings
 from variables import *
 from beclust3d.prioritize_by_conservation import prioritize_by_conservation
 
-@pytest.mark.parametrize(("gene", "uniprot", "structid", "mouse_gene"), zip(all_genes, all_uniprots, all_structureids, all_mouse_genes))
+@pytest.mark.parametrize(("gene", "structid", "mouse_gene"), zip(all_genes, all_structureids, all_mouse_genes))
 @pytest.mark.parametrize("screen", all_human_screens)
-def test_afstructuralfeatures_human(gene, uniprot, structid, mouse_gene, screen): 
+def test_afstructuralfeatures_human(gene, structid, mouse_gene, screen): 
 
     df_struc = pd.read_csv(f"{workdir}/{gene}/{structid}_coord_struc_features.tsv", sep = "\t")
     df_consrv = pd.read_csv(f"{workdir}/{gene}/Human{gene}_Mouse{mouse_gene}_residuemap_conservation.tsv", sep = '\t')

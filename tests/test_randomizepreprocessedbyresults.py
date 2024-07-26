@@ -7,9 +7,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from variables import *
 from beclust3d.randomize_preprocessed_be_results import randomize_be_results
 
-@pytest.mark.parametrize(("gene", "uniprot", "structid"), zip(all_genes, all_uniprots, all_structureids))
+@pytest.mark.parametrize("gene", all_genes)
 @pytest.mark.parametrize("screen", all_human_screens)
-def test_afstructuralfeatures_human(gene, uniprot, structid, screen): 
+def test_afstructuralfeatures_human(gene, screen): 
     screen_name = screen.split('.')[0]
     df_filename = f'{workdir}/{gene}/screendata/{gene}_{screen_name}_Missense_edits_list.tsv'
     df_missense = pd.read_csv(df_filename, sep='\t')

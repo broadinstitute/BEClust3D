@@ -9,8 +9,8 @@ from variables import *
 from beclust3d.metaaggregation import metaaggregation
 
 
-@pytest.mark.parametrize(("gene", "uniprot", "structid", "mouse_gene"), zip(all_genes, all_uniprots, all_structureids, all_mouse_genes))
-def test_metaaggregation_integration_human(gene, uniprot, structid, mouse_gene): 
+@pytest.mark.parametrize(("gene", "structid"), zip(all_genes, all_structureids))
+def test_metaaggregation_integration_human(gene, structid): 
 
     filename = f'{workdir}/{gene}/LFC3D/{gene}_LFC_LFC3D_per_Random_LFC3Dr.tsv'
     if not os.path.exists(filename): 

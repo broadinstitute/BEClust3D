@@ -8,9 +8,9 @@ import warnings
 from variables import *
 from beclust3d.metaaggregation import metaaggregation
 
-@pytest.mark.parametrize(("gene", "uniprot", "structid", "mouse_gene"), zip(all_genes, all_uniprots, all_structureids, all_mouse_genes))
+@pytest.mark.parametrize(("gene", "structid"), zip(all_genes, all_structureids))
 @pytest.mark.parametrize("screen", all_human_screens)
-def test_metaaggregation_human(gene, uniprot, structid, mouse_gene, screen): 
+def test_metaaggregation_human(gene, structid, screen): 
 
     filename = f'{workdir}/{gene}/LFC3D/{gene}_LFC_LFC3D_per_Random_LFC3Dr.tsv' # from calculate_lfc3d
     if not os.path.exists(filename): 

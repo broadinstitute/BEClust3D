@@ -10,9 +10,9 @@ from beclust3d.preprocess_be_results import parse_base_editing_results
 vals = ['D14_Input', 'D14_Input', 'D14_Input', 'D17_Input', 'D14_Input', 'D14_Input', ]
 mouse_vals = ['NSG_Input', 'Tx_NSG', 'NSG_Input', 'Tx_NSG', 'NSG_Input', 'Tx_NSG', ]
 
-@pytest.mark.parametrize(("gene", "uniprot", "structid"), zip(all_genes, all_uniprots, all_structureids))
+@pytest.mark.parametrize("gene", all_genes)
 @pytest.mark.parametrize(("screen", "val"), zip(all_human_screens, vals))
-def test_afstructuralfeatures_human(gene, uniprot, structid, screen, val): 
+def test_afstructuralfeatures_human(gene, screen, val): 
     df_filename = f'{workdir}/../rawdata/{screen}'
     df_screen = pd.read_csv(df_filename, sep='\t')
 

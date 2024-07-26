@@ -161,7 +161,7 @@ def clustering_distance(
             this_c_len = len(this_c_data)
             print(c, ':', this_c_len, ':', this_c_data.at[0, 'unipos'], '-', this_c_data.at[len(this_c_data)-1, 'unipos'])
 
-        return clust_indices
+    return clust_indices
 
 def plot_dendrogram(
         clustering, df, 
