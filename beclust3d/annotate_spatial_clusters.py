@@ -93,6 +93,8 @@ def plot_cluster_distance(
     dist_stat['n_sens_clusters'] = ys[0]
     dist_stat['n_resi_clusters'] = ys[1]
 
+    fig, ax = plt.subplots()
+
     sns.lineplot(data=dist_stat, x="cluster_distance", y="n_sens_clusters")
     sns.lineplot(data=dist_stat, x="cluster_distance", y="n_resi_clusters")
 
@@ -147,6 +149,7 @@ def clustering_distance(
         dendogram_filename = edits_filedir / f"plots/{input_gene}_{input_uniprot}_{name}_hits_Dendogram_p_l001_{str(int(thr_distance))}A.png"
         fig = plot_dendrogram(clustering, df_META_temp, dendogram_filename, name)
         plt.savefig(dendogram_filename, dpi = 300)
+        plt.show()
 
         # CLUSTER INDEX AND LENGTH
         hits_clust_filename = edits_filedir / f"cluster_LFC3D/{structureid}_MetaAggr_Hits_Clust_p_l001.tsv"

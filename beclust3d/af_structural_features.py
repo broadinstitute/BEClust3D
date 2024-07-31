@@ -406,8 +406,8 @@ def af_structural_features(
         
         out_fasta = edits_filedir / f"{input_gene}_{input_uniprot}.tsv"
         uFasta_list = query_uniprot(input_uniprot, edits_filedir, out_fasta)
-
         af_processed_file, coord_pLDDT_file = query_af_and_process(input_uniprot, input_gene, edits_filedir, structureid)
+
 
         ### query dssp with mkdssp
         dssp_output_filename = parse_dssp(input_uniprot, input_gene, edits_filedir, structureid)
