@@ -18,8 +18,8 @@ def prioritize_by_conservation(
 ): 
     """
     Description
-        Takes in results across multiple categories for a screen, and
-        prioritizes residue scores by conservation. 
+        Takes in results across multiple edit types for a screen, and
+        aggregates the edits for each residue with conservation information. 
 
     Params
         df_struc: pandas dataframe, required
@@ -39,13 +39,6 @@ def prioritize_by_conservation(
         df_struc_consvr: pandas dataframe
             DataFrame
     """
-
-    df_struc_consvr = df_struc
-    df_struc_consvr['human_res_pos'] = df_consrv['human_res_pos']
-    df_struc_consvr['mouse_res_pos'] = df_consrv['mouse_res_pos']
-    df_struc_consvr['mouse_res']     = df_consrv['mouse_res']
-    df_struc_consvr['conservation']  = df_consrv['conservation']
-
     screen_name = input_screen.split('.')[0]
     edits_filedir = Path(workdir + '/' +  input_gene)
     if not os.path.exists(edits_filedir):
@@ -53,49 +46,51 @@ def prioritize_by_conservation(
     if not os.path.exists(edits_filedir / 'screendata'):
         os.mkdir(edits_filedir / 'screendata')
 
-    edits_filename = edits_filedir / f"screendata/{input_gene}_{structureid}_struc_consrv.tsv"
-    df_struc_consvr.to_csv(edits_filename, 
-                           sep = "\t", index=False)
+    df_struc_consvr = df_struc
+    df_struc_consvr['human_res_pos'] = df_consrv['human_res_pos']
+    df_struc_consvr['mouse_res_pos'] = df_consrv['mouse_res_pos']
+    df_struc_consvr['mouse_res']     = df_consrv['mouse_res']
+    df_struc_consvr['conservation']  = df_consrv['conservation']
+    del df_struc, df_consrv
 
-    # for Missense, Silent, Nonsense
+    struc_consrv_filename =  f"screendata/{input_gene}_{structureid}_struc_consrv.tsv"
+    df_struc_consvr.to_csv(edits_filedir / struc_consrv_filename, sep = "\t", index=False)
+
+    # FOR EACH EDIT TYPE, AGGREGATE LFC AND EDITS WITH CONSERVATION #
+    ### this can be done without conservation, just with an input dataframe that only has the original sequence
     for edit_type in ['Missense', 'Silent', 'Nonsense']: 
 
-        edits_filename = edits_filedir / f"screendata/{input_gene}_{screen_name}_{edit_type}_edits_list.tsv"
-        df_edit = pd.read_csv(edits_filename, sep='\t')
+        in_filename = f"screendata/{input_gene}_{screen_name}_{edit_type}_edits_list.tsv"
+        df_edit = pd.read_csv(edits_filedir / in_filename, sep='\t')
         
         arr_unique_LFC = []
         arr_all_edits = []
 
-        for i in range(0, len(df_struc_consvr)):
-            human_res_pos = df_struc_consvr.at[i, 'human_res_pos']
-            unique_LFC_per_residue_human = '-'
-            all_edits_per_residue_human = '-'
-            
-            df_pos_edits = df_edit.loc[df_edit['human_pos'] == int(human_res_pos), ]
-            df_pos_edits = df_pos_edits.reset_index()
+        # FOR EACH RESIDUE #
+        for i in range(len(df_struc_consvr)): 
+            human_res_pos = df_struc_consvr.at[i, 'human_res_pos'] ###
+            df_pos_edits = df_edit.loc[df_edit['human_pos'] == int(human_res_pos), ].reset_index() ###
 
-            if len(df_pos_edits) > 1:
-                # edits
-                pos_edits_list = df_pos_edits['edit'].tolist()
-                all_edits_per_residue_human = ';'.join(list(set(pos_edits_list)))
-                # scores
+            if len(df_pos_edits) > 1: 
                 pos_LFCscore_list = df_pos_edits['LFC'].tolist()
                 pos_LFCscore = round(sum(pos_LFCscore_list) / len(pos_LFCscore_list), 3)
-                unique_LFC_per_residue_human = str(pos_LFCscore)
+                unique_LFC_res = str(pos_LFCscore)
+
+                pos_edits_list = df_pos_edits['edit'].tolist()
+                all_edits_res = ';'.join(list(set(pos_edits_list)))
             elif len(df_pos_edits) == 1:   
-                all_edits_per_residue_human = df_pos_edits.at[0,'edit']
-                unique_LFC_per_residue_human = str(round(df_pos_edits.at[0,'LFC'], 3))
+                unique_LFC_res = str(round(df_pos_edits.at[0, 'LFC'], 3))
+                all_edits_res = df_pos_edits.at[0, 'edit']
             else:
-                all_edits_per_residue_human = '-'
-                unique_LFC_per_residue_human = '-'
+                unique_LFC_res, all_edits_res = '-', '-'
 
-            arr_unique_LFC.append(unique_LFC_per_residue_human)
-            arr_all_edits.append(all_edits_per_residue_human)
+            arr_unique_LFC.append(unique_LFC_res)
+            arr_all_edits.append(all_edits_res)
 
-        df_struc_consvr[f'all_{edit_type}_edits'] = arr_all_edits
         df_struc_consvr[f'mean_{edit_type}_LFC'] = arr_unique_LFC
+        df_struc_consvr[f'all_{edit_type}_edits'] = arr_all_edits
 
-    out_filename = edits_filedir / f"screendata/{input_gene}_{screen_name}_struc_consrv_proteinedits.tsv"
-    df_struc_consvr.to_csv(out_filename, sep = '\t', index=False)
+    strcons_edits_filename = f"screendata/{input_gene}_{screen_name}_struc_consrv_proteinedits.tsv"
+    df_struc_consvr.to_csv(edits_filedir / strcons_edits_filename, sep = '\t', index=False)
 
     return df_struc_consvr
