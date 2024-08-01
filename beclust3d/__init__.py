@@ -9,7 +9,7 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from preprocess_be_results import parse_base_editing_results
-from randomize_preprocessed_be_results import randomize_be_results
+from beclust3d.randomize_be_results import randomize_be_results
 from conservation import conservation
 from prioritize_by_conservation import prioritize_by_conservation
 from randomize_by_conservation import randomize_by_conservation
