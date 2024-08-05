@@ -9,18 +9,24 @@ Description: Translated from Notebook 3.1
 import pandas as pd
 import re
 from pathlib import Path
-from scipy.stats import mannwhitneyu
-import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
 import os
+import re
 
-def parse_base_editing_results(df_InputGene, workdir, 
-                               input_gene, input_screen, 
-                               mut_col='Mutation category', val_col='logFC', 
-                               gene_col='Target Gene Symbol', edits_col='Amino Acid Edits', 
-                               output_col='human_pos', 
-                               ): 
+from _preprocess_be_results_plots_ import *
+from _preprocess_be_results_hypothesis_ import *
+
+# These have to be predefined, too much of the code is dependent on these categories #
+mut_categories = ["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"]
+
+def parse_base_editing_results(
+    df_Input, workdir, 
+    input_gene, input_screen, 
+    mut_col='Mutation category', val_col='logFC', 
+    gene_col='Target Gene Symbol', edits_col='Amino Acid Edits', 
+    output_col='human_pos', 
+    multi_annotation = False, split_char = ',',
+): 
     """
     Description
         Parse raw data and create separate dataframes for each mutation type. 
@@ -49,231 +55,88 @@ def parse_base_editing_results(df_InputGene, workdir,
             each dataframe with column headers edit, {output_col}, refAA, altAA, LFC
     """
 
-    ### figure out creating directories
-
-    df_InputGene = df_InputGene.loc[df_InputGene[gene_col] == input_gene, ]
-    screen_name = input_screen.split('.')[0]
-    # df_InputGene_missense, df_InputGene_silent, df_InputGene_nonsense, df_InputGene_intron, df_InputGene_UTR
-    mut_categories = ['Missense', 'Silent', 'Nonsense'] # 'Intron', 'UTR'
-        # based on the standard output from BEAGLE
-        # order of priority
-    mut_dfs = [pd.DataFrame() for _ in mut_categories]
-
     edits_filedir = Path(workdir + '/' +  input_gene)
+    screen_name = input_screen.split('.')[0]    
+    counts_violin_by_gene(df_rawinput=df_Input, edits_filedir=edits_filedir, 
+                          gene_col=gene_col, mut_col=mut_col, val_col=val_col, screen_name=screen_name, )
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'screendata'):
         os.mkdir(edits_filedir / 'screendata')
     if not os.path.exists(edits_filedir / 'plots'):
         os.mkdir(edits_filedir / 'plots')
+    if not os.path.exists(edits_filedir / 'qc_validation'):
+        os.mkdir(edits_filedir / 'qc_validation')
 
-    for mut, df in zip(mut_categories, mut_dfs): 
-        # preprocess by taking the subset of the original df with the indicated mutation
-        df = df_InputGene.loc[df_InputGene[mut_col] == mut, ] ### == or .contains
+    # NARROW DOWN TO INPUT_GENE #
+    df_InputGene = df_Input.loc[df_Input[gene_col] == input_gene, ]
+    mut_dfs = []
+    ### assert mut_categories appear
+
+    # NARROW DOWN TO EACH MUTATION TYPE #
+    for mut in mut_categories: 
+        df = pd.DataFrame()
+        # IF USER WANTS TO CATEGORIZE BY ONE SINGLE MUTATION PER GUIDE OR MULTIPLE MUTATIONS PER GUIDE #
+        if multi_annotation: 
+            df = df_InputGene.loc[df_InputGene[mut_col].contains(mut), ]
+        else: 
+            df = df_InputGene.loc[df_InputGene[mut_col] == mut, ]
         df = df.reset_index(drop=True)
         print(f"Count of {mut} rows: " + str(len(df)))
 
-        # only Missense, Silent, Nonsense have associated mutations to parse
-        if mut not in ['Missense', 'Silent', 'Nonsense']: 
-            continue
+        # ASSIGN position refAA altAA #
+        df[edits_col] = df[edits_col].str.strip(',').str.strip(';').str.split(split_char)
+        df[val_col] = df[val_col].round(3)
+        df[edits_col] = df[edits_col].apply(lambda xs: [x for x in xs if re.match('^[A-Z*][0-9]{1,4}[A-Z*]$', x)] if not isinstance(xs, float) else []) # FILTER FOR MUTATIONS #
 
-        # open a file to write in list of mutations and their LFC values
-        edits_filename = edits_filedir / f"screendata/{input_gene}_{screen_name}_{mut}_edits_list.tsv"
-        edits_file = open(edits_filename, "w")
-        edits_file.write("edit\t"+output_col+"\trefAA\taltAA\tLFC\n")
+        df_exploded = df.explode(edits_col) # EACH ROW IS A MUTATION #
+        df_exploded['edit_pos'] = df_exploded[edits_col].str.extract('(\d+)')
+        df_exploded['refAA'], df_exploded['altAA'] = df_exploded[edits_col].str[0], df_exploded[edits_col].str[-1]
+        df_subset = df_exploded[[edits_col, 'edit_pos', 'refAA', 'altAA', val_col]].rename(columns={edits_col: 'this_edit', val_col: 'LFC'})
 
-        # iterate through each cell of each list of edits
-        for i in range(0, len(df)):
-            edits_all = df.at[i, edits_col].strip(',').strip(';')
-            edit_val = round(df.at[i, val_col], 3)
-            edits_list = edits_all.split(',')
-            
-            for j in range(0, len(edits_list)):
-                # identify edit information and output them into .tsv
-                this_edit = edits_list[j].strip()
-                temp = parse_edit_helper(mut, this_edit)
-                if temp is not None: 
-                    edit_refAA, edit_altAA, edit_pos = temp
-                    line = '\t'.join([this_edit, str(edit_pos), edit_refAA, edit_altAA, str(edit_val)]) + '\n'
-                    edits_file.write(line)
-                
-        edits_file.close()
+        if mut == 'Missense': 
+            df_subset = df_subset[(df_subset['refAA'] != df_subset['altAA']) & (df_subset['altAA'] != '*')]
+        elif mut == 'Nonsense': 
+            df_subset = df_subset[df_subset['altAA'] == '*']
+        elif mut == 'Silent': 
+            df_subset = df_subset[df_subset['refAA'] == df_subset['altAA']]
+        else: 
+            df_subset = df_subset['LFC']
 
-    # preprocess these separately
-    for mut in ['Splice Site', 'No Mutation']: 
-        df_temp = df_InputGene.loc[df_InputGene[mut_col] == mut, ]
-        df_temp = df_temp.reset_index(drop=True)
-        print("Count of Splice site rows: " + str(len(df_temp)))
-
-        df_temp_new = pd.DataFrame()
-        df_temp_new['gene'] = df_temp[gene_col]
-        df_temp_new['LFC'] = df_temp[val_col]
-
-        mut_str = mut.replace(' ', '_')
-        df_temp_new.to_csv(edits_filedir / f"screendata/{input_gene}_{screen_name}_{mut_str}_edits_list.tsv", 
-                           sep='\t', index=False)
-        mut_dfs.append(df_temp)
-
-    # TESTS and PLOTS #
-    # mann whitney test
-    df_list, comparisons = mann_whitney_test(edits_filedir=edits_filedir, 
-                                screen_name=screen_name, input_gene=input_gene)
-
-    # violin plot by mutation
-    violin_plot(
-            df_InputGene_edits_list=df_list, 
-            edits_filedir=edits_filedir, screen_name=screen_name, input_gene=input_gene,
-            )
-    # directional violin plot by mutation
+        # WRITE LIST OF MUT AND THEIR LFC VALUES #
+        edits_filename = f"screendata/{input_gene}_{screen_name}_{mut.replace(' ', '_')}_edits_list.tsv"
+        df_subset.to_csv(edits_filedir / edits_filename, sep='\t')
+        mut_dfs.append(df_subset)
+    
+    # MW AND KS TESTS HYPOTHESIS 1 #
+    hypothesis_one(df_Input, edits_filedir, 
+                   screen_name, gene_col, mut_col, val_col, testtype='MannWhitney')
+    hypothesis_one(df_Input, edits_filedir, 
+                   screen_name, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
+    hypothesis_one_plot(edits_filedir, screen_name, testtype1='MannWhitney', testtype2='KolmogorovSmirnov', 
+                        comparison_condition='Splice + Nonsense vs. Silent + No Mutation',
+                        partial_col_header='_Splice_Site_Nonsense_vs_Silent_No_Mutation')
+    # # MW AND KS TESTS HYPOTHESIS 2 #
+    # hypothesis_two(df_Input, edits_filedir, 
+    #                screen_name, gene_col, mut_col, val_col, testtype='MannWhitney')
+    # hypothesis_two(df_Input, edits_filedir, 
+    #                screen_name, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
+    # hypothesis_two_plot(edits_filedir, screen_name, testtype1='MannWhitney', testtype2='KolmogorovSmirnov', 
+    #                     comparison_condition='Splice + Nonsense vs. Silent + No Mutation',
+    #                     partial_col_header='_Splice_Site_Nonsense_vs_Silent_No_Mutation')
+    
+    # TESTS AND PLOTS #
+    # MANN WHITNEY TEST #
+    df_list, mw_res = mann_whitney_test(edits_filedir=edits_filedir, 
+                                        screen_name=screen_name, input_gene=input_gene, )
+    print(df_list)
+    # VIOLIN PLOTS #
+    violin_plot(df_InputGene_edits_list=df_list, 
+                edits_filedir=edits_filedir, screen_name=screen_name, input_gene=input_gene, )
+    # DIRECTIONAL VIOLIN PLOTS #
     df_list['LFC_direction'] = np.where(df_list['LFC'] < 0, 'neg', 'pos')
-    violin_plot(
-            df_InputGene_edits_list=df_list, 
-            edits_filedir=edits_filedir, screen_name=screen_name, input_gene=input_gene, 
-            directional=True,
-            )
+    violin_plot(df_InputGene_edits_list=df_list, 
+                edits_filedir=edits_filedir, screen_name=screen_name, input_gene=input_gene, 
+                directional=True, )
 
     return mut_dfs
-
-
-def parse_edit_helper(
-        mut_type, this_edit
-): 
-    """
-    Description
-        A helper function to take in a string and parse out the mutation information. 
-        For example, Met20Ala is interpreted as 'Met', 20, 'Ala'
-
-    Params
-        mut_type: str, required
-            one of the types of mutations ie Missense, Silent, Nonsense, etc
-        this_edit: str, required
-            a string in the approximate format of Met20Ala or M20A
-
-    Returns
-        edit_refAA: str
-            the original amino acid
-        edit_altAA: str
-            the new amino acid
-        edit_pos: int
-            the position of the base edit
-    """
-    ### different format types
-    pattern = r'^([a-zA-Z*]{1,3})(\d{1,4})([a-zA-Z*]{1,3})$'
-    match_edit = re.match(pattern, this_edit)
-    if match_edit:
-        edit_refAA, edit_pos, edit_altAA = list(match_edit.groups())
-
-        ### what do i do if assertions fail
-        if mut_type == "Missense" and edit_refAA != edit_altAA: 
-            return edit_refAA, edit_altAA, edit_pos
-
-        elif mut_type == "Silent" and edit_refAA == edit_altAA:
-            return edit_refAA, edit_altAA, edit_pos
-
-        elif mut_type == "Nonsense" and edit_altAA in ['Ter', 'STOP', '*']: ### some possible ways to decribe stop codon
-            return edit_refAA, edit_altAA, edit_pos
-    
-    return None
-
-def mann_whitney_test(
-    edits_filedir, screen_name, input_gene
-): 
-    """
-    Description
-        A helper function to run the Mann Whitney test on
-        'Missense', 'Silent', 'Nonsense', 'No_mutation'
-
-    Params
-        edits_filedir: Path, required
-            Path to working directory
-        screen_name: str, required
-            the name of the input screen parsed form the input file
-        input_gene: str, required
-            the name of the input gene
-
-    Returns
-        df_InputGene_edits_list: list of Pandas Dataframes
-            A list of dataframes, for each category of mutations
-        comparisons: dict
-            A dictionary of each screen comparison and their Mann Whitney results
-    """
-    
-    mut_categories = ['Missense', 'Silent', 'Nonsense', 'No_mutation']
-    df_inputgenes = [pd.DataFrame() for _ in mut_categories]
-
-    for mut, df in zip(mut_categories, df_inputgenes): 
-        filename = edits_filedir / f"screendata/{input_gene}_{screen_name}_{mut}_edits_list.tsv"
-        df_temp = pd.read_csv(filename, sep = '\t')
-        df['LFC'] = df_temp['LFC']
-        df['muttype'] = mut
-        print(f"{mut} edits: {str(len(df))}")
-
-    # Mann Whitney U test #
-    comparisons = [
-        {'df1': df_inputgenes[2], 'df2': df_inputgenes[0], 'name': 'Nonsense vs Missense'}, 
-        {'df1': df_inputgenes[2], 'df2': df_inputgenes[3], 'name': 'Nonsense vs No mutation'}, 
-        {'df1': df_inputgenes[2], 'df2': df_inputgenes[1], 'name': 'Nonsense vs Silent'}, 
-        {'df1': df_inputgenes[3], 'df2': df_inputgenes[1], 'name': 'No mutation vs Silent'}, 
-                   ]
-    for comp in comparisons: 
-        if not comp['df1'].empty and not comp['df2'].empty: 
-            U1, p = mannwhitneyu(comp['df1']['LFC'], comp['df2']['LFC'], method="asymptotic")
-            comp['U1'] = U1
-            comp['p'] = p
-            print(f"{comp['name']}: {U1} {p}")
-
-    df_InputGene_edits_list = pd.concat(df_inputgenes)
-    df_InputGene_edits_list = df_InputGene_edits_list.reset_index(drop=True)
-
-    return df_InputGene_edits_list, comparisons
-
-def violin_plot(
-        df_InputGene_edits_list, 
-        edits_filedir, screen_name, input_gene, 
-        directional=False, 
-): 
-    """
-    Description
-        Graph a violin plot of LFC distribution by category
-
-    Params
-        edits_filedir: Path, required
-            Path to working directory
-        screen_name: str, required
-            the name of the input screen parsed form the input file
-        input_gene: str, required
-            the name of the input gene
-        directional: bool, optional, default is False
-            Whether or not to include bidirectional data
-
-    Returns
-        means: list of floats
-            List of means for each mutation category
-        stds: list of floats
-            List of standard deviations for each mutation category
-        medians: list of floats
-            List of medians for each mutation category
-    """
-
-    fig, ax = plt.subplots()
-
-    means = df_InputGene_edits_list.groupby('muttype')['LFC'].mean()
-    stds = df_InputGene_edits_list.groupby('muttype')['LFC'].std()
-    medians = df_InputGene_edits_list.groupby('muttype')['LFC'].median()
-
-    if directional: 
-        sns.violinplot(data=df_InputGene_edits_list, x="LFC", y="muttype", 
-                       hue="LFC_direction", inner=None).set(title=screen_name)
-        plotname = edits_filedir / f"plots/{input_gene}_{screen_name}_LFC_dist_muttype_bidirectional.pdf"
-    else: 
-        sns.violinplot(data=df_InputGene_edits_list, x="LFC", y="muttype", 
-                       inner=None).set(title=screen_name)
-        plotname = edits_filedir / f"plots/{input_gene}_{screen_name}_LFC_dist_muttype.pdf"
-        
-    plt.axvline(df_InputGene_edits_list["LFC"].mean(), c="gray", linestyle="dashed")
-    plt.setp(ax.collections, alpha=.4)
-    plt.scatter(y=range(len(means)), x=means, c="violet", alpha=.9)
-
-    plt.savefig(plotname, dpi=300)
-
-    return means, stds, medians
