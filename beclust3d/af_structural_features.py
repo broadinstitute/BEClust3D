@@ -48,7 +48,7 @@ def query_uniprot(
 
     # QUERY FASTA FILE #
     ffile = input_uniprot + '.fasta'
-    if not os.path.exists(edits_filedir / ffile): 
+    if not os.path.exists(os.path.join(edits_filedir, ffile)): 
         _ = wget.download(f'https://rest.uniprot.org/uniprotkb/{ffile}', 
                           out=str(edits_filedir))
 
