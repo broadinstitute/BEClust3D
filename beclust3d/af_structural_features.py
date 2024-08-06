@@ -48,11 +48,11 @@ def query_uniprot(
 
     # QUERY FASTA FILE #
     ffile = input_uniprot + '.fasta'
-    if not os.path.exists(f'{edits_filedir}/{ffile}'): 
+    if not os.path.exists(os.path.join(edits_filedir, ffile)): 
         _ = wget.download(f'https://rest.uniprot.org/uniprotkb/{ffile}', 
                           out=str(edits_filedir))
 
-    uFasta_file = edits_filedir / ffile
+    uFasta_file = os.path.join(edits_filedir, ffile)
     return uFasta_file
 
 def parse_uniprot(
