@@ -65,7 +65,7 @@ def randomize_by_conservation(
     new_colnames = ['mean_missense_LFC']+[f'mean_missense_LFCr{j+1}' for j in range(nRandom)] # +['mean_missense_LFCavg']
     df_mis_positions = pd.DataFrame(columns=new_colnames)
     for i in range(len(df_struc_consvr)): 
-        df_mis_pos = df_missense.loc[df_missense['human_pos'] == human_res_positions[i]]
+        df_mis_pos = df_missense.loc[df_missense['edit_pos'] == human_res_positions[i]]
         df_mis_pos = df_mis_pos[missense_filter_col]
 
         if df_mis_pos.shape[0] == 0: # FILL WITH '-' #

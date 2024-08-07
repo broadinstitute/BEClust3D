@@ -6,70 +6,102 @@ import numpy as np
 from scipy.stats import mannwhitneyu
 from scipy.stats import ks_2samp
 
-# nonsense vs. missense
-# nonsense vs. no mutation
-# nonsense vs. silent
-# splice vs. missense
-# splice vs. no mutation
-# splice vs. silent
-# missense vs. splice + nonsense
-# no mutation vs. splice + nonsense
-# silent vs. splice + nonsense
-# missense vs. silent + no mutation
-# nonsense vs. silent + no mutation
-# splice vs. silent + no mutation
-# no mutation vs. silent (negative control as in no difference)
-# nonsense vs. splice (negative control as in no difference)
-# splice + nonsense vs. silent + no mutation
 
 mut_categories_spaced = ["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"]
 mut_categories_unspaced = [mc.replace(' ' , '_') for mc in mut_categories_spaced]
-comparisons = [
-    f'{mut_categories_unspaced[0]}_vs_{mut_categories_unspaced[2]}', 
-    f'{mut_categories_unspaced[0]}_vs_{mut_categories_unspaced[3]}', 
-    f'{mut_categories_unspaced[0]}_vs_{mut_categories_unspaced[4]}', 
-    f'{mut_categories_unspaced[1]}_vs_{mut_categories_unspaced[2]}', 
-    f'{mut_categories_unspaced[1]}_vs_{mut_categories_unspaced[3]}', 
-    f'{mut_categories_unspaced[1]}_vs_{mut_categories_unspaced[4]}', 
-    f'{mut_categories_unspaced[2]}_vs_{mut_categories_unspaced[1]}_{mut_categories_unspaced[0]}', 
-    f'{mut_categories_unspaced[3]}_vs_{mut_categories_unspaced[1]}_{mut_categories_unspaced[0]}', 
-    f'{mut_categories_unspaced[4]}_vs_{mut_categories_unspaced[1]}_{mut_categories_unspaced[0]}', 
-    f'{mut_categories_unspaced[2]}_vs_{mut_categories_unspaced[4]}_{mut_categories_unspaced[3]}', 
-    f'{mut_categories_unspaced[0]}_vs_{mut_categories_unspaced[4]}_{mut_categories_unspaced[3]}', 
-    f'{mut_categories_unspaced[1]}_vs_{mut_categories_unspaced[4]}_{mut_categories_unspaced[3]}', 
-    f'{mut_categories_unspaced[3]}_vs_{mut_categories_unspaced[4]}', 
-    f'{mut_categories_unspaced[0]}_vs_{mut_categories_unspaced[1]}', 
-    f'{mut_categories_unspaced[1]}_{mut_categories_unspaced[0]}_vs_{mut_categories_unspaced[4]}_{mut_categories_unspaced[3]}', 
+comparisons1 = [
+    f'Nonsense_vs_Missense', f'Nonsense_vs_No_Mutation', f'Nonsense_vs_Silent', 
+    f'Splice_Site_vs_Missense', f'Splice_Site_vs_No_Mutation', f'Splice_Site_vs_Silent', 
+    f'Missense_vs_Splice_Site_Nonsense', f'No_Mutation_vs_Splice_Site_Nonsense', f'Silent_vs_Splice_Site_Nonsense', 
+    f'Missense_vs_Silent_No_Mutation', f'Nonsense_vs_Silent_No_Mutation', f'Splice_Site_vs_Silent_No_Mutation', 
+    f'No_Mutation_vs_Silent', 
+    f'Nonsense_vs_Splice_Site', 
+    f'Splice_Site_Nonsense_vs_Silent_No_Mutation', 
+]
+comparisons2 = [
+    f'Nonsense_vs_No_Mutation', f'Nonsense_vs_Silent', 
+    f'Splice_Site_vs_No_Mutation', f'Splice_Site_vs_Silent', 
+    f'No_Mutation_vs_Splice_Site_Nonsense', f'Silent_vs_Splice_Site_Nonsense', 
+    f'Missense_vs_Silent_No_Mutation', f'Nonsense_vs_Silent_No_Mutation', f'Splice_Site_vs_Silent_No_Mutation', 
+    f'No_Mutation_vs_Silent', 
+    f'Splice_Site_Nonsense_vs_Silent_No_Mutation', 
 ]
 
 def add_to_row(
     df1, df2, val_col, function
 ): 
-    if function == 'KolmogorovSmirnov': 
-        if len(df1) > 0 and len(df2) > 0: 
+    if len(df1) > 0 and len(df2) > 0: 
+        if function == 'KolmogorovSmirnov': 
             U1, p = ks_2samp(df1[val_col], df2[val_col])
             return [U1, p]
-    if function == 'MannWhitney': 
-        if len(df1) > 0 and len(df2) > 0: 
+        if function == 'MannWhitney': 
             U1, p = mannwhitneyu(df1[val_col], df2[val_col], method="asymptotic")
             return [U1, p]
     return [-999, -999]
 
+def negative_log_transformation(value):
+    if pd.notna(value) and value > 0:
+        return -np.log10(value)
+    return value
+
+def hypothesis_plot(
+        edits_filedir, screen_name, testtype1, testtype2, 
+        hypothesis, partial_col_header='_Splice_Site_Nonsense_vs_Silent_No_Mutation', 
+): 
+    fig, axes = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(12, 6))
+
+    # PREP DATAFRAME MW #
+    qc_filename = f"qc_validation/{screen_name}_{testtype1}_hypothesis{hypothesis}.tsv"
+    df_MW_input = pd.read_csv(edits_filedir / qc_filename, sep='\t')
+    df_MW_input.replace(-999, pd.NA, inplace=True)  # replace -999 with NaN
+    df_MW_input[f"p{partial_col_header}"] = df_MW_input[f"p{partial_col_header}"].apply(negative_log_transformation)
+
+    # PLOT MW #
+    plot1 = sns.scatterplot(ax=axes[0], data=df_MW_input, x=f"U{partial_col_header}", y=f"p{partial_col_header}", 
+                            hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k' )
+    axes[0].axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
+    axes[0].axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
+    axes[0].set_title(f'Mann-Whiteney')
+
+    # PREP DATAFRAME #
+    qc_filename = f"qc_validation/{screen_name}_{testtype2}_hypothesis{hypothesis}.tsv"
+    df_KS_input = pd.read_csv(edits_filedir / qc_filename, sep='\t')
+    df_KS_input.replace(-999, pd.NA, inplace=True)  # replace -999 with NaN
+    df_KS_input[f"p{partial_col_header}"] = df_KS_input[f"p{partial_col_header}"].apply(negative_log_transformation)
+
+    # PLOTE KS #
+    plot2 = sns.scatterplot(ax=axes[1], data=df_KS_input, x=f"D{partial_col_header}", y=f"p{partial_col_header}", 
+                            hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=False )
+    axes[1].axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
+    axes[1].axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
+    axes[1].set_title(f'Kolmogorov-Smirnov')
+
+    # LEGEND AND Y AXIS #
+    handles, labels = plot1.get_legend_handles_labels()
+    axes[0].legend(handles, labels, title="Genes", bbox_to_anchor=(1.0, 1), loc='upper left')
+    axes[0].set_ylabel(f'-log10({f"p{partial_col_header}"})')
+    plt.tight_layout()
+    fig.suptitle(f"Hypothesis {hypothesis}: Splice + Nonsense vs. Silent + No Mutation")
+
+    # SAVE PLOT #
+    plot_filename = f"plots/{screen_name}_hypothesis{hypothesis}_scatterplot.pdf"
+    plt.savefig(edits_filedir / plot_filename, dpi=300)
+
 
 # HYPOTHESIS 1: There is a significant difference in the signal (LFC) #
 # between knockout (nonsense/splice) mutations and none (silent/no mutations) per screen, per gene #
+
 def hypothesis_one(
-    df_rawinput, 
-    edits_filedir, 
+    df_rawinput, edits_filedir, 
     screen_name, gene_col, mut_col, val_col, 
     testtype, 
 ): 
     col_names = ['screenid', 'gene_name']
     col_names.extend([f'n_{mut}' for mut in mut_categories_unspaced])
     if testtype == 'MannWhitney': 
-        col_names.extend([pref+comp for comp in comparisons for pref in ('U_', 'p_')])
+        col_names.extend([pref+comp for comp in comparisons1 for pref in ('U_', 'p_')])
     if testtype == 'KolmogorovSmirnov': 
-        col_names.extend([pref+comp for comp in comparisons for pref in ('D_', 'p_')])
+        col_names.extend([pref+comp for comp in comparisons1 for pref in ('D_', 'p_')])
 
     # CREATE DF TO STORE TEST RESULTS #
     unique_genes = df_rawinput[gene_col].unique()
@@ -80,16 +112,14 @@ def hypothesis_one(
         new_row = [screen_name, current_gene]
 
         # PARSE DF FOR EACH MUT TYPE #
-        df_missense = df_edits.loc[df_edits[mut_col]=='Missense'].reset_index(drop=True)
-        df_silent = df_edits.loc[df_edits[mut_col]=='Silent'].reset_index(drop=True)
         df_nonsense = df_edits.loc[df_edits[mut_col]=='Nonsense'].reset_index(drop=True)
-        df_nomutation = df_edits.loc[df_edits[mut_col]=='NoMutation'].reset_index(drop=True)
         df_splice = df_edits.loc[df_edits[mut_col]=='Splice'].reset_index(drop=True)
-        new_row.extend([len(df_missense), len(df_silent), len(df_nonsense), len(df_nomutation), len(df_splice)])
-
+        df_missense = df_edits.loc[df_edits[mut_col]=='Missense'].reset_index(drop=True)
+        df_nomutation = df_edits.loc[df_edits[mut_col]=='NoMutation'].reset_index(drop=True)
+        df_silent = df_edits.loc[df_edits[mut_col]=='Silent'].reset_index(drop=True)
         df_splice_nonsense = pd.concat([df_nonsense, df_splice])
         df_silent_nomutation = pd.concat([df_silent, df_nomutation])
-        df_silent_nomutation = pd.concat([df_silent, df_nomutation])
+        new_row.extend([len(df_missense), len(df_silent), len(df_nonsense), len(df_nomutation), len(df_splice)])
 
         new_row.extend(add_to_row(df_nonsense, df_missense, val_col, testtype)) # nonsense vs. missense
         new_row.extend(add_to_row(df_nonsense, df_nomutation, val_col, testtype)) # nonsense vs. no mutation
@@ -97,9 +127,9 @@ def hypothesis_one(
         new_row.extend(add_to_row(df_splice, df_missense, val_col, testtype)) # splice vs. missense
         new_row.extend(add_to_row(df_splice, df_nomutation, val_col, testtype)) # splice vs. no mutation
         new_row.extend(add_to_row(df_splice, df_silent, val_col, testtype)) # splice vs. silent
-        new_row.extend(add_to_row(df_splice_nonsense, df_missense, val_col, testtype)) # missense vs. splice + nonsense
-        new_row.extend(add_to_row(df_splice_nonsense, df_nomutation, val_col, testtype)) # no mutation vs. splice + nonsense
-        new_row.extend(add_to_row(df_splice_nonsense, df_silent, val_col, testtype)) # silent vs. splice + nonsense
+        new_row.extend(add_to_row(df_missense, df_splice_nonsense, val_col, testtype)) # missense vs. splice + nonsense
+        new_row.extend(add_to_row(df_nomutation, df_splice_nonsense, val_col, testtype)) # no mutation vs. splice + nonsense
+        new_row.extend(add_to_row(df_silent, df_splice_nonsense, val_col, testtype)) # silent vs. splice + nonsense
         new_row.extend(add_to_row(df_missense, df_silent_nomutation, val_col, testtype)) # missense vs. silent + no mutation
         new_row.extend(add_to_row(df_nonsense, df_silent_nomutation, val_col, testtype)) # nonsense vs. silent + no mutation
         new_row.extend(add_to_row(df_splice, df_silent_nomutation, val_col, testtype)) # splice vs. silent + no mutation
@@ -108,11 +138,8 @@ def hypothesis_one(
         new_row.extend(add_to_row(df_splice_nonsense, df_silent_nomutation, val_col, testtype)) # splice + nonsense vs. silent + no mutation
 
         # ADD NEW ROW #
-        print('HERE')
-        print(df_output)
-        print(new_row)
         df_output.loc[len(df_output)] = new_row
-        del new_row
+        del new_row, df_nonsense, df_splice, df_missense, df_nomutation, df_silent, df_splice_nonsense, df_silent_nomutation
 
     # SAVE FILE #
     qc_filename = f"qc_validation/{screen_name}_{testtype}_hypothesis1.tsv"
@@ -120,63 +147,71 @@ def hypothesis_one(
 
     return df_output
 
-def negative_log_transformation(value):
-    if pd.notna(value) and value > 0:
-        return -np.log10(value)
-    return value
-
-def hypothesis_one_plot(
-        edits_filedir, screen_name, testtype1, testtype2, 
-        comparison_condition, partial_col_header, 
-): 
-    fig, axes = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(12, 6))
-
-    # PREP DATAFRAME MW #
-    qc_filename = f"qc_validation/{screen_name}_{testtype1}_hypothesis1.tsv"
-    df_MW_input = pd.read_csv(edits_filedir / qc_filename, sep='\t')
-    df_MW_input.replace(-999, pd.NA, inplace=True)  # replace -999 with NaN
-    df_MW_input[f"p{partial_col_header}"] = df_MW_input[f"p{partial_col_header}"].apply(negative_log_transformation)
-
-    # PLOT MW #
-    plot1 = sns.scatterplot(ax=axes[0], data=df_MW_input, x=f"U{partial_col_header}", y=f"p{partial_col_header}", 
-                            hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k' )
-    axes[0].axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
-    axes[0].axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
-    axes[0].set_title(f'Mann-Whiteney Scatterplot')
-
-    # PREP DATAFRAME #
-    qc_filename = f"qc_validation/{screen_name}_{testtype2}_hypothesis1.tsv"
-    df_KS_input = pd.read_csv(edits_filedir / qc_filename, sep='\t')
-    df_KS_input.replace(-999, pd.NA, inplace=True)  # replace -999 with NaN
-    df_KS_input[f"p{partial_col_header}"] = df_KS_input[f"p{partial_col_header}"].apply(negative_log_transformation)
-
-    # PLOTE KS #
-    plot2 = sns.scatterplot(ax=axes[1], data=df_KS_input, x=f"D{partial_col_header}", y=f"p{partial_col_header}", 
-                            hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=False )
-    axes[1].axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
-    axes[1].axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
-    axes[1].set_title(f'Kolmogorov-Smirnov Scatterplot')
-
-    # LEGEND AND Y AXIS #
-    handles, labels = plot1.get_legend_handles_labels()
-    axes[0].legend(handles, labels, title="Genes", bbox_to_anchor=(1.0, 1), loc='upper left')
-    axes[0].set_ylabel(f'-log10({f"p{partial_col_header}"})')
-    plt.tight_layout()
-    fig.suptitle(f"Hypothesis 1: {comparison_condition}")
-
-    # SAVE PLOT #
-    plot_filename = f"plots/{screen_name}_hypothesis1_scatterplot.pdf"
-    plt.savefig(edits_filedir / plot_filename, dpi=300)
-
-
 # HYPOTHESIS 2: There's a significant difference in the signal (LFC) #
 # between knockout (nonsense/splice) mutations per gene and none (silent/no mutations) from entire screen #
-def hypothesis_two(
-        
-): 
-    return None
 
-def hypothesis_two_plot(
-        
+def hypothesis_two(
+    df_rawinput, edits_filedir, 
+    screen_name, gene_col, mut_col, val_col, 
+    testtype, 
 ): 
-    return None
+    col_names = ['screenid', 'gene_name']
+    col_names.extend([f'n_{mut}' for mut in mut_categories_unspaced])
+    if testtype == 'MannWhitney': 
+        col_names.extend([pref+comp for comp in comparisons2 for pref in ('U_', 'p_')])
+    if testtype == 'KolmogorovSmirnov': 
+        col_names.extend([pref+comp for comp in comparisons2 for pref in ('D_', 'p_')])
+
+    # CREATE DF TO STORE CONTROL RESULTS #
+    unique_genes = df_rawinput[gene_col].unique()
+    df_output = pd.DataFrame(columns=col_names)
+    df_all_screen_nomutation = pd.DataFrame()
+    df_all_screen_silent = pd.DataFrame()
+
+    # GLOBAL SILENT AND NO MUTATION #
+    for current_gene in unique_genes:
+        df_edits = df_rawinput[df_rawinput[gene_col] == current_gene]
+
+        # PARSE DF FOR EACH MUT TYPE, CONCAT TO PREVIOUS GENE #
+        df_nomutation = df_edits.loc[df_edits[mut_col]=='NoMutation'].reset_index(drop=True)
+        df_all_screen_nomutation = pd.concat([df_all_screen_nomutation, df_nomutation]).reset_index(drop=True)
+        df_silent = df_edits.loc[df_edits[mut_col]=='Silent'].reset_index(drop=True)
+        df_all_screen_silent = pd.concat([df_all_screen_silent, df_silent]).reset_index(drop=True)
+        del df_nomutation, df_silent
+
+    df_all_silent_nomutation = pd.concat([df_all_screen_nomutation, df_all_screen_silent])
+
+    for current_gene in unique_genes:
+        df_edits = df_rawinput[df_rawinput[gene_col] == current_gene]
+        new_row = [screen_name, current_gene]
+
+        # PARSE DF FOR EACH MUT TYPE #
+        df_nonsense = df_edits.loc[df_edits[mut_col]=='Nonsense'].reset_index(drop=True)
+        df_splice = df_edits.loc[df_edits[mut_col]=='Splice'].reset_index(drop=True)
+        df_missense = df_edits.loc[df_edits[mut_col]=='Missense'].reset_index(drop=True)
+        df_nomutation = df_edits.loc[df_edits[mut_col]=='NoMutation'].reset_index(drop=True)
+        df_silent = df_edits.loc[df_edits[mut_col]=='Silent'].reset_index(drop=True)
+        df_splice_nonsense = pd.concat([df_nonsense, df_splice])
+        new_row.extend([len(df_missense), len(df_silent), len(df_nonsense), len(df_nomutation), len(df_splice)])
+
+        new_row.extend(add_to_row(df_nonsense, df_all_screen_nomutation, val_col, testtype)) # nonsense vs. no mutation
+        new_row.extend(add_to_row(df_nonsense, df_all_screen_silent, val_col, testtype)) # nonsense vs. silent
+        new_row.extend(add_to_row(df_splice, df_all_screen_nomutation, val_col, testtype)) # splice vs. no mutation
+        new_row.extend(add_to_row(df_splice, df_all_screen_silent, val_col, testtype)) # splice vs. silent
+        new_row.extend(add_to_row(df_nomutation, df_splice_nonsense, val_col, testtype)) # no mutation vs. splice + nonsense
+        new_row.extend(add_to_row(df_silent, df_splice_nonsense, val_col, testtype)) # silent vs. splice + nonsense
+        new_row.extend(add_to_row(df_missense, df_all_silent_nomutation, val_col, testtype)) # missense vs. silent + no mutation
+        new_row.extend(add_to_row(df_nonsense, df_all_silent_nomutation, val_col, testtype)) # nonsense vs. silent + no mutation
+        new_row.extend(add_to_row(df_splice, df_all_silent_nomutation, val_col, testtype)) # splice vs. silent + no mutation
+        new_row.extend(add_to_row(df_nomutation, df_all_screen_silent, val_col, testtype)) # no mutation vs. silent (negative control)
+        new_row.extend(add_to_row(df_splice_nonsense, df_all_silent_nomutation, val_col, testtype)) # splice + nonsense vs. silent + no mutation
+        
+        # ADD NEW ROW #
+        df_output.loc[len(df_output)] = new_row
+        del new_row, df_nonsense, df_splice, df_missense, df_nomutation, df_silent, df_splice_nonsense
+
+    # SAVE FILE #
+    qc_filename = f"qc_validation/{screen_name}_{testtype}_hypothesis2.tsv"
+    df_output.to_csv(edits_filedir / qc_filename, sep = '\t', index=False)
+
+    return df_output

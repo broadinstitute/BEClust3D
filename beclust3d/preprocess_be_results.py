@@ -71,7 +71,8 @@ def parse_base_editing_results(
     # NARROW DOWN TO INPUT_GENE #
     df_InputGene = df_Input.loc[df_Input[gene_col] == input_gene, ]
     mut_dfs = []
-    ### assert mut_categories appear
+    for mut_cat in mut_categories: 
+        assert mut_cat in df_InputGene[mut_col].unique()
 
     # NARROW DOWN TO EACH MUTATION TYPE #
     for mut in mut_categories: 
@@ -113,17 +114,13 @@ def parse_base_editing_results(
                    screen_name, gene_col, mut_col, val_col, testtype='MannWhitney')
     hypothesis_one(df_Input, edits_filedir, 
                    screen_name, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
-    hypothesis_one_plot(edits_filedir, screen_name, testtype1='MannWhitney', testtype2='KolmogorovSmirnov', 
-                        comparison_condition='Splice + Nonsense vs. Silent + No Mutation',
-                        partial_col_header='_Splice_Site_Nonsense_vs_Silent_No_Mutation')
-    # # MW AND KS TESTS HYPOTHESIS 2 #
-    # hypothesis_two(df_Input, edits_filedir, 
-    #                screen_name, gene_col, mut_col, val_col, testtype='MannWhitney')
-    # hypothesis_two(df_Input, edits_filedir, 
-    #                screen_name, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
-    # hypothesis_two_plot(edits_filedir, screen_name, testtype1='MannWhitney', testtype2='KolmogorovSmirnov', 
-    #                     comparison_condition='Splice + Nonsense vs. Silent + No Mutation',
-    #                     partial_col_header='_Splice_Site_Nonsense_vs_Silent_No_Mutation')
+    hypothesis_plot(edits_filedir, screen_name, testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1')
+    # MW AND KS TESTS HYPOTHESIS 2 #
+    hypothesis_two(df_Input, edits_filedir, 
+                   screen_name, gene_col, mut_col, val_col, testtype='MannWhitney')
+    hypothesis_two(df_Input, edits_filedir, 
+                   screen_name, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
+    hypothesis_plot(edits_filedir, screen_name, testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')
     
     # TESTS AND PLOTS #
     # MANN WHITNEY TEST #

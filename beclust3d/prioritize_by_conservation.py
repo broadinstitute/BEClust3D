@@ -69,18 +69,18 @@ def prioritize_by_conservation(
         # FOR EACH RESIDUE #
         for i in range(len(df_struc_consvr)): 
             human_res_pos = df_struc_consvr.at[i, 'human_res_pos'] ###
-            df_pos_edits = df_edit.loc[df_edit['human_pos'] == int(human_res_pos), ].reset_index() ###
+            df_pos_edits = df_edit.loc[df_edit['edit_pos'] == int(human_res_pos), ].reset_index() ###
 
             if len(df_pos_edits) > 1: 
                 pos_LFCscore_list = df_pos_edits['LFC'].tolist()
                 pos_LFCscore = round(sum(pos_LFCscore_list) / len(pos_LFCscore_list), 3)
                 unique_LFC_res = str(pos_LFCscore)
 
-                pos_edits_list = df_pos_edits['edit'].tolist()
+                pos_edits_list = df_pos_edits['this_edit'].tolist()
                 all_edits_res = ';'.join(list(set(pos_edits_list)))
             elif len(df_pos_edits) == 1:   
                 unique_LFC_res = str(round(df_pos_edits.at[0, 'LFC'], 3))
-                all_edits_res = df_pos_edits.at[0, 'edit']
+                all_edits_res = df_pos_edits.at[0, 'this_edit']
             else:
                 unique_LFC_res, all_edits_res = '-', '-'
 

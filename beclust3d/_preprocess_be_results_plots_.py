@@ -15,11 +15,12 @@ import math
 
 mut_categories_spaced = ["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"]
 mut_categories_unspaced = [mc.replace(' ' , '_') for mc in mut_categories_spaced]
-comparisons = [(mut_categories_unspaced[0], mut_categories_unspaced[2]), 
-               (mut_categories_unspaced[0], mut_categories_unspaced[3]), 
-               (mut_categories_unspaced[0], mut_categories_unspaced[4]), 
-               (mut_categories_unspaced[3], mut_categories_unspaced[4]), 
-               ]
+comparisons = [
+    ('Nonsense', 'Missense'), 
+    ('Nonsense', 'No_Mutation'), 
+    ('Nonsense', 'Silent'), 
+    ('No_Mutation', 'Silent'), 
+]
 
 def mann_whitney_test(
     edits_filedir, screen_name, input_gene, 
@@ -44,7 +45,6 @@ def mann_whitney_test(
     df_inputgenes = [pd.DataFrame() for _ in mut_categories_unspaced]
     for mut, df in zip(mut_categories_unspaced, df_inputgenes): 
         edits_filename = f"screendata/{input_gene}_{screen_name}_{mut}_edits_list.tsv"
-        print(edits_filename)
         df_temp = pd.read_csv(edits_filedir / edits_filename, sep = '\t')
         df['LFC'] = df_temp['LFC']
         df['muttype'] = mut
@@ -125,25 +125,26 @@ def counts_violin_by_gene(
             res.append(len(df_current_gene.loc[df_current_gene[mut_col] == mutcat, ]))
         df_mutation_counts.loc[idx] = res
 
+    df_plot = df_mutation_counts.melt("Gene", var_name="Mut Type", value_name="Count")
     # BARPLOT #
     sns.set_style("darkgrid")
     plt.tight_layout()
     plot_dim = math.ceil(math.sqrt(len(unique_genes)))
-    ax = sns.catplot(data=df_mutation_counts.melt("Gene", var_name="Mutation Type", value_name="Count"), 
-                     x="Mutation Type", y="Count", kind="bar", col_wrap=plot_dim, hue="Mutation Type", 
-                     col="Gene", sharex = False )
+    ax = sns.catplot(data=df_plot, kind="bar", col_wrap=plot_dim, 
+                     x="Mut Type", y="Count", hue="Mut Type", col="Gene", sharex = False )
     for ax in ax.axes.flat:
         for idx in range(len(ax.containers)):
             ax.bar_label(ax.containers[idx])
-    del df_mutation_counts
+    del df_mutation_counts, df_plot
 
     # SAVE BARPLOT #
     plotname = f"plots/{screen_name}_muttype_count.pdf"
     plt.savefig(edits_filedir / plotname, dpi=500)
 
+    # VIOLIN PLOT SETUP #
     plot_dim = math.ceil(math.sqrt(len(unique_genes)))
     fig, axes = plt.subplots(nrows=plot_dim, ncols=plot_dim, sharex=False, sharey=True, 
-                             figsize=(19,17), gridspec_kw={'hspace': 0.3, 'wspace': 0.1})
+                             figsize=(19,17), gridspec_kw={'hspace':0.3, 'wspace':0.1})
 
     for idx, current_gene in enumerate(unique_genes): 
         df_current_gene = df_rawinput.loc[df_rawinput[gene_col] == gene,]
@@ -151,25 +152,25 @@ def counts_violin_by_gene(
         # ENSURE ALL MUTATION TYPES PRESENT #
         for mutcat in mut_categories_spaced: 
             if mutcat not in df_current_gene[mut_col].unique():
-                df_current_gene = pd.concat([df_current_gene, 
-                                             pd.DataFrame({val_col: [np.nan], mut_col: [mutcat]})], ignore_index=True)
+                df_temp = pd.DataFrame({val_col: [np.nan], mut_col: [mutcat]})
+                df_current_gene = pd.concat([df_current_gene, df_temp], ignore_index=True)
 
+        # CALC MEAN STD #
         Means = df_current_gene.groupby(mut_col)[val_col].mean()
         STDs = df_current_gene.groupby(mut_col)[val_col].std()
-        Medians = df_current_gene.groupby(mut_col)[val_col].median()
-
         print(f"{current_gene}: Mean + STD")
         for mutcat in mut_categories_spaced: 
-            print(f"{mutcat}: {round(Means[mutcat], 3)} + {round(STDs[mutcat], 3)}") # Access by label for robustness
+            print(f"{mutcat}: {round(Means[mutcat], 3)} + {round(STDs[mutcat], 3)}")
 
         # PLOT VIOLIN #
         ax = axes.flatten()[idx]
         df_current_gene.loc[:, mut_col] = pd.Categorical(df_current_gene[mut_col], categories=mut_categories_spaced)
         df_current_gene = df_current_gene.sort_values(by=[mut_col]).reset_index(drop=True)
         sns.violinplot(ax=ax, data=df_current_gene, x=val_col, y=mut_col, 
-                       inner=None, hue=mut_col).set(title=current_gene)
+                       inner=None, hue=mut_col).set(title=current_gene) # VIOLIN PLOTS #
         ax.axvline(df_current_gene[val_col].mean(), c="gray", linestyle="dashed")
-        ax.scatter(y=range(len(Means)), x=Means, c="violet", alpha=.9)
+        ax.scatter(y=range(len(Means)), x=Means, c="violet", alpha=.9) # MEANS #
+        del df_current_gene
 
     # SAVE VIOLIN #
     plotname = f"plots/{screen_name}_muttype_LFC_dist.pdf"
