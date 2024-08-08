@@ -114,13 +114,7 @@ def query_af(
     affile = structureid + '.pdb'
     if not os.path.exists(edits_filedir / af_filename): 
         _ = wget.download(f'https://alphafold.ebi.ac.uk/files/{affile}', out=str(edits_filedir))
-    try: 
-        os.rename(affile, edits_filedir / af_filename)
-    except OSError: 
-        try: 
-            shutil.move(affile, edits_filedir / af_filename)
-        except: 
-            pass
+    os.rename(affile, edits_filedir / af_filename)
     return af_filename
 
 def parse_af(

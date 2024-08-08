@@ -56,9 +56,7 @@ def parse_base_editing_results(
     """
 
     edits_filedir = Path(workdir + '/' +  input_gene)
-    screen_name = input_screen.split('.')[0]    
-    counts_violin_by_gene(df_rawinput=df_Input, edits_filedir=edits_filedir, 
-                          gene_col=gene_col, mut_col=mut_col, val_col=val_col, screen_name=screen_name, )
+    screen_name = input_screen.split('.')[0]
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'screendata'):
@@ -67,6 +65,8 @@ def parse_base_editing_results(
         os.mkdir(edits_filedir / 'plots')
     if not os.path.exists(edits_filedir / 'qc_validation'):
         os.mkdir(edits_filedir / 'qc_validation')
+    counts_violin_by_gene(df_rawinput=df_Input, edits_filedir=edits_filedir, 
+                          gene_col=gene_col, mut_col=mut_col, val_col=val_col, screen_name=screen_name, )
 
     # NARROW DOWN TO INPUT_GENE #
     df_InputGene = df_Input.loc[df_Input[gene_col] == input_gene, ]
