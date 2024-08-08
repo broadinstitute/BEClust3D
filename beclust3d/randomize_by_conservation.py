@@ -51,7 +51,7 @@ def randomize_by_conservation(
         return None
     df_struc_consvr = pd.read_csv(edits_filedir / struc_consrv_filename, sep = "\t")
 
-    missense_filename = f"randomized_screendata/{input_gene}_{screen_name}_Missense_edits_randomized.tsv"
+    missense_filename = f"randomized_screendata/{input_gene}_{screen_name}_missense_edits_randomized.tsv"
     if not os.path.exists(edits_filedir / missense_filename): 
         warnings.warn(f"{missense_filename} does not exist")
         return None
