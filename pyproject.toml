@@ -6,9 +6,7 @@ build-backend = "hatchling.build"
 name = "beclust3d"
 version = "2024.0.0"
 authors = [
-  {name = "Calvin XiaoYang Hu", email = "xiaohu@g.harvard.edu"},
-  {name = "Surya Mani", email = "smani@broadinstitute.org"},
-  {name = "Sumaiya Iqbal", email = "sumaiya@broadinstitute.org"},
+  {name = "Calvin XiaoYang Hu", email = "xiaohu@g.harvard.edu"}
 ]
 dependencies = [
   "numpy",
@@ -18,26 +16,9 @@ dependencies = [
   "scipy",
   "biopython",
   "biopandas",
-  "sklearn", 
+  "sklearn",
 ]
 requires-python = ">=3.9"
 description = "Package for prioritizing and clustering base editing screen scores based on structure and conservation."
 readme = "README.md"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-]
-maintainers = [
-  {name = "Calvin XiaoYang Hu", email = "xiaohu@g.harvard.edu"},
-]
 license = {file = "LICENSE.txt"}
-
-[project.optional-dependencies]
-test = [
-    "pytest"
-]
-
-[project.urls]
-"Homepage" = "https://github.com/broadinstitute/BEClust3D"
-"Repository" = "https://github.com/broadinstitute/BEClust3D.git"
