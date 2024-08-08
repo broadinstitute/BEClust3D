@@ -8,7 +8,6 @@ Description: Translated from Notebook 3.2
 
 import pandas as pd
 from pathlib import Path
-import math
 import os
 
 def prioritize_by_conservation(
