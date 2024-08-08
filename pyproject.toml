@@ -7,8 +7,8 @@ name = "beclust3d"
 version = "2024.0.0"
 authors = [
   {name = "Calvin XiaoYang Hu", email = "xiaohu@g.harvard.edu"},
-  {name = "Surya Mani", email = ""},
-  {name = "Sumaiya Iqbal", email = ""},
+  {name = "Surya Mani", email = "smani@broadinstitute.org"},
+  {name = "Sumaiya Iqbal", email = "sumaiya@broadinstitute.org"},
 ]
 dependencies = [
   "numpy",
