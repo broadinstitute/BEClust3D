@@ -14,6 +14,7 @@ from biopandas.pdb import PandasPdb
 import math
 import wget
 import warnings
+import shutil
 
 aamap = {
     'A': {'max_asa': 129.0, 'aa3cap': 'ALA'}, 'R': {'max_asa': 247.0, 'aa3cap': 'ARG'}, 
@@ -112,8 +113,14 @@ def query_af(
     # QUERY ALPHAFOLD #
     affile = structureid + '.pdb'
     if not os.path.exists(edits_filedir / affile): 
-        _ = wget.download(f'https://alphafold.ebi.ac.uk/files/{affile}', out=str(edits_filedir))
-    os.rename(edits_filedir / affile, edits_filedir / af_filename)
+        _ = wget.download(f'https://alphafold.ebi.ac.uk/files/{affile}', out='')
+    try: 
+        os.rename(affile, edits_filedir / af_filename)
+    except OSError: 
+        try: 
+            shutil.move(affile, edits_filedir / af_filename)
+        except: 
+            pass
     return af_filename
 
 def parse_af(
