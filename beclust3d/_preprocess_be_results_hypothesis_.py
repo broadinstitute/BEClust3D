@@ -59,62 +59,48 @@ def hypothesis_plot(
     df_MW_input.replace(-999, pd.NA, inplace=True)  # replace -999 with NaN
     df_MW_input[f"p{partial_col_header}"] = df_MW_input[f"p{partial_col_header}"].apply(negative_log_transformation)
 
+    if len(screen_names) == 1: axes_list = [axes[0]] # FOR ONE SCREEN #
+    else: axes_list = [axes[i, 0] for i in range(len(screen_names))] # FOR MULTIPLE SCREEN #
+
     # PLOT MW #
-    if len(screen_names) == 1: 
-    # FOR ONE SCREEN #
-        plot1 = sns.scatterplot(ax=axes[0], data=df_MW_input[df_MW_input['screenid']==screen_names[0]], 
+    for i, (ax, screen) in enumerate(zip(axes_list, screen_names)):
+        plot1 = sns.scatterplot(ax=ax, data=df_MW_input[df_MW_input['screenid']==screen], 
                                 x=f"U{partial_col_header}", y=f"p{partial_col_header}", 
                                 hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k' )
-        axes[0].axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
-        axes[0].axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
+        ax.axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
+        ax.axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
 
         # LEGEND AND Y AXIS #
         handles, labels = plot1.get_legend_handles_labels()
-        axes[0].legend(handles, labels, title="Genes", bbox_to_anchor=(1.0, 1), loc='upper left')
-        axes[0].set_ylabel(f'-log10({f"p{partial_col_header}"})')
-        axes[0].set_title(f'Mann-Whiteney')
-    else: 
-    # FOR MULTIPLE SCREEN #
-        for i, screen in enumerate(screen_names): 
-            plot1 = sns.scatterplot(ax=axes[i,0], data=df_MW_input[df_MW_input['screenid']==screen], 
-                                    x=f"U{partial_col_header}", y=f"p{partial_col_header}", 
-                                    hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k' )
-            axes[i,0].axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
-            axes[i,0].axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
+        ax.legend(handles, labels, title="Genes", bbox_to_anchor=(1.0, 1), loc='upper left')
+        ax.set_ylabel(f'-log10({f"p{partial_col_header}"})')
+    axes_list[0].set_title(f'Mann-Whiteney')
 
-            # LEGEND AND Y AXIS #
-            handles, labels = plot1.get_legend_handles_labels()
-            axes[i,0].legend(handles, labels, title="Genes", bbox_to_anchor=(1.0, 1), loc='upper left')
-            axes[i,0].set_ylabel(f'-log10({f"p{partial_col_header}"})')
-        axes[0,0].set_title(f'Mann-Whiteney')
-
-    # PREP DATAFRAME #
+    # PREP DATAFRAME KS #
     qc_filename = f"qc_validation/{testtype2}_hypothesis{hypothesis}.tsv"
     df_KS_input = pd.read_csv(edits_filedir / qc_filename, sep='\t')
     df_KS_input.replace(-999, pd.NA, inplace=True)  # replace -999 with NaN
     df_KS_input[f"p{partial_col_header}"] = df_KS_input[f"p{partial_col_header}"].apply(negative_log_transformation)
 
-    # PLOTE KS #
-    if len(screen_names) == 1: 
-    # FOR ONE SCREEN #
-        plot2 = sns.scatterplot(ax=axes[1], data=df_KS_input[df_KS_input['screenid']==screen_names[0]], 
-                                x=f"D{partial_col_header}", y=f"p{partial_col_header}", 
-                                hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=False )
-        axes[1].axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
-        axes[1].axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
-        axes[1].set_title(f'Kolmogorov-Smirnov')
-    else: 
-    # FOR MULTIPLE SCREEN #
-        for i, screen in enumerate(screen_names): 
-            plot2 = sns.scatterplot(ax=axes[i,1], data=df_KS_input[df_KS_input['screenid']==screen], 
-                                    x=f"D{partial_col_header}", y=f"p{partial_col_header}", 
-                                    hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=False )
-            axes[i,1].axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
-            axes[i,1].axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
-        axes[0,1].set_title(f'Kolmogorov-Smirnov')
+    if len(screen_names) == 1: axes_list = [axes[0]] # FOR ONE SCREEN #
+    else: axes_list = [axes[i, 0] for i in range(len(screen_names))] # FOR MULTIPLE SCREEN #
 
-    plt.tight_layout()
+    # PLOTE KS #
+    for i, (ax, screen) in enumerate(zip(axes_list, screen_names)):
+        plot1 = sns.scatterplot(ax=ax, data=df_KS_input[df_KS_input['screenid']==screen], 
+                                x=f"D{partial_col_header}", y=f"p{partial_col_header}", 
+                                hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k' )
+        ax.axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
+        ax.axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
+
+        # LEGEND AND Y AXIS #
+        handles, labels = plot1.get_legend_handles_labels()
+        ax.legend(handles, labels, title="Genes", bbox_to_anchor=(1.0, 1), loc='upper left')
+        ax.set_ylabel(f'-log10({f"p{partial_col_header}"})')
+    axes_list[0].set_title(f'Kolmogorov-Smirnov')
+
     # SAVE PLOT #
+    plt.tight_layout()
     plot_filename = f"plots/hypothesis{hypothesis}_scatterplot.pdf"
     plt.savefig(edits_filedir / plot_filename, dpi=500)
 
