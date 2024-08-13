@@ -57,7 +57,8 @@ def parse_base_editing_results(
             each dataframe with column headers edit, {output_col}, refAA, altAA, LFC
     """
 
-    edits_filedir = Path(workdir + '/' +  input_gene)
+    edits_filedir = Path(workdir)
+    edits_filedir = edits_filedir / input_gene
     screen_names = [input_screen.split('.')[0] for input_screen in input_screens]
     if not os.path.exists(edits_filedir): 
         os.mkdir(edits_filedir)

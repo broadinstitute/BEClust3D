@@ -404,8 +404,8 @@ def af_structural_features(
         df_coord_dssp: pandas DataFrame
             a dataframe of coordinates and structural features
     """
-    
-    edits_filedir = Path(workdir + '/' +  input_gene)
+    edits_filedir = Path(workdir)
+    edits_filedir = edits_filedir / input_gene
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
     

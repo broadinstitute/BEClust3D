@@ -126,7 +126,7 @@ def counts_violin_by_gene(
         for df_input in df_inputs: 
             df_current_gene = df_input.loc[df_input[gene_col] == gene,]
             for j, mutcat in enumerate(mut_categories_spaced): 
-                res[j+1] = len(df_current_gene.loc[df_current_gene[mut_col] == mutcat, ])
+                res[j+1] += len(df_current_gene.loc[df_current_gene[mut_col] == mutcat, ])
         df_mutation_counts.loc[idx] = res
 
     df_plot = df_mutation_counts.melt("Gene", var_name="Mut Type", value_name="Count")
@@ -166,10 +166,10 @@ def counts_violin_by_gene(
 
         # CALC MEAN STD #
         Means = df_gene.groupby(mut_col)[val_col].mean()
-        STDs = df_gene.groupby(mut_col)[val_col].std()
-        print(f"{current_gene}: Mean + STD")
-        for mutcat in mut_categories_spaced: 
-            print(f"{mutcat}: {round(Means[mutcat], 3)} + {round(STDs[mutcat], 3)}")
+        # STDs = df_gene.groupby(mut_col)[val_col].std()
+        # print(f"{current_gene}: Mean + STD")
+        # for mutcat in mut_categories_spaced: 
+        #     print(f"{mutcat}: {round(Means[mutcat], 3)} + {round(STDs[mutcat], 3)}")
 
         # PLOT VIOLIN #
         ax = axes.flatten()[idx]
