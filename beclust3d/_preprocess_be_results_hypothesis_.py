@@ -60,10 +60,10 @@ def hypothesis_plot(
     df_MW_input[f"p{partial_col_header}"] = df_MW_input[f"p{partial_col_header}"].apply(negative_log_transformation)
 
     if len(screen_names) == 1: axes_list = [axes[0]] # FOR ONE SCREEN #
-    else: axes_list = [axes[i, 0] for i in range(len(screen_names))] # FOR MULTIPLE SCREEN #
+    else: axes_list = [axes[i,0] for i in range(len(screen_names))] # FOR MULTIPLE SCREEN #
 
     # PLOT MW #
-    for i, (ax, screen) in enumerate(zip(axes_list, screen_names)):
+    for ax, screen in zip(axes_list, screen_names):
         plot1 = sns.scatterplot(ax=ax, data=df_MW_input[df_MW_input['screenid']==screen], 
                                 x=f"U{partial_col_header}", y=f"p{partial_col_header}", 
                                 hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k' )
@@ -82,11 +82,11 @@ def hypothesis_plot(
     df_KS_input.replace(-999, pd.NA, inplace=True)  # replace -999 with NaN
     df_KS_input[f"p{partial_col_header}"] = df_KS_input[f"p{partial_col_header}"].apply(negative_log_transformation)
 
-    if len(screen_names) == 1: axes_list = [axes[0]] # FOR ONE SCREEN #
-    else: axes_list = [axes[i, 0] for i in range(len(screen_names))] # FOR MULTIPLE SCREEN #
+    if len(screen_names) == 1: axes_list = [axes[1]] # FOR ONE SCREEN #
+    else: axes_list = [axes[i,1] for i in range(len(screen_names))] # FOR MULTIPLE SCREEN #
 
     # PLOTE KS #
-    for i, (ax, screen) in enumerate(zip(axes_list, screen_names)):
+    for ax, screen in zip(axes_list, screen_names):
         plot1 = sns.scatterplot(ax=ax, data=df_KS_input[df_KS_input['screenid']==screen], 
                                 x=f"D{partial_col_header}", y=f"p{partial_col_header}", 
                                 hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k' )
