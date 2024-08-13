@@ -93,7 +93,7 @@ def parse_uniprot(
     return None
 
 def query_af(
-    edits_filedir, input_uniprot, af_filename
+    edits_filedir, af_filename, structureid
 ): 
     """
     Description
@@ -109,12 +109,12 @@ def query_af(
         af_filename
             filename of the output protein structure .pdb
     """
-    
+
     # QUERY ALPHAFOLD #
-    ffile = input_uniprot + '.fasta'
-    if not os.path.exists(edits_filedir / ffile): 
-        _ = wget.download(f'https://rest.uniprot.org/uniprotkb/{ffile}', out=str(edits_filedir))
-    os.rename(edits_filedir / ffile, edits_filedir / af_filename)
+    affile = structureid + '.pdb'
+    if not os.path.exists(edits_filedir / af_filename): 
+        _ = wget.download(f'https://alphafold.ebi.ac.uk/files/{affile}', out=str(edits_filedir))
+    os.rename(edits_filedir / affile, edits_filedir / af_filename)
     return af_filename
 
 def parse_af(
