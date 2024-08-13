@@ -93,7 +93,7 @@ def parse_uniprot(
     return None
 
 def query_af(
-    edits_filedir, af_filename, structureid
+    edits_filedir, af_filename, input_uniprot
 ): 
     """
     Description
