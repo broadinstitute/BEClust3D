@@ -89,10 +89,10 @@ def hypothesis_plot(
     for ax, screen in zip(axes_list, screen_names):
         plot1 = sns.scatterplot(ax=ax, data=df_KS_input[df_KS_input['screenid']==screen], 
                                 x=f"D{partial_col_header}", y=f"p{partial_col_header}", 
-                                hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k' )
+                                hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=False)
         ax.axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
         ax.axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
-    axes_list[1].set_title(f'Kolmogorov-Smirnov')
+    axes_list[0].set_title(f'Kolmogorov-Smirnov')
 
     # SAVE PLOT #
     plt.tight_layout()
