@@ -92,12 +92,7 @@ def hypothesis_plot(
                                 hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k' )
         ax.axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
         ax.axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
-
-        # LEGEND AND Y AXIS #
-        handles, labels = plot1.get_legend_handles_labels()
-        ax.legend(handles, labels, title="Genes", bbox_to_anchor=(1.0, 1), loc='upper left')
-        ax.set_ylabel(f'-log10({f"p{partial_col_header}"})')
-    axes_list[0].set_title(f'Kolmogorov-Smirnov')
+    axes_list[1].set_title(f'Kolmogorov-Smirnov')
 
     # SAVE PLOT #
     plt.tight_layout()
