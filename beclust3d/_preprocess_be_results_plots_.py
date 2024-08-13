@@ -23,7 +23,7 @@ comparisons = [
 ]
 
 def mann_whitney_test(
-    edits_filedir, screen_name, input_gene, 
+    edits_filedir, screen_names, input_gene, 
 ): 
     """
     Description
@@ -42,29 +42,30 @@ def mann_whitney_test(
         comparisons: dict
             A dictionary of each screen comparison and their Mann Whitney results
     """
-    df_inputgenes = [pd.DataFrame() for _ in mut_categories_unspaced]
-    for mut, df in zip(mut_categories_unspaced, df_inputgenes): 
-        edits_filename = f"screendata/{input_gene}_{screen_name}_{mut}_edits_list.tsv"
-        df_temp = pd.read_csv(edits_filedir / edits_filename, sep = '\t')
-        df['LFC'] = df_temp['LFC']
-        df['muttype'] = mut
-    df_dict = dict(map(lambda i, j : (i, j) , mut_categories_unspaced, df_inputgenes))
+    muts_dicts_list = [{} for _ in mut_categories_unspaced]
+    for mut, mut_dict in zip(mut_categories_unspaced, muts_dicts_list): 
+        list_mut = []
+        for screen_name in screen_names: 
+            edits_filename = f"screendata/{input_gene}_{screen_name}_{mut}_edits_list.tsv"
+            df_temp = pd.read_csv(edits_filedir / edits_filename, sep = '\t')
+            list_mut.extend(df_temp['LFC'].tolist())
+            del df_temp
+        mut_dict['LFC'] = list_mut
+        mut_dict['muttype'] = mut
+    muts_dicts = dict(map(lambda i, j : (i, j) , mut_categories_unspaced, muts_dicts_list))
 
     # MANN WHITNEY TEST #
     mannwhiteney_results = {}
     for comp1, comp2 in comparisons: 
-        if not df_dict[comp1].empty and not df_dict[comp2].empty: 
-            U1, p = mannwhitneyu(df_dict[comp1]['LFC'], df_dict[comp2]['LFC'], method="asymptotic")
+        if len(muts_dicts[comp1]['LFC']) > 0 and len(muts_dicts[comp2]['LFC']) > 0: 
+            U1, p = mannwhitneyu(muts_dicts[comp1]['LFC'], muts_dicts[comp2]['LFC'], method="asymptotic")
             mannwhiteney_results[f'{comp1} vs {comp2}'] = {'U1': U1, 'p': p}
 
-    df_InputGene_edits_list = pd.concat(df_inputgenes).reset_index(drop=True)
-
-    return df_InputGene_edits_list, mannwhiteney_results
+    df_muts = pd.concat([pd.DataFrame(d) for d in muts_dicts_list]).reset_index(drop=True)
+    return df_muts, mannwhiteney_results
 
 def violin_plot(
-        df_InputGene_edits_list, 
-        edits_filedir, screen_name, input_gene, 
-        directional=False, 
+        df_muts, edits_filedir, input_gene, 
 ): 
     """
     Description
@@ -86,25 +87,21 @@ def violin_plot(
         medians: list of floats
             List of medians for each mutation category
     """
+    fig, ax = plt.subplots(1, 2, figsize=(12,6))
 
-    fig, ax = plt.subplots()
+    means = df_muts.groupby('muttype')['LFC'].mean()
+    stds = df_muts.groupby('muttype')['LFC'].std()
+    medians = df_muts.groupby('muttype')['LFC'].median()
 
-    means = df_InputGene_edits_list.groupby('muttype')['LFC'].mean()
-    stds = df_InputGene_edits_list.groupby('muttype')['LFC'].std()
-    medians = df_InputGene_edits_list.groupby('muttype')['LFC'].median()
-
-    if directional: 
-        sns.violinplot(data=df_InputGene_edits_list, x="LFC", y="muttype", 
-                       hue="LFC_direction", inner=None).set(title=screen_name)
-        plotname = edits_filedir / f"plots/{input_gene}_{screen_name}_LFC_dist_muttype_bidirectional.pdf"
-    else: 
-        sns.violinplot(data=df_InputGene_edits_list, x="LFC", y="muttype", 
-                       inner=None).set(title=screen_name)
-        plotname = edits_filedir / f"plots/{input_gene}_{screen_name}_LFC_dist_muttype.pdf"
-        
-    plt.axvline(df_InputGene_edits_list["LFC"].mean(), c="gray", linestyle="dashed")
-    plt.setp(ax.collections, alpha=.4)
+    sns.violinplot(ax=ax[0], data=df_muts, x="LFC", y="muttype", 
+                    inner=None).set(title='LFC by Mutation Type')
+    sns.violinplot(ax=ax[1], data=df_muts, x="LFC", y="muttype", 
+                    hue="LFC_direction", inner=None).set(title='LFC by Mutation Type')
+    plt.axvline(df_muts["LFC"].mean(), c="gray", linestyle="dashed")
     plt.scatter(y=range(len(means)), x=means, c="violet", alpha=.9)
+
+    plt.tight_layout()
+    plotname = edits_filedir / f"plots/{input_gene}_LFC_dist_muttype.pdf"
     plt.savefig(plotname, dpi=300)
 
     return means, stds, medians

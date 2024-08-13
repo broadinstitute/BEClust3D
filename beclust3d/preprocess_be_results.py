@@ -130,18 +130,12 @@ def parse_base_editing_results(
                    screen_names, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
     hypothesis_plot(edits_filedir, screen_names, testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')
     
-    # # AGGREGATE ACROSS SCREENS FOR PLOTS #
-    # # MANN WHITNEY TEST #
-    # df_list, mw_res = mann_whitney_test(edits_filedir=edits_filedir, 
-    #                                     screen_name=screen_name, input_gene=input_gene, )
-    # print(df_list)
-    # # VIOLIN PLOTS #
-    # violin_plot(df_InputGene_edits_list=df_list, 
-    #             edits_filedir=edits_filedir, screen_name=screen_name, input_gene=input_gene, )
-    # # DIRECTIONAL VIOLIN PLOTS #
-    # df_list['LFC_direction'] = np.where(df_list['LFC'] < 0, 'neg', 'pos')
-    # violin_plot(df_InputGene_edits_list=df_list, 
-    #             edits_filedir=edits_filedir, screen_name=screen_name, input_gene=input_gene, 
-    #             directional=True, )
+    # AGGREGATE ACROSS SCREENS FOR PLOTS #
+    # MANN WHITNEY TEST #
+    df_muts, mw_res = mann_whitney_test(edits_filedir=edits_filedir, 
+                                        screen_names=screen_names, input_gene=input_gene, )
+    df_muts['LFC_direction'] = np.where(df_muts['LFC'] < 0, 'neg', 'pos')
+    # VIOLIN PLOTS #
+    violin_plot(df_muts=df_muts, edits_filedir=edits_filedir, input_gene=input_gene)
 
     return mut_dfs
