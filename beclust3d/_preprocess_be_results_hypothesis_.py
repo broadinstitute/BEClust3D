@@ -62,7 +62,7 @@ def hypothesis_plot(
     # PLOT MW #
     if len(screen_names) == 1: 
     # FOR ONE SCREEN #
-        plot1 = sns.scatterplot(ax=axes[0], data=df_MW_input[df_MW_input['screenid']==screen], 
+        plot1 = sns.scatterplot(ax=axes[0], data=df_MW_input[df_MW_input['screenid']==screen_names[0]], 
                                 x=f"U{partial_col_header}", y=f"p{partial_col_header}", 
                                 hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k' )
         axes[0].axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
@@ -97,12 +97,11 @@ def hypothesis_plot(
     # PLOTE KS #
     if len(screen_names) == 1: 
     # FOR ONE SCREEN #
-        for i, screen in enumerate(screen_names): 
-            plot2 = sns.scatterplot(ax=axes[1], data=df_KS_input[df_KS_input['screenid']==screen], 
-                                    x=f"D{partial_col_header}", y=f"p{partial_col_header}", 
-                                    hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=False )
-            axes[1].axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
-            axes[1].axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
+        plot2 = sns.scatterplot(ax=axes[1], data=df_KS_input[df_KS_input['screenid']==screen_names[0]], 
+                                x=f"D{partial_col_header}", y=f"p{partial_col_header}", 
+                                hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=False )
+        axes[1].axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
+        axes[1].axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
         axes[1].set_title(f'Kolmogorov-Smirnov')
     else: 
     # FOR MULTIPLE SCREEN #
