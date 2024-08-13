@@ -111,10 +111,10 @@ def query_af(
     """
 
     # QUERY ALPHAFOLD #
-    affile = structureid + '.pdb'
-    if not os.path.exists(edits_filedir / af_filename): 
-        _ = wget.download(f'https://alphafold.ebi.ac.uk/files/{affile}', out=str(edits_filedir))
-    os.rename(affile, edits_filedir / af_filename)
+    ffile = input_uniprot + '.fasta'
+    if not os.path.exists(edits_filedir / ffile): 
+        _ = wget.download(f'https://rest.uniprot.org/uniprotkb/{ffile}', out=str(edits_filedir))
+    uFasta_file = edits_filedir / ffile
     return af_filename
 
 def parse_af(

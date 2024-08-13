@@ -45,55 +45,61 @@ def negative_log_transformation(value):
     return value
 
 def hypothesis_plot(
-        edits_filedir, screen_name, testtype1, testtype2, 
+        edits_filedir, screen_names, testtype1, testtype2, 
         hypothesis, partial_col_header='_Splice_Site_Nonsense_vs_Silent_No_Mutation', 
 ): 
-    fig, axes = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(12, 6))
+    ### if by gene replace "i, gene in enumerate(unique_genes)"
+
+    fig, axes = plt.subplots(nrows=len(screen_names), ncols=2, sharey=True, 
+                             figsize=(12, 4*len(screen_names)))
 
     # PREP DATAFRAME MW #
-    qc_filename = f"qc_validation/{screen_name}_{testtype1}_hypothesis{hypothesis}.tsv"
+    qc_filename = f"qc_validation/{testtype1}_hypothesis{hypothesis}.tsv"
     df_MW_input = pd.read_csv(edits_filedir / qc_filename, sep='\t')
     df_MW_input.replace(-999, pd.NA, inplace=True)  # replace -999 with NaN
     df_MW_input[f"p{partial_col_header}"] = df_MW_input[f"p{partial_col_header}"].apply(negative_log_transformation)
 
     # PLOT MW #
-    plot1 = sns.scatterplot(ax=axes[0], data=df_MW_input, x=f"U{partial_col_header}", y=f"p{partial_col_header}", 
-                            hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k' )
-    axes[0].axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
-    axes[0].axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
-    axes[0].set_title(f'Mann-Whiteney')
+    for i, screen in enumerate(screen_names): 
+        plot1 = sns.scatterplot(ax=axes[i,0], data=df_MW_input[df_MW_input['screenid']==screen], 
+                                x=f"U{partial_col_header}", y=f"p{partial_col_header}", 
+                                hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k' )
+        axes[i,0].axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
+        axes[i,0].axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
+
+        # LEGEND AND Y AXIS #
+        handles, labels = plot1.get_legend_handles_labels()
+        axes[i,0].legend(handles, labels, title="Genes", bbox_to_anchor=(1.0, 1), loc='upper left')
+        axes[i,0].set_ylabel(f'-log10({f"p{partial_col_header}"})')
+    axes[0,0].set_title(f'Mann-Whiteney')
 
     # PREP DATAFRAME #
-    qc_filename = f"qc_validation/{screen_name}_{testtype2}_hypothesis{hypothesis}.tsv"
+    qc_filename = f"qc_validation/{testtype2}_hypothesis{hypothesis}.tsv"
     df_KS_input = pd.read_csv(edits_filedir / qc_filename, sep='\t')
     df_KS_input.replace(-999, pd.NA, inplace=True)  # replace -999 with NaN
     df_KS_input[f"p{partial_col_header}"] = df_KS_input[f"p{partial_col_header}"].apply(negative_log_transformation)
 
     # PLOTE KS #
-    plot2 = sns.scatterplot(ax=axes[1], data=df_KS_input, x=f"D{partial_col_header}", y=f"p{partial_col_header}", 
-                            hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=False )
-    axes[1].axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
-    axes[1].axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
-    axes[1].set_title(f'Kolmogorov-Smirnov')
+    for i, screen in enumerate(screen_names): 
+        plot2 = sns.scatterplot(ax=axes[i,1], data=df_KS_input[df_KS_input['screenid']==screen], 
+                                x=f"D{partial_col_header}", y=f"p{partial_col_header}", 
+                                hue="gene_name", palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=False )
+        axes[i,1].axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
+        axes[i,1].axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
+    axes[0,1].set_title(f'Kolmogorov-Smirnov')
 
-    # LEGEND AND Y AXIS #
-    handles, labels = plot1.get_legend_handles_labels()
-    axes[0].legend(handles, labels, title="Genes", bbox_to_anchor=(1.0, 1), loc='upper left')
-    axes[0].set_ylabel(f'-log10({f"p{partial_col_header}"})')
     plt.tight_layout()
-    fig.suptitle(f"Hypothesis {hypothesis}: Splice + Nonsense vs. Silent + No Mutation")
-
     # SAVE PLOT #
-    plot_filename = f"plots/{screen_name}_hypothesis{hypothesis}_scatterplot.pdf"
-    plt.savefig(edits_filedir / plot_filename, dpi=300)
+    plot_filename = f"plots/hypothesis{hypothesis}_scatterplot.pdf"
+    plt.savefig(edits_filedir / plot_filename, dpi=500)
 
 
 # HYPOTHESIS 1: There is a significant difference in the signal (LFC) #
 # between knockout (nonsense/splice) mutations and none (silent/no mutations) per screen, per gene #
 
 def hypothesis_one(
-    df_rawinput, edits_filedir, 
-    screen_name, gene_col, mut_col, val_col, 
+    df_inputs, edits_filedir, 
+    screen_names, gene_col, mut_col, val_col, 
     testtype, 
 ): 
     col_names = ['screenid', 'gene_name']
@@ -104,45 +110,51 @@ def hypothesis_one(
         col_names.extend([pref+comp for comp in comparisons1 for pref in ('D_', 'p_')])
 
     # CREATE DF TO STORE TEST RESULTS #
-    unique_genes = df_rawinput[gene_col].unique()
+    unique_genes = []
+    for df_input in df_inputs: 
+        unique = df_input[gene_col].unique().tolist()
+        unique_genes = list(set(unique_genes+unique))
+
     df_output = pd.DataFrame(columns=col_names)
-    
-    for current_gene in unique_genes: 
-        df_edits = df_rawinput[df_rawinput[gene_col] == current_gene]
-        new_row = [screen_name, current_gene]
+    # PER SCREEN PER GENE #
+    for df_input, screen_name in zip(df_inputs, screen_names): 
+        for current_gene in unique_genes: 
 
-        # PARSE DF FOR EACH MUT TYPE #
-        df_nonsense = df_edits.loc[df_edits[mut_col]=='Nonsense'].reset_index(drop=True)
-        df_splice = df_edits.loc[df_edits[mut_col]=='Splice'].reset_index(drop=True)
-        df_missense = df_edits.loc[df_edits[mut_col]=='Missense'].reset_index(drop=True)
-        df_nomutation = df_edits.loc[df_edits[mut_col]=='NoMutation'].reset_index(drop=True)
-        df_silent = df_edits.loc[df_edits[mut_col]=='Silent'].reset_index(drop=True)
-        df_splice_nonsense = pd.concat([df_nonsense, df_splice])
-        df_silent_nomutation = pd.concat([df_silent, df_nomutation])
-        new_row.extend([len(df_missense), len(df_silent), len(df_nonsense), len(df_nomutation), len(df_splice)])
+            df_edits = df_input[df_input[gene_col] == current_gene]
+            new_row = [screen_name, current_gene]
 
-        new_row.extend(add_to_row(df_nonsense, df_missense, val_col, testtype)) # nonsense vs. missense
-        new_row.extend(add_to_row(df_nonsense, df_nomutation, val_col, testtype)) # nonsense vs. no mutation
-        new_row.extend(add_to_row(df_nonsense, df_silent, val_col, testtype)) # nonsense vs. silent
-        new_row.extend(add_to_row(df_splice, df_missense, val_col, testtype)) # splice vs. missense
-        new_row.extend(add_to_row(df_splice, df_nomutation, val_col, testtype)) # splice vs. no mutation
-        new_row.extend(add_to_row(df_splice, df_silent, val_col, testtype)) # splice vs. silent
-        new_row.extend(add_to_row(df_missense, df_splice_nonsense, val_col, testtype)) # missense vs. splice + nonsense
-        new_row.extend(add_to_row(df_nomutation, df_splice_nonsense, val_col, testtype)) # no mutation vs. splice + nonsense
-        new_row.extend(add_to_row(df_silent, df_splice_nonsense, val_col, testtype)) # silent vs. splice + nonsense
-        new_row.extend(add_to_row(df_missense, df_silent_nomutation, val_col, testtype)) # missense vs. silent + no mutation
-        new_row.extend(add_to_row(df_nonsense, df_silent_nomutation, val_col, testtype)) # nonsense vs. silent + no mutation
-        new_row.extend(add_to_row(df_splice, df_silent_nomutation, val_col, testtype)) # splice vs. silent + no mutation
-        new_row.extend(add_to_row(df_nomutation, df_silent, val_col, testtype)) # no mutation vs. silent (negative control)
-        new_row.extend(add_to_row(df_nonsense, df_splice, val_col, testtype)) # nonsense vs. splice (negative control)
-        new_row.extend(add_to_row(df_splice_nonsense, df_silent_nomutation, val_col, testtype)) # splice + nonsense vs. silent + no mutation
+            # PARSE DF FOR EACH MUT TYPE #
+            df_nonsense = df_edits.loc[df_edits[mut_col]=='Nonsense'].reset_index(drop=True)
+            df_splice = df_edits.loc[df_edits[mut_col]=='Splice'].reset_index(drop=True)
+            df_missense = df_edits.loc[df_edits[mut_col]=='Missense'].reset_index(drop=True)
+            df_nomutation = df_edits.loc[df_edits[mut_col]=='NoMutation'].reset_index(drop=True)
+            df_silent = df_edits.loc[df_edits[mut_col]=='Silent'].reset_index(drop=True)
+            df_splice_nonsense = pd.concat([df_nonsense, df_splice])
+            df_silent_nomutation = pd.concat([df_silent, df_nomutation])
+            new_row.extend([len(df_missense), len(df_silent), len(df_nonsense), len(df_nomutation), len(df_splice)])
 
-        # ADD NEW ROW #
-        df_output.loc[len(df_output)] = new_row
-        del new_row, df_nonsense, df_splice, df_missense, df_nomutation, df_silent, df_splice_nonsense, df_silent_nomutation
+            new_row.extend(add_to_row(df_nonsense, df_missense, val_col, testtype)) # nonsense vs. missense
+            new_row.extend(add_to_row(df_nonsense, df_nomutation, val_col, testtype)) # nonsense vs. no mutation
+            new_row.extend(add_to_row(df_nonsense, df_silent, val_col, testtype)) # nonsense vs. silent
+            new_row.extend(add_to_row(df_splice, df_missense, val_col, testtype)) # splice vs. missense
+            new_row.extend(add_to_row(df_splice, df_nomutation, val_col, testtype)) # splice vs. no mutation
+            new_row.extend(add_to_row(df_splice, df_silent, val_col, testtype)) # splice vs. silent
+            new_row.extend(add_to_row(df_missense, df_splice_nonsense, val_col, testtype)) # missense vs. splice + nonsense
+            new_row.extend(add_to_row(df_nomutation, df_splice_nonsense, val_col, testtype)) # no mutation vs. splice + nonsense
+            new_row.extend(add_to_row(df_silent, df_splice_nonsense, val_col, testtype)) # silent vs. splice + nonsense
+            new_row.extend(add_to_row(df_missense, df_silent_nomutation, val_col, testtype)) # missense vs. silent + no mutation
+            new_row.extend(add_to_row(df_nonsense, df_silent_nomutation, val_col, testtype)) # nonsense vs. silent + no mutation
+            new_row.extend(add_to_row(df_splice, df_silent_nomutation, val_col, testtype)) # splice vs. silent + no mutation
+            new_row.extend(add_to_row(df_nomutation, df_silent, val_col, testtype)) # no mutation vs. silent (negative control)
+            new_row.extend(add_to_row(df_nonsense, df_splice, val_col, testtype)) # nonsense vs. splice (negative control)
+            new_row.extend(add_to_row(df_splice_nonsense, df_silent_nomutation, val_col, testtype)) # splice + nonsense vs. silent + no mutation
+
+            # ADD NEW ROW #
+            df_output.loc[len(df_output)] = new_row
+            del new_row, df_nonsense, df_splice, df_missense, df_nomutation, df_silent, df_splice_nonsense, df_silent_nomutation
 
     # SAVE FILE #
-    qc_filename = f"qc_validation/{screen_name}_{testtype}_hypothesis1.tsv"
+    qc_filename = f"qc_validation/{testtype}_hypothesis1.tsv"
     df_output.to_csv(edits_filedir / qc_filename, sep = '\t', index=False)
 
     return df_output
@@ -151,8 +163,8 @@ def hypothesis_one(
 # between knockout (nonsense/splice) mutations per gene and none (silent/no mutations) from entire screen #
 
 def hypothesis_two(
-    df_rawinput, edits_filedir, 
-    screen_name, gene_col, mut_col, val_col, 
+    df_inputs, edits_filedir, 
+    screen_names, gene_col, mut_col, val_col, 
     testtype, 
 ): 
     col_names = ['screenid', 'gene_name']
@@ -163,55 +175,64 @@ def hypothesis_two(
         col_names.extend([pref+comp for comp in comparisons2 for pref in ('D_', 'p_')])
 
     # CREATE DF TO STORE CONTROL RESULTS #
-    unique_genes = df_rawinput[gene_col].unique()
+    unique_genes = []
+    for df_input in df_inputs: 
+        unique = df_input[gene_col].unique().tolist()
+        unique_genes = list(set(unique_genes+unique))
+
     df_output = pd.DataFrame(columns=col_names)
     df_all_screen_nomutation = pd.DataFrame()
     df_all_screen_silent = pd.DataFrame()
 
     # GLOBAL SILENT AND NO MUTATION #
-    for current_gene in unique_genes:
-        df_edits = df_rawinput[df_rawinput[gene_col] == current_gene]
+    # PER SCREEN PER GENE #
+    for df_input, screen_name in zip(df_inputs, screen_names): 
+        for current_gene in unique_genes:
+            df_edits = df_input[df_input[gene_col] == current_gene]
 
-        # PARSE DF FOR EACH MUT TYPE, CONCAT TO PREVIOUS GENE #
-        df_nomutation = df_edits.loc[df_edits[mut_col]=='NoMutation'].reset_index(drop=True)
-        df_all_screen_nomutation = pd.concat([df_all_screen_nomutation, df_nomutation]).reset_index(drop=True)
-        df_silent = df_edits.loc[df_edits[mut_col]=='Silent'].reset_index(drop=True)
-        df_all_screen_silent = pd.concat([df_all_screen_silent, df_silent]).reset_index(drop=True)
-        del df_nomutation, df_silent
+            # PARSE DF FOR EACH MUT TYPE, CONCAT TO PREVIOUS GENE #
+            df_nomutation = df_edits.loc[df_edits[mut_col]=='NoMutation'].reset_index(drop=True)
+            df_all_screen_nomutation = pd.concat([df_all_screen_nomutation, df_nomutation]).reset_index(drop=True)
+            df_silent = df_edits.loc[df_edits[mut_col]=='Silent'].reset_index(drop=True)
+            df_all_screen_silent = pd.concat([df_all_screen_silent, df_silent]).reset_index(drop=True)
+            del df_nomutation, df_silent
 
     df_all_silent_nomutation = pd.concat([df_all_screen_nomutation, df_all_screen_silent])
 
-    for current_gene in unique_genes:
-        df_edits = df_rawinput[df_rawinput[gene_col] == current_gene]
-        new_row = [screen_name, current_gene]
+    # PER SCREEN PER GENE #
+    for df_input, screen_name in zip(df_inputs, screen_names): 
+        for current_gene in unique_genes: 
 
-        # PARSE DF FOR EACH MUT TYPE #
-        df_nonsense = df_edits.loc[df_edits[mut_col]=='Nonsense'].reset_index(drop=True)
-        df_splice = df_edits.loc[df_edits[mut_col]=='Splice'].reset_index(drop=True)
-        df_missense = df_edits.loc[df_edits[mut_col]=='Missense'].reset_index(drop=True)
-        df_nomutation = df_edits.loc[df_edits[mut_col]=='NoMutation'].reset_index(drop=True)
-        df_silent = df_edits.loc[df_edits[mut_col]=='Silent'].reset_index(drop=True)
-        df_splice_nonsense = pd.concat([df_nonsense, df_splice])
-        new_row.extend([len(df_missense), len(df_silent), len(df_nonsense), len(df_nomutation), len(df_splice)])
+            df_edits = df_input[df_input[gene_col] == current_gene]
+            new_row = [screen_name, current_gene]
 
-        new_row.extend(add_to_row(df_nonsense, df_all_screen_nomutation, val_col, testtype)) # nonsense vs. no mutation
-        new_row.extend(add_to_row(df_nonsense, df_all_screen_silent, val_col, testtype)) # nonsense vs. silent
-        new_row.extend(add_to_row(df_splice, df_all_screen_nomutation, val_col, testtype)) # splice vs. no mutation
-        new_row.extend(add_to_row(df_splice, df_all_screen_silent, val_col, testtype)) # splice vs. silent
-        new_row.extend(add_to_row(df_nomutation, df_splice_nonsense, val_col, testtype)) # no mutation vs. splice + nonsense
-        new_row.extend(add_to_row(df_silent, df_splice_nonsense, val_col, testtype)) # silent vs. splice + nonsense
-        new_row.extend(add_to_row(df_missense, df_all_silent_nomutation, val_col, testtype)) # missense vs. silent + no mutation
-        new_row.extend(add_to_row(df_nonsense, df_all_silent_nomutation, val_col, testtype)) # nonsense vs. silent + no mutation
-        new_row.extend(add_to_row(df_splice, df_all_silent_nomutation, val_col, testtype)) # splice vs. silent + no mutation
-        new_row.extend(add_to_row(df_nomutation, df_all_screen_silent, val_col, testtype)) # no mutation vs. silent (negative control)
-        new_row.extend(add_to_row(df_splice_nonsense, df_all_silent_nomutation, val_col, testtype)) # splice + nonsense vs. silent + no mutation
-        
-        # ADD NEW ROW #
-        df_output.loc[len(df_output)] = new_row
-        del new_row, df_nonsense, df_splice, df_missense, df_nomutation, df_silent, df_splice_nonsense
+            # PARSE DF FOR EACH MUT TYPE #
+            df_nonsense = df_edits.loc[df_edits[mut_col]=='Nonsense'].reset_index(drop=True)
+            df_splice = df_edits.loc[df_edits[mut_col]=='Splice'].reset_index(drop=True)
+            df_missense = df_edits.loc[df_edits[mut_col]=='Missense'].reset_index(drop=True)
+            df_nomutation = df_edits.loc[df_edits[mut_col]=='NoMutation'].reset_index(drop=True)
+            df_silent = df_edits.loc[df_edits[mut_col]=='Silent'].reset_index(drop=True)
+            df_splice_nonsense = pd.concat([df_nonsense, df_splice])
+            new_row.extend([len(df_missense), len(df_silent), len(df_nonsense), len(df_nomutation), len(df_splice)])
+
+            new_row.extend(add_to_row(df_nonsense, df_all_screen_nomutation, val_col, testtype)) # nonsense vs. no mutation
+            new_row.extend(add_to_row(df_nonsense, df_all_screen_silent, val_col, testtype)) # nonsense vs. silent
+            new_row.extend(add_to_row(df_splice, df_all_screen_nomutation, val_col, testtype)) # splice vs. no mutation
+            new_row.extend(add_to_row(df_splice, df_all_screen_silent, val_col, testtype)) # splice vs. silent
+            new_row.extend(add_to_row(df_nomutation, df_splice_nonsense, val_col, testtype)) # no mutation vs. splice + nonsense
+            new_row.extend(add_to_row(df_silent, df_splice_nonsense, val_col, testtype)) # silent vs. splice + nonsense
+            new_row.extend(add_to_row(df_missense, df_all_silent_nomutation, val_col, testtype)) # missense vs. silent + no mutation
+            new_row.extend(add_to_row(df_nonsense, df_all_silent_nomutation, val_col, testtype)) # nonsense vs. silent + no mutation
+            new_row.extend(add_to_row(df_splice, df_all_silent_nomutation, val_col, testtype)) # splice vs. silent + no mutation
+            new_row.extend(add_to_row(df_nomutation, df_all_screen_silent, val_col, testtype)) # no mutation vs. silent (negative control)
+            new_row.extend(add_to_row(df_splice_nonsense, df_all_silent_nomutation, val_col, testtype)) # splice + nonsense vs. silent + no mutation
+            
+            # ADD NEW ROW #
+            df_output.loc[len(df_output)] = new_row
+            del new_row, df_nonsense, df_splice, df_missense, df_nomutation, df_silent, df_splice_nonsense
 
     # SAVE FILE #
-    qc_filename = f"qc_validation/{screen_name}_{testtype}_hypothesis2.tsv"
+    qc_filename = f"qc_validation/{testtype}_hypothesis2.tsv"
     df_output.to_csv(edits_filedir / qc_filename, sep = '\t', index=False)
 
     return df_output
