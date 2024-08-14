@@ -14,7 +14,9 @@ from biopandas.pdb import PandasPdb
 import math
 import wget
 import warnings
-import shutil
+import requests
+import json
+import time
 
 aamap = {
     'A': {'max_asa': 129.0, 'aa3cap': 'ALA'}, 'R': {'max_asa': 247.0, 'aa3cap': 'ARG'}, 
@@ -200,9 +202,42 @@ def parse_coord(
     return None
 
 def query_dssp(
-                
+    edits_filedir, af_filename, dssp_filename, 
 ): 
-    return None
+    rest_url = 'https://www3.cmbi.umcn.nl/xssp/xssp/'
+    pdb_file_path = str(edits_filedir / af_filename)
+    files = {'file_': open(pdb_file_path, 'rb')}
+
+    url_create = f'{rest_url}api/create/pdb_file/dssp/'
+    r = requests.post(url_create, files=files)
+    r.raise_for_status()
+    job_id = json.loads(r.text)['id']
+    print(f'MKDSSP API Job ID is {job_id}')
+    print('Fetching job result ...')
+
+    ready = False
+    while not ready:
+        url_status = f'{rest_url}api/status/pdb_file/dssp/{job_id}/'
+        r = requests.get(url_status)
+        r.raise_for_status()
+        status = json.loads(r.text)['status']
+
+        if status == 'SUCCESS':
+            ready = True
+        elif status in ['FAILURE', 'REVOKED']:
+            raise Exception(json.loads(r.text)['message'])
+        else:
+            time.sleep(5)
+    else:
+        url_result = f'{rest_url}api/result/pdb_file/dssp/{job_id}/'
+        r = requests.get(url_result)
+        r.raise_for_status()
+        result = json.loads(r.text)['result']
+
+    f = open(str(edits_filedir / dssp_filename), "w")
+    f.write(result)
+    f.close()
+    print('MKDSSP query complete.')
 
 def parse_dssp(
         edits_filedir, 
@@ -422,7 +457,8 @@ def af_structural_features(
     parse_af(edits_filedir, af_filename, af_processed_filename)
     parse_coord(edits_filedir, af_processed_filename, fastalist_filename, coord_filename)
 
-    ### query dssp with mkdssp ### query_dssp
+    dssp_filename = f"{structureid}_processed.dssp"
+    query_dssp(edits_filedir, af_filename, dssp_filename)
     alphafold_dssp_filename = f"{structureid}_processed.dssp"
     dssp_parsed_filename = f"{structureid}_dssp_parsed.tsv"
     parse_dssp(edits_filedir, alphafold_dssp_filename, fastalist_filename, dssp_parsed_filename)

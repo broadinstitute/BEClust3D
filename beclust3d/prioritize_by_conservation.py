@@ -68,6 +68,9 @@ def prioritize_by_conservation(
 
         # FOR EACH RESIDUE #
         for i in range(len(df_struc_consvr)): 
+            ### minimal info is human_res_pos from struc_consrv which doesn't need conservationn but just the original sequence
+            ### df_edit from preprocess
+            ### change human_res_pos to someting else in conservation
             human_res_pos = df_struc_consvr.at[i, 'human_res_pos'] ###
             df_pos_edits = df_edit.loc[df_edit['edit_pos'] == int(human_res_pos), ].reset_index() ###
 
