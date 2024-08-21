@@ -14,7 +14,6 @@ import os
 import re
 
 from _preprocess_be_results_plots_ import *
-from _preprocess_be_results_hypothesis_ import *
 
 # These have to be predefined, too much of the code is dependent on these categories #
 mut_categories = ["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"]
@@ -68,9 +67,19 @@ def parse_base_editing_results(
         os.mkdir(edits_filedir / 'plots')
     if not os.path.exists(edits_filedir / 'qc_validation'):
         os.mkdir(edits_filedir / 'qc_validation')
+    
+    # INDIVIDUAL BARPLOTS AND VIOLIN PLOTS #
+    for df, screen_name in zip(df_Inputs, screen_names): 
+        counts_by_gene(df_inputs=[df], edits_filedir=edits_filedir, 
+                    gene_col=gene_col, mut_col=mut_col, title=screen_name)
+        violin_by_gene(df_inputs=[df], edits_filedir=edits_filedir, 
+                    gene_col=gene_col, mut_col=mut_col, val_col=val_col, title=screen_name)
     # AGGREGATE ACROSS SCREENS IN FUNCTION #
-    counts_violin_by_gene(df_inputs=df_Inputs, edits_filedir=edits_filedir, 
-                          gene_col=gene_col, mut_col=mut_col, val_col=val_col, )
+    if len(df_Inputs) > 1: 
+        counts_by_gene(df_inputs=df_Inputs, edits_filedir=edits_filedir, 
+                    gene_col=gene_col, mut_col=mut_col, title='Aggregate')
+        violin_by_gene(df_inputs=df_Inputs, edits_filedir=edits_filedir, 
+                    gene_col=gene_col, mut_col=mut_col, val_col=val_col, title='Aggregate')
 
     mut_dfs = {}
     # OUTPUT TSV BY INDIVIDUAL SCREENS #
@@ -115,20 +124,6 @@ def parse_base_editing_results(
             edits_filename = f"screendata/{input_gene}_{screen_name}_{mut.replace(' ', '_')}_edits_list.tsv"
             df_subset.to_csv(edits_filedir / edits_filename, sep='\t')
             mut_dfs[screen_name][mut] = df_subset
-    
-    # AGGREGATE ACROSS SCREENS FOR HYPOTHESIS #
-    # MW AND KS TESTS HYPOTHESIS 1 #
-    hypothesis_one(df_Inputs, edits_filedir, 
-                   screen_names, gene_col, mut_col, val_col, testtype='MannWhitney')
-    hypothesis_one(df_Inputs, edits_filedir, 
-                   screen_names, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
-    hypothesis_plot(edits_filedir, screen_names, testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1')
-    # MW AND KS TESTS HYPOTHESIS 2 #
-    hypothesis_two(df_Inputs, edits_filedir, 
-                   screen_names, gene_col, mut_col, val_col, testtype='MannWhitney')
-    hypothesis_two(df_Inputs, edits_filedir, 
-                   screen_names, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
-    hypothesis_plot(edits_filedir, screen_names, testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')
     
     # AGGREGATE ACROSS SCREENS FOR PLOTS #
     # MANN WHITNEY TEST #

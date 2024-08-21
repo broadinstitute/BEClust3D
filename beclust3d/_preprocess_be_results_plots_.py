@@ -106,21 +106,23 @@ def violin_plot(
 
     return means, stds, medians
 
-def counts_violin_by_gene(
+def counts_by_gene(
     df_inputs, 
-    gene_col, mut_col, val_col, 
-    edits_filedir, 
+    gene_col, mut_col, 
+    edits_filedir, title, 
 ): 
+    # FIND HOW MANY PLOTS NEEDED #
     unique_genes = []
     for df_input in df_inputs: 
         unique = df_input[gene_col].unique().tolist()
         unique_genes = list(set(unique_genes+unique))
+    plot_dim = math.ceil(math.sqrt(len(unique_genes)))
 
     # MUTATION COUNTS ACROSS SCREENS BY GENE #
     df_mutation_counts = pd.DataFrame(columns = ['Gene'] + mut_categories_spaced, index=[0])
     for idx, gene in enumerate(unique_genes): 
         res = [gene] + [0 for _ in range(len(mut_categories_spaced))]
-        for df_input in df_inputs: 
+        for df_input in df_inputs:  
             df_current_gene = df_input.loc[df_input[gene_col] == gene,]
             for j, mutcat in enumerate(mut_categories_spaced): 
                 res[j+1] += len(df_current_gene.loc[df_current_gene[mut_col] == mutcat, ])
@@ -129,21 +131,32 @@ def counts_violin_by_gene(
     df_plot = df_mutation_counts.melt("Gene", var_name="Mut Type", value_name="Count")
     # BARPLOT #
     sns.set_style("darkgrid")
-    plt.tight_layout()
     plot_dim = math.ceil(math.sqrt(len(unique_genes)))
     ax = sns.catplot(data=df_plot, kind="bar", col_wrap=plot_dim, 
-                     x="Mut Type", y="Count", hue="Mut Type", col="Gene", sharex = False )
+                     x="Mut Type", y="Count", hue="Mut Type", col="Gene", sharex = False)
     for ax in ax.axes.flat:
         for idx in range(len(ax.containers)):
             ax.bar_label(ax.containers[idx])
+    plt.suptitle(title)
 
     # SAVE BARPLOT #
     plotname = f"plots/barplot_count_by_muttype.pdf"
-    plt.savefig(edits_filedir / plotname, dpi=500)
+    plt.savefig(edits_filedir / plotname, dpi=300)
     del df_mutation_counts, df_plot
 
-    # VIOLIN PLOT SETUP #
+def violin_by_gene(
+    df_inputs, 
+    gene_col, mut_col, val_col, 
+    edits_filedir, title
+): 
+    # FIND HOW MANY PLOTS NEEDED #
+    unique_genes = []
+    for df_input in df_inputs: 
+        unique = df_input[gene_col].unique().tolist()
+        unique_genes = list(set(unique_genes+unique))
     plot_dim = math.ceil(math.sqrt(len(unique_genes)))
+    
+    # VIOLIN PLOT SETUP #
     fig, axes = plt.subplots(nrows=plot_dim, ncols=plot_dim, sharex=False, sharey=True, 
                              figsize=(19,17), gridspec_kw={'hspace':0.3, 'wspace':0.1})
 
@@ -151,7 +164,7 @@ def counts_violin_by_gene(
         df_gene = pd.DataFrame()
         # AGGREGATE OVER EVERY SCREEN #
         for df_input in df_inputs: 
-            df_current_gene = df_input.loc[df_input[gene_col] == gene,]
+            df_current_gene = df_input.loc[df_input[gene_col] == current_gene,]
 
             # ENSURE ALL MUTATION TYPES PRESENT #
             for mutcat in mut_categories_spaced: 
@@ -177,7 +190,8 @@ def counts_violin_by_gene(
         ax.axvline(df_gene[val_col].mean(), c="gray", linestyle="dashed")
         ax.scatter(y=range(len(Means)), x=Means, c="violet", alpha=.9) # MEANS #
         del df_gene
+    plt.suptitle(title)
 
     # SAVE VIOLIN #
     plotname = f"plots/violinplot_LFC_by_muttype.pdf"
-    plt.savefig(edits_filedir / plotname, dpi=500)
+    plt.savefig(edits_filedir / plotname, dpi=300)
