@@ -12,6 +12,7 @@ from pathlib import Path
 import numpy as np
 import os
 import re
+import warnings
 
 from _preprocess_be_results_plots_ import *
 
@@ -88,7 +89,8 @@ def parse_base_editing_results(
         df_InputGene = df_Input.loc[df_Input[gene_col] == input_gene, ]
         mut_dfs[screen_name] = {}
         for mut_cat in mut_categories: 
-            assert mut_cat in df_InputGene[mut_col].unique()
+            if not mut_cat in df_InputGene[mut_col].unique(): 
+                warnings.warn(f'{mut_cat} not in Dataframe')
 
         # NARROW DOWN TO EACH MUTATION TYPE #
         for mut in mut_categories: 
