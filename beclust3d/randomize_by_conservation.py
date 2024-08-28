@@ -48,7 +48,7 @@ def randomize_by_conservation(
     
     struc_consrv_filename =  f"screendata/{input_gene}_{structureid}_struc_consrv.tsv"
     if not os.path.exists(edits_filedir / struc_consrv_filename): 
-        warnings.warn(f"{missense_filename} does not exist")
+        warnings.warn(f"{struc_consrv_filename} does not exist")
         return None
     df_struc_consvr = pd.read_csv(edits_filedir / struc_consrv_filename, sep = "\t")
 
