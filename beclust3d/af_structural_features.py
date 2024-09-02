@@ -204,40 +204,41 @@ def parse_coord(
 def query_dssp(
     edits_filedir, af_filename, dssp_filename, 
 ): 
-    rest_url = 'https://www3.cmbi.umcn.nl/xssp/xssp/'
-    pdb_file_path = str(edits_filedir / af_filename)
-    files = {'file_': open(pdb_file_path, 'rb')}
+    if not os.path.exists(edits_filedir / dssp_filename): 
+        rest_url = 'https://www3.cmbi.umcn.nl/xssp/xssp/'
+        pdb_file_path = str(edits_filedir / af_filename)
+        files = {'file_': open(pdb_file_path, 'rb')}
 
-    url_create = f'{rest_url}api/create/pdb_file/dssp/'
-    r = requests.post(url_create, files=files)
-    r.raise_for_status()
-    job_id = json.loads(r.text)['id']
-    print(f'MKDSSP API Job ID is {job_id}')
-    print('Fetching job result ...')
-
-    ready = False
-    while not ready:
-        url_status = f'{rest_url}api/status/pdb_file/dssp/{job_id}/'
-        r = requests.get(url_status)
+        url_create = f'{rest_url}api/create/pdb_file/dssp/'
+        r = requests.post(url_create, files=files)
         r.raise_for_status()
-        status = json.loads(r.text)['status']
+        job_id = json.loads(r.text)['id']
+        print(f'MKDSSP API Job ID is {job_id}')
+        print('Fetching job result ...')
 
-        if status == 'SUCCESS':
-            ready = True
-        elif status in ['FAILURE', 'REVOKED']:
-            raise Exception(json.loads(r.text)['message'])
+        ready = False
+        while not ready:
+            url_status = f'{rest_url}api/status/pdb_file/dssp/{job_id}/'
+            r = requests.get(url_status)
+            r.raise_for_status()
+            status = json.loads(r.text)['status']
+
+            if status == 'SUCCESS':
+                ready = True
+            elif status in ['FAILURE', 'REVOKED']:
+                raise Exception(json.loads(r.text)['message'])
+            else:
+                time.sleep(5)
         else:
-            time.sleep(5)
-    else:
-        url_result = f'{rest_url}api/result/pdb_file/dssp/{job_id}/'
-        r = requests.get(url_result)
-        r.raise_for_status()
-        result = json.loads(r.text)['result']
+            url_result = f'{rest_url}api/result/pdb_file/dssp/{job_id}/'
+            r = requests.get(url_result)
+            r.raise_for_status()
+            result = json.loads(r.text)['result']
 
-    f = open(str(edits_filedir / dssp_filename), "w")
-    f.write(result)
-    f.close()
-    print('MKDSSP query complete.')
+        f = open(str(edits_filedir / dssp_filename), "w")
+        f.write(result)
+        f.close()
+        print('MKDSSP query complete.')
 
 def parse_dssp(
         edits_filedir, 
