@@ -189,7 +189,9 @@ def violin_by_gene(
         sns.violinplot(ax=ax, data=df_gene, x=val_col, y=mut_col, 
                        inner=None, hue=mut_col).set(title=current_gene) # VIOLIN PLOTS #
         ax.axvline(df_gene[val_col].mean(), c="gray", linestyle="dashed")
-        ax.scatter(y=range(len(Means)), x=Means, c="violet", alpha=.9) # MEANS #
+        # ax.scatter(y=range(len(Means)), x=Means, c="violet", alpha=.9) # MEANS #
+        ### need to make sure means match with violin
+        ### should organize genes/screens/mutations by alphabetical order in all cases
         del df_gene
     plt.suptitle(title)
 
