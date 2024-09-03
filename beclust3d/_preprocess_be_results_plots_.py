@@ -65,7 +65,7 @@ def mann_whitney_test(
     return df_muts, mannwhiteney_results
 
 def violin_plot(
-        df_muts, edits_filedir, input_gene, 
+        df_muts, edits_filedir, input_gene, screen_name, 
 ): 
     """
     Description
@@ -99,6 +99,7 @@ def violin_plot(
                     hue="LFC_direction", inner=None).set(title='LFC by Mutation Type')
     plt.axvline(df_muts["LFC"].mean(), c="gray", linestyle="dashed")
     plt.scatter(y=range(len(means)), x=means, c="violet", alpha=.9)
+    plt.suptitle(screen_name)
 
     plt.tight_layout()
     plotname = edits_filedir / f"plots/{input_gene}_LFC_dist_muttype.pdf"
