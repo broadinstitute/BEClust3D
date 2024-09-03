@@ -131,7 +131,7 @@ def counts_by_residue(
     ax = sns.barplot(x=df_struc_consvr['unipos'], y=counts, 
                      color='steelblue', edgecolor='steelblue')
     ax.set_ylabel(f"Count of {edit_type} Mutations")
-    ax.set_title(f"Count of {edit_type} Mutations Per Residue")
+    ax.set_title(f"Count of {edit_type} Mutations Per Residue {screen_name}")
     ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
     plt.xticks(np.arange(0, len(df_struc_consvr), 50), rotation = 90)
 
@@ -156,7 +156,7 @@ def scatterplot_by_residue(
     ax.axhline(1.0, c="blue", linestyle="--")
     ax.axhline(0.0, c="gray", linestyle="--")
     ax.set_ylabel(f"{edit_type} LFC Score")
-    ax.set_title(f'{edit_type} LFC Score By Residue')
+    ax.set_title(f'{edit_type} LFC Score By Residue {screen_name}')
     plt.xticks(np.arange(0, len(df_struc_consvr), 50), rotation = 90)
 
     scatter_filename = f"plots/{input_gene}_{screen_name}_{edit_type}_lfc_score_by_residue.pdf"
