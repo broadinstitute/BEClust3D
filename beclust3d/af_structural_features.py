@@ -457,7 +457,7 @@ def af_structural_features(
     af_filename = f"AF_{input_uniprot}.pdb"
     if len(user_pdb) > 0: # USER INPUT FOR ALPHAFOLD #
         assert os.path.isfile(user_pdb), f'{user_pdb} does not exist'
-        os.rename(user_pdb, af_filename)
+        os.rename(user_pdb, edits_filedir / af_filename)
     else: # QUERY DATABASE #
         query_af(edits_filedir, af_filename, structureid)
 
@@ -470,7 +470,7 @@ def af_structural_features(
     dssp_filename = f"{structureid}_processed.dssp"
     if len(user_dssp) > 0: # USER INPUT FOR DSSP #
         assert os.path.isfile(user_dssp), f'{user_dssp} does not exist'
-        os.rename(user_dssp, dssp_filename)
+        os.rename(user_dssp, edits_filedir / dssp_filename)
     else: # QUERY DATABASE #
         query_dssp(edits_filedir, af_filename, dssp_filename)
     alphafold_dssp_filename = f"{structureid}_processed.dssp"
