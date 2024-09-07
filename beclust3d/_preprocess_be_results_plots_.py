@@ -92,11 +92,12 @@ def violin_plot(
     means = df_muts.groupby('muttype')['LFC'].mean()
     stds = df_muts.groupby('muttype')['LFC'].std()
     medians = df_muts.groupby('muttype')['LFC'].median()
+    sorted_muttypes = sorted(means.sort_values().index.tolist())
 
     sns.violinplot(ax=ax[0], data=df_muts, x="LFC", y="muttype", 
-                    inner=None).set(title='LFC by Mutation Type')
+                   order=sorted_muttypes, inner=None).set(title='LFC by Mutation Type')
     sns.violinplot(ax=ax[1], data=df_muts, x="LFC", y="muttype", 
-                    hue="LFC_direction", inner=None).set(title='LFC by Mutation Type')
+                   order=sorted_muttypes, hue="LFC_direction", inner=None).set(title='LFC by Mutation Type')
     plt.axvline(df_muts["LFC"].mean(), c="gray", linestyle="dashed")
     plt.scatter(y=range(len(means)), x=means, c="violet", alpha=.9)
     plt.suptitle(screen_name)
@@ -112,20 +113,22 @@ def counts_by_gene(
     gene_col, mut_col, 
     edits_filedir, title, 
 ): 
+    mut_categories_spaced_sort = sorted(mut_categories_spaced)
     # FIND HOW MANY PLOTS NEEDED #
     unique_genes = []
     for df_input in df_inputs: 
         unique = df_input[gene_col].unique().tolist()
         unique_genes = list(set(unique_genes+unique))
     plot_dim = math.ceil(math.sqrt(len(unique_genes)))
+    unique_genes = sorted(unique_genes)
 
     # MUTATION COUNTS ACROSS SCREENS BY GENE #
-    df_mutation_counts = pd.DataFrame(columns = ['Gene'] + mut_categories_spaced, index=[0])
+    df_mutation_counts = pd.DataFrame(columns = ['Gene'] + mut_categories_spaced_sort, index=[0])
     for idx, gene in enumerate(unique_genes): 
-        res = [gene] + [0 for _ in range(len(mut_categories_spaced))]
+        res = [gene] + [0 for _ in range(len(mut_categories_spaced_sort))]
         for df_input in df_inputs:  
             df_current_gene = df_input.loc[df_input[gene_col] == gene,]
-            for j, mutcat in enumerate(mut_categories_spaced): 
+            for j, mutcat in enumerate(mut_categories_spaced_sort): 
                 res[j+1] += len(df_current_gene.loc[df_current_gene[mut_col] == mutcat, ])
         df_mutation_counts.loc[idx] = res
 
@@ -156,7 +159,9 @@ def violin_by_gene(
         unique = df_input[gene_col].unique().tolist()
         unique_genes = list(set(unique_genes+unique))
     plot_dim = math.ceil(math.sqrt(len(unique_genes)))
-    
+    unique_genes = sorted(unique_genes)
+    mut_categories_spaced_sort = sorted(mut_categories_spaced)
+
     # VIOLIN PLOT SETUP #
     fig, axes = plt.subplots(nrows=plot_dim, ncols=plot_dim, sharex=False, sharey=True, 
                              figsize=(19,17), gridspec_kw={'hspace':0.3, 'wspace':0.1})
@@ -168,7 +173,7 @@ def violin_by_gene(
             df_current_gene = df_input.loc[df_input[gene_col] == current_gene,]
 
             # ENSURE ALL MUTATION TYPES PRESENT #
-            for mutcat in mut_categories_spaced: 
+            for mutcat in mut_categories_spaced_sort: 
                 if mutcat not in df_current_gene[mut_col].unique():
                     df_temp = pd.DataFrame({val_col: [np.nan], mut_col: [mutcat]})
                     df_current_gene = pd.concat([df_current_gene, df_temp], ignore_index=True)
@@ -176,20 +181,21 @@ def violin_by_gene(
         del df_current_gene
 
         # CALC MEAN STD #
-        Means = df_gene.groupby(mut_col)[val_col].mean()
-        # STDs = df_gene.groupby(mut_col)[val_col].std()
-        # print(f"{current_gene}: Mean + STD")
-        # for mutcat in mut_categories_spaced: 
-        #     print(f"{mutcat}: {round(Means[mutcat], 3)} + {round(STDs[mutcat], 3)}")
+        filtered_df_gene = df_gene[df_gene[mut_col].isin(mut_categories_spaced_sort)]
+        Means = filtered_df_gene.groupby(mut_col)[val_col].mean()
+        STDs = filtered_df_gene.groupby(mut_col)[val_col].std()
+        print(f"{current_gene}: Mean + STD")
+        for mutcat in mut_categories_spaced_sort: 
+            print(f"{mutcat}: {round(Means[mutcat], 3)} + {round(STDs[mutcat], 3)}")
 
         # PLOT VIOLIN #
         ax = axes.flatten()[idx]
-        df_gene.loc[:, mut_col] = pd.Categorical(df_gene[mut_col], categories=mut_categories_spaced)
+        df_gene.loc[:, mut_col] = pd.Categorical(df_gene[mut_col], categories=mut_categories_spaced_sort)
         df_gene = df_gene.sort_values(by=[mut_col]).reset_index(drop=True)
         sns.violinplot(ax=ax, data=df_gene, x=val_col, y=mut_col, 
                        inner=None, hue=mut_col).set(title=current_gene) # VIOLIN PLOTS #
         ax.axvline(df_gene[val_col].mean(), c="gray", linestyle="dashed")
-        # ax.scatter(y=range(len(Means)), x=Means, c="violet", alpha=.9) # MEANS #
+        ax.scatter(y=range(len(Means)), x=Means, c="violet", alpha=.9) # MEANS #
         ### need to make sure means match with violin
         ### should organize genes/screens/mutations by alphabetical order in all cases
         del df_gene
