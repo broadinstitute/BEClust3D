@@ -420,6 +420,7 @@ def degree_of_burial(
 def af_structural_features(
         workdir, 
         input_gene, input_uniprot, structureid, 
+        user_uniprot='', user_pdb='', user_dssp='', 
 ): 
     """
     Description
@@ -446,11 +447,19 @@ def af_structural_features(
         os.mkdir(edits_filedir)
     
     out_fasta = edits_filedir / f"{input_gene}_{input_uniprot}.tsv"
-    uFasta_file = query_uniprot(edits_filedir, input_uniprot)
+    if len(user_uniprot) > 0: # USER INPUT FOR UNIPROT #
+        assert os.path.isfile(user_uniprot), f'{user_uniprot} does not exist'
+        uFasta_file = user_uniprot
+    else: # QUERY DATABASE #
+        uFasta_file = query_uniprot(edits_filedir, input_uniprot)
     parse_uniprot(uFasta_file, out_fasta)
 
     af_filename = f"AF_{input_uniprot}.pdb"
-    query_af(edits_filedir, af_filename, structureid)
+    if len(user_pdb) > 0: # USER INPUT FOR ALPHAFOLD #
+        assert os.path.isfile(user_pdb), f'{user_pdb} does not exist'
+        os.rename(user_pdb, af_filename)
+    else: # QUERY DATABASE #
+        query_af(edits_filedir, af_filename, structureid)
 
     fastalist_filename = f"{input_gene}_{input_uniprot}.tsv"
     af_processed_filename = f"{structureid}_processed.pdb"
@@ -459,7 +468,11 @@ def af_structural_features(
     parse_coord(edits_filedir, af_processed_filename, fastalist_filename, coord_filename)
 
     dssp_filename = f"{structureid}_processed.dssp"
-    query_dssp(edits_filedir, af_filename, dssp_filename)
+    if len(user_dssp) > 0: # USER INPUT FOR DSSP #
+        assert os.path.isfile(user_dssp), f'{user_dssp} does not exist'
+        os.rename(user_dssp, dssp_filename)
+    else: # QUERY DATABASE #
+        query_dssp(edits_filedir, af_filename, dssp_filename)
     alphafold_dssp_filename = f"{structureid}_processed.dssp"
     dssp_parsed_filename = f"{structureid}_dssp_parsed.tsv"
     parse_dssp(edits_filedir, alphafold_dssp_filename, fastalist_filename, dssp_parsed_filename)
