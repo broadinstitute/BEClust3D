@@ -418,7 +418,7 @@ def degree_of_burial(
 
 def af_structural_features(
         workdir, 
-        input_gene, input_uniprot, structureid, 
+        input_gene, input_uniprot, structureid, radius
 ): 
     """
     Description
@@ -464,7 +464,7 @@ def af_structural_features(
     parse_dssp(edits_filedir, alphafold_dssp_filename, fastalist_filename, dssp_parsed_filename)
 
     df_dssp = pd.read_csv(edits_filedir / dssp_parsed_filename, sep = '\t')
-    df_coord = count_aa_within_radius(edits_filedir, coord_filename)
+    df_coord = count_aa_within_radius(edits_filedir, coord_filename, radius=radius)
 
     coord_dssp_filename = f"{structureid}_coord_struc_features.tsv"
     df_coord_dssp = degree_of_burial(df_dssp, df_coord, edits_filedir, coord_dssp_filename)
