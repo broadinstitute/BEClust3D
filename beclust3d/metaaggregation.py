@@ -24,6 +24,7 @@ def metaaggregation(
     input_gene, structureid, 
     input_screens, 
     nRandom=1000, 
+    pthr=0.05, 
 ): 
     """
     Description
@@ -139,7 +140,6 @@ def metaaggregation(
                 {'mu':df_METAggregation['AVG_LFC3Dr_pos'].mean(), 
                 's':df_METAggregation['AVG_LFC3Dr_pos'].std()}]
     colnames = ['SUM_LFC3D_neg', 'SUM_LFC3D_pos']
-    pthr = 0.001
 
     for i in range(0, len(df_METAggregation)):
         # sensitizing and resistant
@@ -207,7 +207,7 @@ def metaaggregation(
         metaaggregation_scatterplot(
                 df_METAggregation, 
                 dis_col=dis, pval_col=pval, y_col=y,
-                filedir=edits_filedir, input_gene=input_gene, out_keyword=out,
+                filedir=edits_filedir, input_gene=input_gene, out_keyword=out, pthr=pthr, 
         )
     
     return df_METAggregation
@@ -269,7 +269,7 @@ def metaaggregation_histogram(
 
 def binning_lfc3d(
         df_METAggregation, 
-        colnames = ['SUM_LFC3D_neg', 'SUM_LFC3D_pos'],
+        colnames = ['SUM_LFC3D_neg', 'SUM_LFC3D_pos'], 
 ): 
     """
     Description
@@ -331,7 +331,7 @@ def metaaggregation_displot(
 def metaaggregation_scatterplot(
         df_METAggregation, 
         dis_col, pval_col, y_col, 
-        filedir, input_gene, out_keyword,
+        filedir, input_gene, out_keyword, pthr, 
 ): 
     """
     Description
@@ -339,7 +339,7 @@ def metaaggregation_scatterplot(
     """
 
     df_combined_clean = df_METAggregation.loc[df_METAggregation[dis_col] != '-', ]
-    df_combined_psig = df_METAggregation.loc[df_METAggregation[pval_col] == 'p<0.001', ]
+    df_combined_psig = df_METAggregation.loc[df_METAggregation[pval_col] == 'p<'+str(pthr), ]
     v_combined_psig_SUM_LFC3D_neg_max = max(df_combined_psig[y_col])
 
     plt.figure(figsize=(12, 8), dpi=300)
