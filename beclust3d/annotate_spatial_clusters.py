@@ -42,7 +42,7 @@ def clustering(
             'resistant':   {'name':'SUM_LFC3D_pos_psig', 'arr':[]}, }
     
     for key, val in hits.items(): 
-        df_META_temp = df_hits_clust.loc[(df_hits_clust[val['name']] == 'p<'+str(pthr), ]
+        df_META_temp = df_hits_clust.loc[(df_hits_clust[val['name']] == 'p<'+str(pthr)), ]
         df_META_temp = df_META_temp.reset_index(drop=True)
         dict_hits = {}
         dict_hits['unipos'] = list(df_META_temp['unipos'])
@@ -127,7 +127,7 @@ def clustering_distance(
     for name, col in names.items(): # for sensitizing and resistant
 
         df_META_hits_coord = pd.DataFrame()
-        df_META_temp = df_hits_clust.loc[(df_META[col] == 'p<'+str(pthr), ]
+        df_META_temp = df_hits_clust.loc[(df_META[col] == 'p<'+str(pthr)), ]
         df_META_temp = df_META_temp.reset_index(drop=True)
         df_META_hits_coord['x_coord'] = df_META_temp['x_coord']
         df_META_hits_coord['y_coord'] = df_META_temp['y_coord']
