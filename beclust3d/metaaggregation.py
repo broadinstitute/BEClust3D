@@ -15,16 +15,13 @@ import scipy.stats as stats
 from pathlib import Path
 from scipy.stats import mannwhitneyu
 import os
-from binning_lfc3d import binning
+from average_split_bin_lfc3d import binning
 import warnings
 
 def metaaggregation(
-    df_LFC_LFC3D,
-    workdir, 
-    input_gene, structureid, 
-    input_screens, 
-    nRandom=1000, 
-    pthr=0.05, 
+    df_LFC_LFC3D, workdir, 
+    input_gene, structureid, input_screens, 
+    nRandom=1000, pthr=0.05, 
 ): 
     """
     Description
@@ -52,7 +49,6 @@ def metaaggregation(
     """
     
     # Sum LFC3D #
-
     df_METAggregation = pd.DataFrame()
     df_METAggregation['unipos'] = df_LFC_LFC3D['unipos']
     df_METAggregation['unires'] = df_LFC_LFC3D['unires']
@@ -300,10 +296,8 @@ def binning_lfc3d(
     POS_90p_v, POS_95p_v = results[colnames[1]]['p1'], results[colnames[1]]['p2']
 
     for colname, df in zip(colnames, df_3daggr_list): 
-        arr_LFC3D_discrete, _ = binning(df_METAggregation, 
-                                        df_3daggr_neg_stats, df_3daggr_pos_stats, 
-                                        NEG_10p_v, POS_90p_v, NEG_05p_v, POS_95p_v, 
-                                        colname)
+        arr_LFC3D_discrete, _ = binning(df_METAggregation, df_3daggr_neg_stats, df_3daggr_pos_stats, 
+                                        [NEG_10p_v, POS_90p_v, NEG_05p_v, POS_95p_v], colname)
         df_METAggregation[colname+'_dis'] = arr_LFC3D_discrete
 
     return df_METAggregation
