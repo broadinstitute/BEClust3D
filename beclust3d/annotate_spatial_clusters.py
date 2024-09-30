@@ -22,7 +22,7 @@ def clustering(
         workdir, 
         input_gene, structureid, 
         i_affn='euclidean', i_link='single', n_clusters=None, 
-        max_distances=20, 
+        max_distances=20, pthr=0.05, 
 ):
 
     edits_filedir = Path(workdir + '/' + input_gene)
@@ -42,7 +42,7 @@ def clustering(
             'resistant':   {'name':'SUM_LFC3D_pos_psig', 'arr':[]}, }
     
     for key, val in hits.items(): 
-        df_META_temp = df_hits_clust.loc[(df_hits_clust[val['name']] == 'p<0.001'), ]
+        df_META_temp = df_hits_clust.loc[(df_hits_clust[val['name']] == 'p<'+str(pthr)), ]
         df_META_temp = df_META_temp.reset_index(drop=True)
         dict_hits = {}
         dict_hits['unipos'] = list(df_META_temp['unipos'])
@@ -108,7 +108,7 @@ def clustering_distance(
         df_struc_consvr, df_META, 
         thr_distance, 
         workdir, input_gene, input_uniprot, structureid, 
-        i_affn='euclidean', i_link='single', n_clusters=None,
+        i_affn='euclidean', i_link='single', n_clusters=None, pthr=0.05, 
 ):
     
     edits_filedir = Path(workdir + '/' + input_gene)
@@ -127,7 +127,7 @@ def clustering_distance(
     for name, col in names.items(): # for sensitizing and resistant
 
         df_META_hits_coord = pd.DataFrame()
-        df_META_temp = df_hits_clust.loc[(df_META[col] == 'p<0.001'), ]
+        df_META_temp = df_hits_clust.loc[(df_META[col] == 'p<'+str(pthr)), ]
         df_META_temp = df_META_temp.reset_index(drop=True)
         df_META_hits_coord['x_coord'] = df_META_temp['x_coord']
         df_META_hits_coord['y_coord'] = df_META_temp['y_coord']
@@ -154,7 +154,7 @@ def clustering_distance(
         # CLUSTER INDEX AND LENGTH
         hits_clust_filename = edits_filedir / f"cluster_LFC3D/{structureid}_MetaAggr_Hits_Clust_p_l001.tsv"
         df_META_hits_clust = pd.read_csv(hits_clust_filename, sep = '\t')
-        df_META_clust = df_META_hits_clust.loc[(df_META_hits_clust[col] == 'p<0.001'), ]
+        df_META_clust = df_META_hits_clust.loc[(df_META_hits_clust[col] == 'p<'+str(pthr)), ]
         df_META_clust = df_META_clust.reset_index(drop=True)
         clust_indices = df_META_clust[f'{name}_hit_clust_{str(int(thr_distance))}'].unique()
 
@@ -172,6 +172,7 @@ def plot_dendrogram(
         name
 ):
     
+    fig, ax = plt.subplots()
     # create the counts of samples under each node
     counts = np.zeros(clustering.children_.shape[0])
     n_samples = len(clustering.labels_)

@@ -328,6 +328,7 @@ def count_aa_within_radius(
             and which residues are within [radius] Angstroms
     """
 
+    print(radius)
     # COUNT AMINO ACIDS IN 6A DISTANCE AND TEIR IDENTITY #
     df_coord = pd.read_csv(edits_filedir / coord_filename, sep = "\t")
 
@@ -400,7 +401,8 @@ def degree_of_burial(
         # CALCULATE #
         sum_dBurial = 0
         for naa_pos in naa_pos_list: 
-            sum_dBurial += round(df_coord_dssp.at[int(naa_pos)-1, "dBurial"], 2)
+            if naa_pos != '': 
+                sum_dBurial += round(df_coord_dssp.at[int(naa_pos)-1, "dBurial"], 2)
         norm_sum_dBurial = round(sum_dBurial / len(naa_list), 2)
         aa_wise_cdBurial.append(round(norm_sum_dBurial * taa_dBurial, 3))
 
@@ -419,7 +421,7 @@ def degree_of_burial(
 
 def af_structural_features(
         workdir, 
-        input_gene, input_uniprot, structureid, 
+        input_gene, input_uniprot, structureid, radius=6.0, 
         user_uniprot='', user_pdb='', user_dssp='', 
 ): 
     """
@@ -448,16 +450,16 @@ def af_structural_features(
     
     out_fasta = edits_filedir / f"{input_gene}_{input_uniprot}.tsv"
     if len(user_uniprot) > 0: # USER INPUT FOR UNIPROT #
-        assert os.path.isfile(user_uniprot), f'{user_uniprot} does not exist'
-        uFasta_file = user_uniprot
+        assert os.path.isfile(edits_filedir / user_uniprot), f'{user_uniprot} does not exist'
+        uFasta_file = edits_filedir / user_uniprot
     else: # QUERY DATABASE #
         uFasta_file = query_uniprot(edits_filedir, input_uniprot)
     parse_uniprot(uFasta_file, out_fasta)
 
     af_filename = f"AF_{input_uniprot}.pdb"
     if len(user_pdb) > 0: # USER INPUT FOR ALPHAFOLD #
-        assert os.path.isfile(user_pdb), f'{user_pdb} does not exist'
-        os.rename(user_pdb, edits_filedir / af_filename)
+        assert os.path.isfile(edits_filedir / user_pdb), f'{user_pdb} does not exist'
+        os.rename(edits_filedir / user_pdb, edits_filedir / af_filename)
     else: # QUERY DATABASE #
         query_af(edits_filedir, af_filename, structureid)
 
@@ -469,8 +471,8 @@ def af_structural_features(
 
     dssp_filename = f"{structureid}_processed.dssp"
     if len(user_dssp) > 0: # USER INPUT FOR DSSP #
-        assert os.path.isfile(user_dssp), f'{user_dssp} does not exist'
-        os.rename(user_dssp, edits_filedir / dssp_filename)
+        assert os.path.isfile(edits_filedir / user_dssp), f'{user_dssp} does not exist'
+        os.rename(edits_filedir / user_dssp, edits_filedir / dssp_filename)
     else: # QUERY DATABASE #
         query_dssp(edits_filedir, af_filename, dssp_filename)
     alphafold_dssp_filename = f"{structureid}_processed.dssp"
@@ -478,7 +480,7 @@ def af_structural_features(
     parse_dssp(edits_filedir, alphafold_dssp_filename, fastalist_filename, dssp_parsed_filename)
 
     df_dssp = pd.read_csv(edits_filedir / dssp_parsed_filename, sep = '\t')
-    df_coord = count_aa_within_radius(edits_filedir, coord_filename)
+    df_coord = count_aa_within_radius(edits_filedir, coord_filename, radius=radius)
 
     coord_dssp_filename = f"{structureid}_coord_struc_features.tsv"
     df_coord_dssp = degree_of_burial(df_dssp, df_coord, edits_filedir, coord_dssp_filename)
