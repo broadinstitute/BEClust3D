@@ -328,7 +328,6 @@ def count_aa_within_radius(
             and which residues are within [radius] Angstroms
     """
 
-    print(radius)
     # COUNT AMINO ACIDS IN 6A DISTANCE AND TEIR IDENTITY #
     df_coord = pd.read_csv(edits_filedir / coord_filename, sep = "\t")
 

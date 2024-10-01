@@ -10,12 +10,12 @@ import pandas as pd
 from pathlib import Path
 import warnings
 import os
+from _average_split_bin_plots_ import *
 
-def average_and_split(
+def average_split_bin(
         df_LFC_LFCrN_LFC3D_LFC3DrN, 
-        workdir, 
-        input_gene, input_screens, 
-        nRandom=1000, 
+        workdir, input_gene, structureid, input_screens, 
+        nRandom=1000, pthr=0.05, 
 ): 
     """
     Description
@@ -51,7 +51,7 @@ def average_and_split(
     df_bidir['unipos'] = df_LFC_LFCrN_LFC3D_LFC3DrN['unipos']
     df_bidir['unires'] = df_LFC_LFCrN_LFC3D_LFC3DrN['unires']
     
-    for input_screen in input_screens: # for every screen individually
+    for input_screen in input_screens: # FOR EVERY SCREEN INDIVIDUALLY #
 
         screen_name = input_screen.split('.')[0]
         header_LFC = f"{screen_name}_LFC"
@@ -140,40 +140,49 @@ def average_and_split(
     out_filename = edits_filedir / f"LFC3D/{input_gene}_LFC_LFC3D_dis_wght_Signal_Only_per_Screen.tsv"
     df_LFC_LFC3D_dis.to_csv(out_filename, sep = '\t', index=False)
 
+    df_z = pd.DataFrame()
+    for input_screen in input_screens: # FOR EVERY SCREEN INDIVIDUALLY #
+        screen_name = input_screen.split('.')[0]
+
+        df_z['unipos'] = df_bidir['unipos']
+        df_z['unires'] = df_bidir['unires']
+        df_z[f'{screen_name}_SUM_LFC3D_neg'] = df_bidir[f'{screen_name}_LFC3D_neg']
+        df_z[f'{screen_name}_SUM_LFC3D_pos'] = df_bidir[f'{screen_name}_LFC3D_pos']
+        df_z[f'{screen_name}_AVG_LFC3Dr_neg'] = df_bidir[f'{screen_name}_AVG_LFC3Dr_neg']
+        df_z[f'{screen_name}_AVG_LFC3Dr_pos'] = df_bidir[f'{screen_name}_AVG_LFC3Dr_pos']
+
+        # CALCULATE Z SCORE #
+        colnames = [f'{screen_name}_SUM_LFC3D_neg', f'{screen_name}_SUM_LFC3D_pos']
+        params = [{'mu':df_bidir[f'{screen_name}_AVG_LFC3Dr_neg'].mean(), 's':df_bidir[f'{screen_name}_AVG_LFC3Dr_neg'].std()}, 
+                  {'mu':df_bidir[f'{screen_name}_AVG_LFC3Dr_pos'].mean(), 's':df_bidir[f'{screen_name}_AVG_LFC3Dr_pos'].std()} ]
+        lists_LFC3D = [{'z':[], 'p':[], 'lab':[]}, {'z':[], 'p':[], 'lab':[]}, ]
+
+        for i in range(0, len(df_z)):
+            for colname, param, lists in zip(colnames, params, lists_LFC3D): 
+                signal = float(df_z.at[i, colname])
+                if param['s'] == 0: 
+                    lists['z'].append(0)
+                    lists['p'].append(0)
+                    lists['lab'].append(0)
+                else: 
+                    signal_z = statistics.NormalDist(mu=param['mu'], sigma=param['s']).zscore(signal)
+                    signal_p = stats.norm.sf(abs(signal_z))
+                    signal_plabel = f'p<{str(pthr)}' if signal_p < pthr else f'p>={str(pthr)}'                
+                    lists['z'].append(signal_z)
+                    lists['p'].append(signal_p)
+                    lists['lab'].append(signal_plabel)
+
+        dict_z = {f'{screen_name}_SUM_LFC3D_neg_z':lists_LFC3D[0]['z'], f'{screen_name}_SUM_LFC3D_neg_p':lists_LFC3D[0]['p'], f'{screen_name}_SUM_LFC3D_neg_psig':lists_LFC3D[0]['lab'], 
+                  f'{screen_name}_SUM_LFC3D_pos_z':lists_LFC3D[1]['z'], f'{screen_name}_SUM_LFC3D_pos_p':lists_LFC3D[1]['p'], f'{screen_name}_SUM_LFC3D_pos_psig':lists_LFC3D[1]['lab'], }
+        df_z = pd.concat([df_z, pd.DataFrame(dict_z)], axis=1)
+        df_z.round(4)
+
+        # PLOTS #
+        LFC3D_plots(
+            df_z, edits_filedir, input_gene, pthr, screen_name+'_', 
+        )
+
+    filename = edits_filedir / f"LFC3D/{structureid}_NonAggr_LFC3D_and_randomized_background.tsv"
+    df_z.to_csv(filename, "\t", index=False)
+
     return df_bidir, df_LFC_LFC3D_dis
-
-
-def binning(
-        df_LFC_LFC3D, df_LFC3D_neg_stats, df_LFC3D_pos_stats, 
-        quantile_vals, LFC3D_header
-):
-    NEG_10p_v, POS_90p_v, NEG_05p_v, POS_95p_v = quantile_vals
-    # binning and weighting 
-    arr_LFC3D_discrete = []
-    arr_LFC3D_weight = []
-
-    for i in range(0, len(df_LFC_LFC3D)): 
-        LFC3D = df_LFC_LFC3D.at[i, LFC3D_header]
-        if LFC3D == '-' or LFC3D == 0.0:
-            LFC3D_discrete = '-'
-            LFC3D_weight = 0.0
-        else: 
-            LFC3Df = round(float(LFC3D), 3)
-            # aligned for better readability
-            if                               LFC3Df <= NEG_05p_v:                 LFC3D_discrete, LFC3D_weight = 'NEG_05p', -0.95
-            elif                 NEG_05p_v < LFC3Df <= NEG_10p_v:                 LFC3D_discrete, LFC3D_weight = 'NEG_10p', -0.9
-            elif                 NEG_10p_v < LFC3Df <= df_LFC3D_neg_stats['25%']: LFC3D_discrete, LFC3D_weight = 'NEG_25p', -0.75
-            elif df_LFC3D_neg_stats['25%'] < LFC3Df <= df_LFC3D_neg_stats['50%']: LFC3D_discrete, LFC3D_weight = 'NEG_50p', -0.5
-            elif df_LFC3D_neg_stats['50%'] < LFC3Df <= df_LFC3D_neg_stats['75%']: LFC3D_discrete, LFC3D_weight = 'NEG_75p', -0.25
-            elif df_LFC3D_neg_stats['75%'] < LFC3Df <= df_LFC3D_neg_stats['max']: LFC3D_discrete, LFC3D_weight = 'NEG_100p', -0.05
-            elif df_LFC3D_pos_stats['25%'] > LFC3Df >= df_LFC3D_pos_stats['min']: LFC3D_discrete, LFC3D_weight = 'POS_0p', 0.05
-            elif df_LFC3D_pos_stats['50%'] > LFC3Df >= df_LFC3D_pos_stats['25%']: LFC3D_discrete, LFC3D_weight = 'POS_25p', 0.25
-            elif df_LFC3D_pos_stats['75%'] > LFC3Df >= df_LFC3D_pos_stats['50%']: LFC3D_discrete, LFC3D_weight = 'POS_50p', 0.50
-            elif                 POS_90p_v > LFC3Df >= df_LFC3D_pos_stats['75%']: LFC3D_discrete, LFC3D_weight = 'POS_75p', 0.75
-            elif                 POS_95p_v > LFC3Df >= POS_90p_v:                 LFC3D_discrete, LFC3D_weight = 'POS_90p', 0.90
-            elif                             LFC3Df >= POS_95p_v:                 LFC3D_discrete, LFC3D_weight = 'POS_95p', 0.95
-
-        arr_LFC3D_discrete.append(LFC3D_discrete)
-        arr_LFC3D_weight.append(LFC3D_weight)
-
-    return arr_LFC3D_discrete, arr_LFC3D_weight
