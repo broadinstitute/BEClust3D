@@ -16,7 +16,7 @@ from randomize_by_conservation import randomize_by_conservation
 from calculate_lfc3d import calculate_lfc3d
 from average_split_bin_lfc3d import average_and_split
 from af_structural_features import af_structural_features
-from metaaggregation import metaaggregation
+from average_split_bin_metaaggregation import metaaggregation
 from annotate_spatial_clusters import clustering, clustering_distance
 
 # 4 is meta aggregating over multiple screens, also an optional function
