@@ -11,24 +11,24 @@ from pathlib import Path
 import os
 import statistics
 import warnings
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
+from scipy.stats import norm
 
-def prioritize_by_conservation(
-        df_struc, df_consrv, 
-        workdir, 
-        input_gene, input_screen, structureid, 
-        function_type='mean', 
+from _prioritize_by_sequence_plots_ import *
+
+def prioritize_by_sequence(
+    df_struc, df_consrv, df_nomutation, 
+    workdir, 
+    input_gene, input_screen, structureid, 
+    function_type='mean', 
 ): 
     """
     Description
         Takes in results across multiple edit types for a screen, and
-        aggregates the edits for each residue with conservation information. 
+        aggregates the edits for each residue with sequence and conservation information. 
 
     Params
         df_struc: pandas dataframe, required
-            DataFrame output from conservation()
+            DataFrame output from af_structural_features()
         df_consrv: pandas dataframe, required
             DataFrame output from conservation()
         workdir: str, required
@@ -90,12 +90,12 @@ def prioritize_by_conservation(
 
             if len(df_pos_edits) > 1: 
                 pos_LFCscore_list = df_pos_edits['LFC'].tolist()
-                unique_LFC_res = str(round(function(pos_LFCscore_list), 3))
+                unique_LFC_res = round(function(pos_LFCscore_list), 3)
 
                 pos_edits_list = df_pos_edits['this_edit'].tolist()
                 all_edits_res = ';'.join(list(set(pos_edits_list)))
             elif len(df_pos_edits) == 1:   
-                unique_LFC_res = str(round(df_pos_edits.at[0, 'LFC'], 3))
+                unique_LFC_res = round(df_pos_edits.at[0, 'LFC'], 3)
                 all_edits_res = df_pos_edits.at[0, 'this_edit']
             else:
                 unique_LFC_res, all_edits_res = '-', '-'
@@ -106,58 +106,65 @@ def prioritize_by_conservation(
         df_struc_consvr[f'mean_{edit_type}_LFC'] = arr_unique_LFC
         df_struc_consvr[f'all_{edit_type}_edits'] = arr_all_edits
 
+        # CALCULATE Z SCORE #
+
+        list_z_LFC, list_p_LFC, list_plab_LFC = [], [], []
+        # negative
+        df_nomutation_neg = df_nomutation.loc[df_nomutation['LFC'] < 0.0, ]
+        mu_neg = df_nomutation_neg['LFC'].mean()
+        sigma_neg = df_nomutation_neg['LFC'].std()
+        # positive
+        df_nomutation_pos = df_nomutation.loc[df_nomutation['LFC'] > 0.0, ]
+        mu_pos = df_nomutation_pos['LFC'].mean()
+        sigma_pos = df_nomutation_pos['LFC'].std()
+
+        for i in range(len(df_struc_consvr)):
+            LFC_raw = df_struc_consvr.at[i, f'mean_{edit_type}_LFC']
+
+            if LFC_raw == '-':
+                LFC, z_LFC, p_LFC, plab_LFC = 0.0, '-', 1.0, 'p=1.0'
+            else:
+                LFC = float(df_struc_consvr.at[i, f'mean_{edit_type}_LFC'])
+
+                if (LFC < 0.0):
+                    z_LFC = statistics.NormalDist(mu=mu_neg, sigma=sigma_neg).zscore(LFC)
+                    p_LFC = norm.sf(abs(z_LFC))
+                    if            z_LFC < -3.29: plab_LFC = '-p=0.001'
+                    elif -3.29 <= z_LFC < -2.58: plab_LFC = '-p=0.01'
+                    elif -2.58 <= z_LFC < -1.96: plab_LFC = '-p=0.05'
+                    elif -1.96 <= z_LFC < -1.65: plab_LFC = '-p=0.1'
+                    elif -1.65 <= z_LFC < -1.0:  plab_LFC = '-p=0.3'
+                    else:                        plab_LFC = '-p=1.0'
+
+                elif (LFC > 0.0):
+                    z_LFC = statistics.NormalDist(mu=mu_pos, sigma=sigma_pos).zscore(LFC)
+                    p_LFC = norm.sf(abs(z_LFC))
+                    if   3.29 < z_LFC:         plab_LFC = '+p=0.001'
+                    elif 2.58 < z_LFC <= 3.29: plab_LFC = '+p=0.01'
+                    elif 1.96 < z_LFC <= 2.58: plab_LFC = '+p=0.05'
+                    elif 1.65 < z_LFC <= 1.95: plab_LFC = '+p=0.1'
+                    elif  1.0 < z_LFC <= 1.65: plab_LFC = '+p=0.3'
+                    else:                      plab_LFC = '+p=1.0'
+
+                else: plab_LFC = 'p=1.0'
+
+            list_z_LFC.append(z_LFC)
+            list_p_LFC.append(p_LFC)
+            list_plab_LFC.append(plab_LFC)
+
+        df_struc_consvr[f'mean_{edit_type}_LFC_Z'] = list_z_LFC
+        df_struc_consvr[f'mean_{edit_type}_LFC_p'] = list_p_LFC
+        df_struc_consvr[f'mean_{edit_type}_LFC_plab'] = list_plab_LFC
+
         # PLOT SCATTERPLOT AND COUNTS PLOT #
         if edit_type == 'Missense': 
             counts_by_residue(df_struc_consvr, edits_filedir, input_gene, screen_name, edit_type, )
             scatterplot_by_residue(df_struc_consvr, edits_filedir, input_gene, screen_name, edit_type, function_type, )
+            scatterplot_by_residue(df_struc_consvr, edits_filedir, input_gene, screen_name, edit_type, function_type, input='_Z')
+            dual_scatterplot_by_residue(df_struc_consvr, input_gene, screen_name)
+            dual_histogram_by_residue(df_struc_consvr, input_gene, screen_name)
 
     strcons_edits_filename = f"screendata/{input_gene}_{screen_name}_struc_consrv_proteinedits.tsv"
     df_struc_consvr.to_csv(edits_filedir / strcons_edits_filename, sep = '\t', index=False)
 
     return df_struc_consvr
-
-
-def counts_by_residue(
-    df_struc_consvr, 
-    edits_filedir, input_gene, screen_name, 
-    edit_type, 
-): 
-    # PREP DATA #
-    counts = df_struc_consvr[f'all_{edit_type}_edits'].str.count(';').fillna(0).astype(int)+1
-    counts[df_struc_consvr[f'all_{edit_type}_edits'] == '-'] = 0
-
-    # PLOT #
-    plt.figure(figsize=(10, 4))
-    ax = sns.barplot(x=df_struc_consvr['unipos'], y=counts, 
-                     color='steelblue', edgecolor='steelblue')
-    ax.set_ylabel(f"Count of {edit_type} Mutations")
-    ax.set_title(f"Count of {edit_type} Mutations Per Residue {screen_name}")
-    ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
-    plt.xticks(np.arange(0, len(df_struc_consvr), 50), rotation = 90)
-
-    counts_filename = f"plots/{input_gene}_{screen_name}_num_{edit_type}_per_residue.pdf"
-    plt.savefig(edits_filedir / counts_filename, dpi=300)
-
-def scatterplot_by_residue(
-    df_struc_consvr, 
-    edits_filedir, input_gene, screen_name, 
-    edit_type, function_type, 
-): 
-    # PREP DATA #
-    x_list = df_struc_consvr['unipos'].tolist()
-    y_list = df_struc_consvr[f'{function_type}_{edit_type}_LFC'].tolist()
-    x_vals = [x for x, y in zip(x_list, y_list) if y!='-']
-    y_vals = [float(y) for y in y_list if y!='-']
-
-    # PLOT #
-    plt.figure(figsize=(10, 4))
-    ax = sns.scatterplot(x=x_vals, y=y_vals, color='steelblue', edgecolor='steelblue')
-    ax.axhline(-1.0, c="red", linestyle="--")
-    ax.axhline(1.0, c="blue", linestyle="--")
-    ax.axhline(0.0, c="gray", linestyle="--")
-    ax.set_ylabel(f"{edit_type} LFC Score")
-    ax.set_title(f'{edit_type} LFC Score By Residue {screen_name}')
-    plt.xticks(np.arange(0, len(df_struc_consvr), 50), rotation = 90)
-
-    scatter_filename = f"plots/{input_gene}_{screen_name}_{edit_type}_lfc_score_by_residue.pdf"
-    plt.savefig(edits_filedir / scatter_filename, dpi=300)

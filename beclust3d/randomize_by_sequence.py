@@ -12,14 +12,14 @@ import os
 import warnings
 import numpy as np
 
-def randomize_by_conservation(
+def randomize_by_sequence(
         workdir, 
         input_gene, input_screen, structureid, 
         nRandom=1000, 
 ): 
     """
     Description
-        Randomizes the scores weighted by structural conservation fom previous step
+        Randomizes the scores weighted by structural sequence and conservation fom previous step
 
     Params
         workdir: str, required
@@ -35,7 +35,7 @@ def randomize_by_conservation(
 
     Returns
         df_struc_consvr: pandas dataframe
-            a dataframe listing randomized structural conservation data
+            a dataframe listing randomized structural sequence and conservation data
     """
 
     screen_name = input_screen.split('.')[0]
