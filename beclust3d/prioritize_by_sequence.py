@@ -161,8 +161,8 @@ def prioritize_by_sequence(
             counts_by_residue(df_struc_consvr, edits_filedir, input_gene, screen_name, edit_type, )
             scatterplot_by_residue(df_struc_consvr, edits_filedir, input_gene, screen_name, edit_type, function_type, )
             scatterplot_by_residue(df_struc_consvr, edits_filedir, input_gene, screen_name, edit_type, function_type, input='_Z')
-            dual_scatterplot_by_residue(df_struc_consvr, input_gene, screen_name)
-            dual_histogram_by_residue(df_struc_consvr, input_gene, screen_name)
+            dual_scatterplot_by_residue(df_struc_consvr, edits_filedir, input_gene, screen_name)
+            dual_histogram_by_residue(df_struc_consvr, edits_filedir, input_gene, screen_name)
 
     strcons_edits_filename = f"screendata/{input_gene}_{screen_name}_struc_consrv_proteinedits.tsv"
     df_struc_consvr.to_csv(edits_filedir / strcons_edits_filename, sep = '\t', index=False)

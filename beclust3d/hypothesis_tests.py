@@ -11,23 +11,44 @@ from scipy.stats import ks_2samp
 
 mut_categories_spaced = ["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"]
 mut_categories_unspaced = [mc.replace(' ' , '_') for mc in mut_categories_spaced]
-# comparisons1 = [
-#     f'Nonsense_vs_Missense', f'Nonsense_vs_No_Mutation', f'Nonsense_vs_Silent', 
-#     f'Splice_Site_vs_Missense', f'Splice_Site_vs_No_Mutation', f'Splice_Site_vs_Silent', 
-#     f'Missense_vs_Splice_Site_Nonsense', f'No_Mutation_vs_Splice_Site_Nonsense', f'Silent_vs_Splice_Site_Nonsense', 
-#     f'Missense_vs_Silent_No_Mutation', f'Nonsense_vs_Silent_No_Mutation', f'Splice_Site_vs_Silent_No_Mutation', 
-#     f'No_Mutation_vs_Silent', 
-#     f'Nonsense_vs_Splice_Site', 
-#     f'Splice_Site_Nonsense_vs_Silent_No_Mutation', 
-# ]
-# comparisons2 = [
-#     f'Nonsense_vs_No_Mutation', f'Nonsense_vs_Silent', 
-#     f'Splice_Site_vs_No_Mutation', f'Splice_Site_vs_Silent', 
-#     f'No_Mutation_vs_Splice_Site_Nonsense', f'Silent_vs_Splice_Site_Nonsense', 
-#     f'Missense_vs_Silent_No_Mutation', f'Nonsense_vs_Silent_No_Mutation', f'Splice_Site_vs_Silent_No_Mutation', 
-#     f'No_Mutation_vs_Silent', 
-#     f'Splice_Site_Nonsense_vs_Silent_No_Mutation', 
-# ]
+
+def hypothesis_tests(
+    df_Inputs, workdir, 
+    input_gene, input_screens, 
+    cases, controls, comp_name, 
+    mut_col='Mutation category', val_col='logFC', gene_col='Target Gene Symbol', 
+): 
+    edits_filedir = Path(workdir)
+    edits_filedir = edits_filedir / input_gene
+    screen_names = [input_screen.split('.')[0] for input_screen in input_screens]
+
+    unique_genes = []
+    for df_input in df_Inputs: 
+        unique = df_input[gene_col].unique().tolist()
+        unique_genes = list(set(unique_genes+unique))
+
+    # AGGREGATE ACROSS SCREENS FOR HYPOTHESIS #
+    # MW AND KS TESTS HYPOTHESIS 1 #
+    hypothesis_one(df_Inputs, unique_genes, edits_filedir, cases, controls, comp_name, 
+                   screen_names, gene_col, mut_col, val_col, testtype='MannWhitney')
+    hypothesis_one(df_Inputs, unique_genes, edits_filedir, 
+                   cases, controls, comp_name, 
+                   screen_names, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
+    hypothesis_plot(edits_filedir, screen_names, 'screenid', 'gene_name', 
+                    testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1')
+    hypothesis_plot(edits_filedir, unique_genes, 'gene_name', 'screenid', 
+                    testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1')
+    # MW AND KS TESTS HYPOTHESIS 2 #
+    hypothesis_two(df_Inputs, unique_genes, edits_filedir, cases, controls, comp_name, 
+                   screen_names, gene_col, mut_col, val_col, testtype='MannWhitney')
+    hypothesis_two(df_Inputs, unique_genes, edits_filedir, 
+                   cases, controls, comp_name, 
+                   screen_names, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
+    hypothesis_plot(edits_filedir, screen_names, 'screenid', 'gene_name', 
+                    testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')
+    hypothesis_plot(edits_filedir, unique_genes, 'gene_name', 'screenid', 
+                    testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')
+
 
 def add_to_row(
     df1, df2, val_col, function
@@ -50,7 +71,9 @@ def hypothesis_plot(
         edits_filedir, category_names, cat_colname, hue_colname, testtype1, testtype2, 
         hypothesis, partial_col_header='Splice_Site_Nonsense_vs_Silent_No_Mutation', 
 ): 
+
     # SETUP PLOT BY NAME (SCREEN or GENE) #
+    plt.rcParams.update({'font.size': 8})
     fig, axes = plt.subplots(nrows=len(category_names), ncols=2, sharey=True, 
                              figsize=(12, 5*len(category_names)))
 
@@ -77,6 +100,16 @@ def hypothesis_plot(
         ax.set_ylabel(f'-log10({f"p_{partial_col_header}"})')
         ax.set_title(f'Hypothesis {hypothesis}: Mann-Whitney {name}')
 
+        # GRAY BACKGROUND #
+        ax.set_facecolor('#EBEBEB')
+        [ax.spines[side].set_visible(False) for side in ax.spines]
+        ax.grid(which='major', color='white', linewidth=0.5)
+        ax.set_axisbelow(True)
+
+        # LABELS #
+        ax.set_xlabel('MW U-Value')
+        ax.set_ylabel('MW -log(P-Value)')
+
     # PREP DATAFRAME KS #
     qc_filename = f"qc_validation/{testtype2}_hypothesis{hypothesis}.tsv"
     df_KS_input = pd.read_csv(edits_filedir / qc_filename, sep='\t')
@@ -95,7 +128,18 @@ def hypothesis_plot(
         ax.axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
         ax.set_title(f'Hypothesis {hypothesis}: Kolmogorov-Smirnov {name}')
 
+        # GRAY BACKGROUND #
+        ax.set_facecolor('#EBEBEB')
+        [ax.spines[side].set_visible(False) for side in ax.spines]
+        ax.grid(which='major', color='white', linewidth=0.5)
+        ax.set_axisbelow(True)
+
+        # LABELS #
+        ax.set_xlabel('KS D-Value')
+        ax.set_ylabel('KS -log(P-Value)')
+
     # SAVE PLOT #
+    plt.subplots_adjust(wspace=0.1)
     plt.tight_layout()
     plot_filename = f"plots/hypothesis{hypothesis}_scatterplot.pdf"
     plt.savefig(edits_filedir / plot_filename, dpi=500)
@@ -192,43 +236,3 @@ def hypothesis_two(
     df_output.to_csv(edits_filedir / qc_filename, sep = '\t', index=False)
 
     return df_output
-
-
-def hypothesis_tests(
-    df_Inputs, workdir, 
-    input_gene, input_screens, 
-    cases, controls, comp_name, 
-    mut_col='Mutation category', val_col='logFC', gene_col='Target Gene Symbol', 
-): 
-    edits_filedir = Path(workdir)
-    edits_filedir = edits_filedir / input_gene
-    screen_names = [input_screen.split('.')[0] for input_screen in input_screens]
-
-    unique_genes = []
-    for df_input in df_Inputs: 
-        unique = df_input[gene_col].unique().tolist()
-        unique_genes = list(set(unique_genes+unique))
-
-    # AGGREGATE ACROSS SCREENS FOR HYPOTHESIS #
-    # MW AND KS TESTS HYPOTHESIS 1 #
-    hypothesis_one(df_Inputs, unique_genes, edits_filedir, 
-                   cases, controls, comp_name, 
-                   screen_names, gene_col, mut_col, val_col, testtype='MannWhitney')
-    hypothesis_one(df_Inputs, unique_genes, edits_filedir, 
-                   cases, controls, comp_name, 
-                   screen_names, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
-    hypothesis_plot(edits_filedir, screen_names, 'screenid', 'gene_name', 
-                    testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1')
-    hypothesis_plot(edits_filedir, unique_genes, 'gene_name', 'screenid', 
-                    testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1')
-    # MW AND KS TESTS HYPOTHESIS 2 #
-    hypothesis_two(df_Inputs, unique_genes, edits_filedir, 
-                   cases, controls, comp_name, 
-                   screen_names, gene_col, mut_col, val_col, testtype='MannWhitney')
-    hypothesis_two(df_Inputs, unique_genes, edits_filedir, 
-                   cases, controls, comp_name, 
-                   screen_names, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
-    hypothesis_plot(edits_filedir, screen_names, 'screenid', 'gene_name', 
-                    testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')
-    hypothesis_plot(edits_filedir, unique_genes, 'gene_name', 'screenid', 
-                    testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')

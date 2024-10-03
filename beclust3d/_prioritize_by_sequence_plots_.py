@@ -67,7 +67,7 @@ def scatterplot_by_residue(
     plt.savefig(edits_filedir / scatter_filename, dpi=300)
 
 def dual_scatterplot_by_residue(
-    df_struc_consvr, input_gene, screen_name, edit_type='Missense', 
+    df_struc_consvr, edits_filedir, input_gene, screen_name, edit_type='Missense', 
 ): 
     df_struc_consvr = df_struc_consvr[df_struc_consvr[f'mean_{edit_type}_LFC'] != '-']
     df_struc_consvr_pos = df_struc_consvr[df_struc_consvr[f'mean_{edit_type}_LFC'] > 0.0]
@@ -95,12 +95,15 @@ def dual_scatterplot_by_residue(
                     y=f'mean_{edit_type}_LFC_Z', hue=f'mean_{edit_type}_LFC_plab', palette='tab10')
     axs[1].legend(bbox_to_anchor=(1.005, 1), loc='upper left', borderaxespad=0)
     axs[1].set_title(f'Negative LFC Values')
-    plt.subplots_adjust(wspace=0.1)
 
+    plt.subplots_adjust(wspace=0.1)
     plt.suptitle(f'{input_gene} LFC_Z Score {screen_name}')
 
+    scatter_filename = f"plots/{input_gene}_{screen_name}_{edit_type}_lfc_z_score_by_residue_posneg.pdf"
+    plt.savefig(edits_filedir / scatter_filename, dpi=300)
+
 def dual_histogram_by_residue(
-    df_struc_consvr, input_gene, screen_name, edit_type='Missense', 
+    df_struc_consvr, edits_filedir, input_gene, screen_name, edit_type='Missense', 
 ):  
     fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(12, 6))
     for ax in axs: 
@@ -120,3 +123,6 @@ def dual_histogram_by_residue(
     plot2.set_title(f'Negative LFC Counts')
     plt.suptitle(f'{input_gene} Mean Missense LFC Counts {screen_name}')
     plt.subplots_adjust(wspace=0.1)
+
+    hist_filename = f"plots/{input_gene}_{screen_name}_{edit_type}_lfc_score_by_bin_posneg.pdf"
+    plt.savefig(edits_filedir / hist_filename, dpi=300)

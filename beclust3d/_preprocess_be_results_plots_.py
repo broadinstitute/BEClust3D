@@ -29,13 +29,7 @@ def mann_whitney_test(
     Description
         A helper function to run the Mann Whitney test on
         'Missense', 'Silent', 'Nonsense', 'No Mutation'
-    Params
-        edits_filedir: Path, required
-            Path to working directory
-        screen_name: str, required
-            the name of the input screen parsed form the input file
-        input_gene: str, required
-            the name of the input gene
+
     Returns
         df_InputGene_edits_list: list of Pandas Dataframes
             A list of dataframes, for each category of mutations
@@ -70,15 +64,7 @@ def violin_plot(
     """
     Description
         Graph a violin plot of LFC distribution by category
-    Params
-        edits_filedir: Path, required
-            Path to working directory
-        screen_name: str, required
-            the name of the input screen parsed form the input file
-        input_gene: str, required
-            the name of the input gene
-        directional: bool, optional, default is False
-            Whether or not to include bidirectional data
+
     Returns
         means: list of floats
             List of means for each mutation category
@@ -87,6 +73,7 @@ def violin_plot(
         medians: list of floats
             List of medians for each mutation category
     """
+    plt.rcParams.update({'font.size': 10})
     fig, ax = plt.subplots(1, 2, figsize=(12,6))
 
     means = df_muts.groupby('muttype')['LFC'].mean()
@@ -100,10 +87,10 @@ def violin_plot(
                    order=sorted_muttypes, hue="LFC_direction", inner=None).set(title='LFC by Mutation Type')
     plt.axvline(df_muts["LFC"].mean(), c="gray", linestyle="dashed")
     plt.scatter(y=range(len(means)), x=means, c="violet", alpha=.9)
-    plt.suptitle(screen_name)
+    plt.suptitle(f'{screen_name}_{input_gene}')
 
     plt.tight_layout()
-    plotname = edits_filedir / f"plots/{input_gene}_LFC_dist_muttype.pdf"
+    plotname = edits_filedir / f"plots/{screen_name}_{input_gene}_LFC_dist_muttype.pdf"
     plt.savefig(plotname, dpi=300)
 
     return means, stds, medians
@@ -115,13 +102,13 @@ def counts_by_gene(
 ): 
     mut_categories_spaced_sort = sorted(mut_categories_spaced)
     # FIND HOW MANY PLOTS NEEDED #
-    unique_genes = []
+    unique_genes = set()
     for df_input in df_inputs: 
-        unique = df_input[gene_col].unique().tolist()
-        unique_genes = list(set(unique_genes+unique))
-    plot_dim = math.ceil(math.sqrt(len(unique_genes)))
+        unique_genes.update(df_input[gene_col].unique().tolist())
     unique_genes = sorted(unique_genes)
+    plot_dim = math.ceil(math.sqrt(len(unique_genes)))
 
+    plt.rcParams.update({'font.size': 12})
     # MUTATION COUNTS ACROSS SCREENS BY GENE #
     df_mutation_counts = pd.DataFrame(columns = ['Gene'] + mut_categories_spaced_sort, index=[0])
     for idx, gene in enumerate(unique_genes): 
@@ -135,16 +122,18 @@ def counts_by_gene(
     df_plot = df_mutation_counts.melt("Gene", var_name="Mut Type", value_name="Count")
     # BARPLOT #
     sns.set_style("darkgrid")
-    plot_dim = math.ceil(math.sqrt(len(unique_genes)))
     ax = sns.catplot(data=df_plot, kind="bar", col_wrap=plot_dim, 
                      x="Mut Type", y="Count", hue="Mut Type", col="Gene", sharex = False)
+    
     for ax in ax.axes.flat:
         for idx in range(len(ax.containers)):
             ax.bar_label(ax.containers[idx])
+            
+    plt.subplots_adjust(top=0.9)
     plt.suptitle(title)
 
     # SAVE BARPLOT #
-    plotname = f"plots/barplot_count_by_muttype.pdf"
+    plotname = f"plots/{title}_barplot_count_by_muttype.pdf"
     plt.savefig(edits_filedir / plotname, dpi=300)
     del df_mutation_counts, df_plot
 
@@ -153,18 +142,19 @@ def violin_by_gene(
     gene_col, mut_col, val_col, 
     edits_filedir, title
 ): 
-    # FIND HOW MANY PLOTS NEEDED #
-    unique_genes = []
-    for df_input in df_inputs: 
-        unique = df_input[gene_col].unique().tolist()
-        unique_genes = list(set(unique_genes+unique))
-    plot_dim = math.ceil(math.sqrt(len(unique_genes)))
-    unique_genes = sorted(unique_genes)
     mut_categories_spaced_sort = sorted(mut_categories_spaced)
+    # FIND HOW MANY PLOTS NEEDED #
+    unique_genes = set()
+    for df_input in df_inputs: 
+        unique_genes.update(df_input[gene_col].unique().tolist())
+    unique_genes = sorted(unique_genes)
+    plot_dim = math.ceil(math.sqrt(len(unique_genes)))
 
     # VIOLIN PLOT SETUP #
+    plt.rcParams.update({'font.size': 9})
     fig, axes = plt.subplots(nrows=plot_dim, ncols=plot_dim, sharex=False, sharey=True, 
                              figsize=(19,17), gridspec_kw={'hspace':0.3, 'wspace':0.1})
+    axes = axes.flatten()
 
     for idx, current_gene in enumerate(unique_genes): 
         df_gene = pd.DataFrame()
@@ -183,24 +173,23 @@ def violin_by_gene(
         # CALC MEAN STD #
         filtered_df_gene = df_gene[df_gene[mut_col].isin(mut_categories_spaced_sort)]
         Means = filtered_df_gene.groupby(mut_col)[val_col].mean()
-        STDs = filtered_df_gene.groupby(mut_col)[val_col].std()
-        print(f"{current_gene}: Mean + STD")
-        for mutcat in mut_categories_spaced_sort: 
-            print(f"{mutcat}: {round(Means[mutcat], 3)} + {round(STDs[mutcat], 3)}")
 
         # PLOT VIOLIN #
-        ax = axes.flatten()[idx]
         df_gene.loc[:, mut_col] = pd.Categorical(df_gene[mut_col], categories=mut_categories_spaced_sort)
         df_gene = df_gene.sort_values(by=[mut_col]).reset_index(drop=True)
-        sns.violinplot(ax=ax, data=df_gene, x=val_col, y=mut_col, 
+        sns.violinplot(ax=axes[idx], data=df_gene, x=val_col, y=mut_col, 
                        inner=None, hue=mut_col).set(title=current_gene) # VIOLIN PLOTS #
-        ax.axvline(df_gene[val_col].mean(), c="gray", linestyle="dashed")
-        ax.scatter(y=range(len(Means)), x=Means, c="violet", alpha=.9) # MEANS #
-        ### need to make sure means match with violin
-        ### should organize genes/screens/mutations by alphabetical order in all cases
+        axes[idx].axvline(df_gene[val_col].mean(), c="gray", linestyle="dashed")
+        axes[idx].scatter(y=range(len(Means)), x=Means, c="violet", alpha=.9) # MEANS #
         del df_gene
+    
+    # REMOVE UNUSSED AXES
+    for j in range(idx + 1, len(axes)):
+        axes[j].set_visible(False)
+
     plt.suptitle(title)
+    plt.subplots_adjust(top=0.9, wspace=0.1)
 
     # SAVE VIOLIN #
-    plotname = f"plots/violinplot_LFC_by_muttype.pdf"
+    plotname = f"plots/{title}_violinplot_LFC_by_muttype.pdf"
     plt.savefig(edits_filedir / plotname, dpi=300)
