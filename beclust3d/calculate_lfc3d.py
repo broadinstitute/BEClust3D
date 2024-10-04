@@ -50,7 +50,7 @@ def calculate_lfc3d(
     for input_screen in input_screens: # for every screen
 
         screen_name = input_screen.split('.')[0]
-        str_cons_filename = edits_filedir / f"randomized_screendata/{input_gene}_{screen_name}_struc_consrv_missenseedits_randomized.tsv"
+        str_cons_filename = edits_filedir / f"screendata/{input_gene}_{screen_name}_struc_consrv_proteinedits.tsv"
         if not os.path.exists(str_cons_filename): 
             warnings.warn(f"{str_cons_filename} does not exist")
             if len(input_screens) == 1: 
@@ -61,7 +61,7 @@ def calculate_lfc3d(
         taa_wise_norm_LFC = []
 
         for aa in range(0, len(df_str_cons_edits)): # for every residue
-            taa_naa_wBE_LFC, sum_taa_naa_LFC = helper(df_str_cons_edits, aa)
+            taa_naa_wBE_LFC, sum_taa_naa_LFC = helper(df_str_cons_edits, aa, lookup='mean_Missense_LFC')
             if taa_naa_wBE_LFC == 0:
                 taa_wise_norm_LFC.append('-')
             else: 
@@ -71,12 +71,20 @@ def calculate_lfc3d(
         df_str_cons_3daggr[f"{screen_name}_LFC_Z"] = df_str_cons_edits['mean_Missense_LFC_Z']
         df_str_cons_3daggr[f"{screen_name}_LFC3D"] = taa_wise_norm_LFC
     
+        str_cons_filename = edits_filedir / f"randomized_screendata/{input_gene}_{screen_name}_struc_consrv_missenseedits_randomized.tsv"
+        screen_name = input_screen.split('.')[0]
+        if not os.path.exists(str_cons_filename): 
+            warnings.warn(f"{str_cons_filename} does not exist")
+            if len(input_screens) == 1: 
+                return None
+            continue
+        df_str_cons_edits = pd.read_csv(str_cons_filename, sep = "\t")
         dict_temp = {}
         for r in range(0, nRandom):
             taa_wise_norm_LFC = []
 
             for aa in range(0, len(df_str_cons_edits)):
-                taa_naa_wBE_LFC, sum_taa_naa_LFC = helper(df_str_cons_edits, aa)
+                taa_naa_wBE_LFC, sum_taa_naa_LFC = helper(df_str_cons_edits, aa, lookup='mean_missense_LFC')
                 if taa_naa_wBE_LFC == 0:
                     taa_wise_norm_LFC.append('-')
                 else: 
@@ -94,7 +102,7 @@ def calculate_lfc3d(
     return df_str_cons_3daggr
 
 def helper(
-    df_str_cons_edits, aa
+    df_str_cons_edits, aa, lookup
 ): 
     taa_naa_wBE_LFC = 0
     sum_taa_naa_LFC = 0.0
@@ -103,19 +111,19 @@ def helper(
     # there are no residues nearby for low radius
     if not isinstance(naa_pos_str, float): 
         naa_pos_list = naa_pos_str.split(';') # neighboring residue positions
-        taa_LFC = df_str_cons_edits.at[aa, 'mean_missense_LFC'] # target LFC
+        taa_LFC = df_str_cons_edits.at[aa, lookup] # target LFC
 
         if taa_LFC != '-':
             taa_naa_wBE_LFC = 1
             sum_taa_naa_LFC = float(taa_LFC)
 
         for naa_pos in naa_pos_list: 
-            naa_LFC = df_str_cons_edits.at[int(naa_pos)-1, 'mean_missense_LFC']
+            naa_LFC = df_str_cons_edits.at[int(naa_pos)-1, lookup]
             if naa_LFC != '-': 
                 sum_taa_naa_LFC += float(naa_LFC)
                 taa_naa_wBE_LFC += 1
     else: 
-        taa_LFC = df_str_cons_edits.at[aa, 'mean_missense_LFC'] # target LFC
+        taa_LFC = df_str_cons_edits.at[aa, lookup] # target LFC
         if taa_LFC != '-':
             taa_naa_wBE_LFC = 1
             sum_taa_naa_LFC = float(taa_LFC)
