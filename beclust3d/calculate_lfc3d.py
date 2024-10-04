@@ -67,8 +67,8 @@ def calculate_lfc3d(
             else: 
                 taa_wise_norm_LFC.append(str(round(sum_taa_naa_LFC/taa_naa_wBE_LFC, 3)))
         
-        df_str_cons_3daggr[f"{screen_name}_LFC"] = df_str_cons_edits['mean_missense_LFC']
-        df_str_cons_3daggr[f"{screen_name}_LFC_Z"] = df_str_cons_edits['mean_missense_LFC_Z']
+        df_str_cons_3daggr[f"{screen_name}_LFC"] = df_str_cons_edits['mean_Missense_LFC']
+        df_str_cons_3daggr[f"{screen_name}_LFC_Z"] = df_str_cons_edits['mean_Missense_LFC_Z']
         df_str_cons_3daggr[f"{screen_name}_LFC3D"] = taa_wise_norm_LFC
     
         dict_temp = {}
@@ -103,19 +103,19 @@ def helper(
     # there are no residues nearby for low radius
     if not isinstance(naa_pos_str, float): 
         naa_pos_list = naa_pos_str.split(';') # neighboring residue positions
-        taa_LFC = df_str_cons_edits.at[aa, 'mean_missense_LFC'] # target LFC
+        taa_LFC = df_str_cons_edits.at[aa, 'mean_Missense_LFC'] # target LFC
 
         if taa_LFC != '-':
             taa_naa_wBE_LFC = 1
             sum_taa_naa_LFC = float(taa_LFC)
 
         for naa_pos in naa_pos_list: 
-            naa_LFC = df_str_cons_edits.at[int(naa_pos)-1, 'mean_missense_LFC']
+            naa_LFC = df_str_cons_edits.at[int(naa_pos)-1, 'mean_Missense_LFC']
             if naa_LFC != '-': 
                 sum_taa_naa_LFC += float(naa_LFC)
                 taa_naa_wBE_LFC += 1
     else: 
-        taa_LFC = df_str_cons_edits.at[aa, 'mean_missense_LFC'] # target LFC
+        taa_LFC = df_str_cons_edits.at[aa, 'mean_Missense_LFC'] # target LFC
         if taa_LFC != '-':
             taa_naa_wBE_LFC = 1
             sum_taa_naa_LFC = float(taa_LFC)
