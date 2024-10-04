@@ -67,8 +67,8 @@ def calculate_lfc3d(
             else: 
                 taa_wise_norm_LFC.append(str(round(sum_taa_naa_LFC/taa_naa_wBE_LFC, 3)))
         
-        df_str_cons_3daggr[f"{screen_name}_LFC"] = df_str_cons_edits['mean_Missense_LFC']
-        df_str_cons_3daggr[f"{screen_name}_LFC_Z"] = df_str_cons_edits['mean_Missense_LFC_Z']
+        df_str_cons_3daggr[f"{screen_name}_LFC"] = df_str_cons_edits['mean_missense_LFC']
+        df_str_cons_3daggr[f"{screen_name}_LFC_Z"] = df_str_cons_edits['mean_missense_LFC_Z']
         df_str_cons_3daggr[f"{screen_name}_LFC3D"] = taa_wise_norm_LFC
     
         dict_temp = {}

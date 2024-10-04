@@ -108,7 +108,7 @@ def counts_by_gene(
     unique_genes = sorted(unique_genes)
     plot_dim = math.ceil(math.sqrt(len(unique_genes)))
 
-    plt.rcParams.update({'font.size': 12})
+    plt.rcParams.update({'font.size': 10})
     # MUTATION COUNTS ACROSS SCREENS BY GENE #
     df_mutation_counts = pd.DataFrame(columns = ['Gene'] + mut_categories_spaced_sort, index=[0])
     for idx, gene in enumerate(unique_genes): 
