@@ -1,3 +1,11 @@
+"""
+File: .py
+Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+Date: 2024-06-25
+Description: Helper Functions for Prioritize by Average Split Bin LFC3D / Average Split Bin Metaaggregate
+
+"""
+
 import pandas as pd
 import seaborn as sns
 import matplotlib.pylab as plt
@@ -78,36 +86,43 @@ def binning_lfc3d(
 
     return df_meta
 
+
 def LFC3D_plots(
         df_Z, edits_filedir, input_gene, pthr, name='', 
 ): 
     # HISTOGRAMS #
-    histogram_params = [(name+'AVG_LFC3Dr_neg', name+'SUM_LFC3D_neg', 'sensitizing'), 
-                        (name+'AVG_LFC3Dr_pos', name+'SUM_LFC3D_pos', 'resistant'), ]
+    histogram_params = [(name+'AVG_LFC3Dr_neg', name+f'SUM_LFC3D_neg', 'Negative'), 
+                        (name+'AVG_LFC3Dr_pos', name+f'SUM_LFC3D_pos', 'Positive'), ]
     res_neg, res_pos = metaaggregation_histogram(
-        df_Z, histogram_params, edits_filedir, input_gene, )
+        df_Z, histogram_params, edits_filedir, input_gene, name=name, )
     if res_neg is None or res_pos is None: 
         return None
 
     df_Z = binning_lfc3d(df_Z, colnames=[name+'SUM_LFC3D_neg',name+'SUM_LFC3D_pos'],)
 
     # HISPLOTS #
-    hisplots_params = [(name+'SUM_LFC3D_neg_dis', name+'SUM_LFC3D_neg', name+'SUM_LFC3D_neg_psig', 'neg_pvalue'), 
-                       (name+'SUM_LFC3D_neg_dis', name+'SUM_LFC3D_neg', name+'SUM_LFC3D_neg_dis', 'neg_pvalue'), 
-                       (name+'SUM_LFC3D_pos_dis', name+'SUM_LFC3D_pos', name+'SUM_LFC3D_pos_psig', 'pos_pvalue'), 
-                       (name+'SUM_LFC3D_pos_dis', name+'SUM_LFC3D_pos', name+'SUM_LFC3D_pos_dis', 'pos_pvalue'), ]
+    hisplots_params = [(name+'SUM_LFC3D_neg_dis', name+f'SUM_LFC3D_neg', name+'SUM_LFC3D_neg_psig', 'Negative P-Value'), 
+                       (name+'SUM_LFC3D_neg_dis', name+f'SUM_LFC3D_neg', name+'SUM_LFC3D_neg_dis', 'Negative P-Value'), 
+                       (name+'SUM_LFC3D_pos_dis', name+f'SUM_LFC3D_pos', name+'SUM_LFC3D_pos_psig', 'Positive P-Value'), 
+                       (name+'SUM_LFC3D_pos_dis', name+f'SUM_LFC3D_pos', name+'SUM_LFC3D_pos_dis', 'Positive P-Value'), ]
     metaaggregation_hisplot(
-        df_Z, hisplots_params, filedir=edits_filedir, input_gene=input_gene, )
+        df_Z, hisplots_params, filedir=edits_filedir, input_gene=input_gene, name=name, )
 
     # SCATTERPLOT #
-    scatterplot_params = [(name+'SUM_LFC3D_neg_dis', name+'SUM_LFC3D_neg_psig', name+'SUM_LFC3D_neg', 'neg_dis'), 
-                          (name+'SUM_LFC3D_pos_dis', name+'SUM_LFC3D_pos_psig', name+'SUM_LFC3D_pos', 'pos_dis')]
+    scatterplot_params = [(name+'SUM_LFC3D_neg_dis', name+'SUM_LFC3D_neg_psig', name+f'SUM_LFC3D_neg', 'Negative'), 
+                          (name+'SUM_LFC3D_pos_dis', name+'SUM_LFC3D_pos_psig', name+f'SUM_LFC3D_pos', 'Positive')]
     metaaggregation_scatterplot(
-        df_Z, scatterplot_params, filedir=edits_filedir, input_gene=input_gene, pthr=pthr, )
+        df_Z, scatterplot_params, filedir=edits_filedir, input_gene=input_gene, pthr=pthr, name=name, )
+    
+    # Z SCORE SCATTERPLOT #
+    scatterplot_params = [(name+'SUM_LFC3D_neg_dis', name+'SUM_LFC3D_neg_dis', name+f'SUM_LFC3D_neg_z', 'Negative'), 
+                          (name+'SUM_LFC3D_pos_dis', name+'SUM_LFC3D_pos_dis', name+f'SUM_LFC3D_pos_z', 'Positive')]
+    metaaggregation_scatterplot(
+        df_Z, scatterplot_params, filedir=edits_filedir, input_gene=input_gene, pthr=pthr, name=name, colors=True, )
 
 
 def metaaggregation_histogram(
-        df_meta, params, filedir, input_gene, 
+        df_meta, params, filedir, input_gene, name, 
 ): 
     """
     Description
@@ -117,7 +132,6 @@ def metaaggregation_histogram(
     fig, ax = plt.subplots(1, 2, figsize=(16, 6), dpi=300)
     results_list = []
 
-    # avg_colname='AVG_LFC3Dr_neg', sum_colname='SUM_LFC3D_neg', out_keyword='sensitizing', 
     for i, (avg, sum, out) in enumerate(params): 
 
         results = {}
@@ -155,16 +169,22 @@ def metaaggregation_histogram(
         ax[i].set_xticks(np.arange(0,len(df_meta), 100))
         ax[i].set_title(out)
 
+        # SET BACKGROUND #
+        ax[i].set_facecolor('#EBEBEB')
+        [ax[i].spines[side].set_visible(False) for side in ax[i].spines]
+        ax[i].grid(which='major', color='white', linewidth=0.5)
+        ax[i].set_axisbelow(True)
+
         del temp, df_meta_plot
         results_list.append(results)
-
-    out_filename = filedir / f"plots/{input_gene}_signal_vs_background.png"
+    
+    plt.subplots_adjust(wspace=0.3)
+    out_filename = filedir / f"plots/{input_gene}_{name}_signal_vs_background.png"
     plt.savefig(out_filename, dpi=300)
     return results_list[0], results_list[1]
 
 def metaaggregation_hisplot(
-        df_meta, 
-        params, filedir, input_gene, 
+        df_meta, params, filedir, input_gene, name, 
 ): 
     """
     Description
@@ -179,11 +199,18 @@ def metaaggregation_hisplot(
         sns.histplot(df_combined_clean, x=x, hue=hue, bins=50, palette='tab10', ax=ax[i])
         ax[i].set_title(name)
 
-    out_name = filedir / f"plots/{input_gene}_Aggr_LFC3D_histogram.png"
+        # SET BACKGROUND #
+        ax[i].set_facecolor('#EBEBEB')
+        [ax[i].spines[side].set_visible(False) for side in ax[i].spines]
+        ax[i].grid(which='major', color='white', linewidth=0.5)
+        ax[i].set_axisbelow(True)
+
+    plt.subplots_adjust(wspace=0.3)
+    out_name = filedir / f"plots/{input_gene}_{name}_Aggr_LFC3D_histogram.png"
     plt.savefig(out_name, dpi=300) 
 
 def metaaggregation_scatterplot(
-        df_meta, params, filedir, input_gene, pthr, 
+        df_meta, params, filedir, input_gene, pthr, name, colors=False, 
 ): 
     """
     Description
@@ -194,17 +221,36 @@ def metaaggregation_scatterplot(
     for i, (dis, pval, y, out) in enumerate(params): 
 
         df_combined_clean = df_meta.loc[df_meta[dis] != '-', ]
-        df_combined_psig = df_meta.loc[df_meta[pval] == 'p<'+str(pthr), ]
-        if 'pos' in dis: 
-            v_combined_psig_SUM_LFC3D = min(df_combined_psig[y])
-        if 'neg' in dis: 
-            v_combined_psig_SUM_LFC3D = max(df_combined_psig[y])
+        if colors: # MULTIPLE COLORS
+            if 'pos' in dis: 
+                ax[i].axhline(y = 1.65, color = 'r', linestyle = '--')
+                ax[i].axhline(y = 1.96, color = 'r', linestyle = '--')
+                ax[i].axhline(y = 2.58, color = 'r', linestyle = '--')
+            if 'neg' in dis: 
+                ax[i].axhline(y = -1.65, color = 'r', linestyle = '--')
+                ax[i].axhline(y = -1.96, color = 'r', linestyle = '--')
+                ax[i].axhline(y = -2.58, color = 'r', linestyle = '--')
+            sns.scatterplot(data=df_combined_clean, x="unipos", y=y, hue=pval, palette='tab10', ax=ax[i])
 
-        sns.scatterplot(data=df_combined_clean, x="unipos", y=y, hue=pval, palette='tab10', ax=ax[i])
+        else: # 2 COLORS #
+            df_combined_psig = df_meta.loc[df_meta[pval] == 'p<'+str(pthr), ]
+            if 'pos' in dis: 
+                v_combined_psig_SUM_LFC3D = min(df_combined_psig[y])
+            if 'neg' in dis: 
+                v_combined_psig_SUM_LFC3D = max(df_combined_psig[y])
+            ax[i].axhline(y = v_combined_psig_SUM_LFC3D, color = 'r', linestyle = '--')
+            sns.scatterplot(data=df_combined_clean, x="unipos", y=y, hue=pval, palette='tab10', ax=ax[i])
+
         ax[i].legend(bbox_to_anchor=(1.005, 1), loc='upper left', borderaxespad=0)
-        ax[i].axhline(y = v_combined_psig_SUM_LFC3D, color = 'r', linestyle = '--')
         ax[i].set_xticks(np.arange(0, len(df_meta), 100))
         ax[i].set_title(out)
 
-    outname = filedir / f"plots/{input_gene}_Aggr_LFC3D_dot_per_residue.png"
+        # SET BACKGROUND #
+        ax[i].set_facecolor('#EBEBEB')
+        [ax[i].spines[side].set_visible(False) for side in ax[i].spines]
+        ax[i].grid(which='major', color='white', linewidth=0.5)
+        ax[i].set_axisbelow(True)
+
+    plt.subplots_adjust(wspace=0.3)
+    outname = filedir / f"plots/{input_gene}_{name}_Aggr_LFC3D_dot_per_residue.png"
     plt.savefig(outname, dpi=300)

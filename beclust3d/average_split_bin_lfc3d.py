@@ -178,11 +178,9 @@ def average_split_bin(
         df_z.round(4)
 
         # PLOTS #
-        LFC3D_plots(
-            df_z, edits_filedir, input_gene, pthr, screen_name+'_', 
-        )
+        LFC3D_plots(df_z, edits_filedir, input_gene, pthr, screen_name+'_', )
 
     filename = edits_filedir / f"LFC3D/{structureid}_NonAggr_LFC3D_and_randomized_background.tsv"
     df_z.to_csv(filename, "\t", index=False)
 
-    return df_bidir, df_LFC_LFC3D_dis
+    return df_bidir, df_LFC_LFC3D_dis, df_z

@@ -163,10 +163,9 @@ def metaaggregation(
 
     filename = edits_filedir / f"metaaggregation/{structureid}_MetaAggr_LFC3D_and_randomized_background.tsv"
     df_meta_Z.to_csv(filename, "\t", index=False)
-
-    LFC3D_plots(
-        df_meta_Z, edits_filedir, input_gene, pthr, 
-    )
     
+    # PLOTS #
+    LFC3D_plots(df_meta_Z, edits_filedir, input_gene, pthr, )
+
     return df_meta_Z
     

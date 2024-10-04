@@ -155,6 +155,7 @@ def prioritize_by_sequence(
         df_struc_consvr[f'mean_{edit_type}_LFC_Z'] = list_z_LFC
         df_struc_consvr[f'mean_{edit_type}_LFC_p'] = list_p_LFC
         df_struc_consvr[f'mean_{edit_type}_LFC_plab'] = list_plab_LFC
+        df_struc_consvr.round(4)
 
         # PLOT SCATTERPLOT AND COUNTS PLOT #
         if edit_type == 'Missense': 
