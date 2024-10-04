@@ -96,7 +96,7 @@ def dual_scatterplot_by_residue(
     axs[1].legend(bbox_to_anchor=(1.005, 1), loc='upper left', borderaxespad=0)
     axs[1].set_title(f'Negative LFC Values')
 
-    plt.subplots_adjust(wspace=0.1)
+    plt.subplots_adjust(wspace=0.3)
     plt.suptitle(f'{input_gene} LFC_Z Score {screen_name}')
 
     scatter_filename = f"plots/{input_gene}_{screen_name}_{edit_type}_lfc_z_score_by_residue_posneg.pdf"
