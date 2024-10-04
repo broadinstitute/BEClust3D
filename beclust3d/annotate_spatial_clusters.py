@@ -81,7 +81,7 @@ def clustering(
     # PLOT #
     cluster_distance_filename = edits_filedir / f"cluster_LFC3D/{structureid}_MetaAggr_Hits_Clust_Dist_Stat_pl001.tsv"
     plot_cluster_distance(arr_d_thr, [hits['negative']['arr'], hits['positive']['arr']], 
-                          cluster_distance_filename, edits_filedir)
+                          cluster_distance_filename, edits_filedir, input_gene, screen_name, )
 
     return arr_d_thr, (hits['negative']['arr'], hits['positive']['arr'])
 
@@ -105,8 +105,8 @@ def clustering_distance(
     df_hits_clust["z_coord"] = df_struc_consvr["z_coord"]
 
     ### kinda convoluted
-    names = {'negative' :'_'.join([screen_name, 'SUM_LFC3D_neg_psig']).strip('_'), 
-             'positive' :'_'.join([screen_name, 'SUM_LFC3D_pos_psig']).strip('_') }
+    names = {'Negative' :'_'.join([screen_name, 'SUM_LFC3D_neg_psig']).strip('_'), 
+             'Positive' :'_'.join([screen_name, 'SUM_LFC3D_pos_psig']).strip('_') }
     for name, col in names.items(): # for sensitizing and resistant
 
         df_pvals_hits_coord = pd.DataFrame()
@@ -129,7 +129,7 @@ def clustering_distance(
         print(f'Number of clusters of {name} hits:', n_c_output)
 
         dendogram_filename = edits_filedir / f"plots/{input_gene}_{input_uniprot}_{name}_hits_Dendogram_p_l001_{str(int(thr_distance))}A.png"
-        fig = plot_dendrogram(clustering, df_pvals_temp, dendogram_filename, name)
+        fig = plot_dendrogram(clustering, df_pvals_temp, dendogram_filename, name, input_gene, )
         plt.savefig(dendogram_filename, dpi = 300)
         plt.show()
 
@@ -138,6 +138,7 @@ def clustering_distance(
         df_pvals_hits_clust = pd.read_csv(hits_clust_filename, sep = '\t')
         df_pvals_clust = df_pvals_hits_clust.loc[(df_pvals_hits_clust[col] == 'p<'+str(pthr)), ]
         df_pvals_clust = df_pvals_clust.reset_index(drop=True)
+        name = name.lower()
         clust_indices = df_pvals_clust[f'{name}_hit_clust_{str(int(thr_distance))}'].unique()
 
         for c in clust_indices: 
@@ -150,7 +151,7 @@ def clustering_distance(
 
 
 def plot_cluster_distance(
-        x, ys, out_filename, edits_filedir, 
+        x, ys, out_filename, edits_filedir, input_gene, screen_name, 
 ): 
     dist_stat = pd.DataFrame()
     dist_stat['cluster_distance'] = x
@@ -164,12 +165,12 @@ def plot_cluster_distance(
 
     plt.xlabel('Cluster Radius')
     plt.ylabel('Number of Clusters')
-    plt.title('Positive vs Negative clusters')
-    plt.savefig(edits_filedir / f"cluster_LFC3D/cluster_distance.png") 
+    plt.title(f'Positive vs Negative Clusters {input_gene}')
+    plt.savefig(edits_filedir / f"cluster_LFC3D/{input_gene}_{screen_name}_cluster_distance.png") 
     dist_stat.to_csv(out_filename, sep = '\t', index=False)
 
 def plot_dendrogram(
-        clustering, df, dendogram_filename, name
+        clustering, df, dendogram_filename, name, input_gene, 
 ):
     
     fig, ax = plt.subplots()
@@ -193,5 +194,5 @@ def plot_dendrogram(
     # plot the corresponding dendrogram
     dendrogram(linkage_matrix, color_threshold=6.0, 
                labels=xlbl, leaf_rotation=90.)
-    plt.title(f'{name} Clusters')
+    plt.title(f'{input_gene} {name} Clusters')
     plt.savefig(dendogram_filename, dpi=300) 
