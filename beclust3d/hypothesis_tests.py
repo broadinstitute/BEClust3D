@@ -144,6 +144,8 @@ def hypothesis_plot(
     plot_filename = f"plots/hypothesis{hypothesis}_scatterplot.pdf"
     plt.savefig(edits_filedir / plot_filename, dpi=500)
 
+    return df_MW_input, df_KS_input
+
 
 # HYPOTHESIS 1: There is a significant difference in the signal (LFC) #
 # between knockout (nonsense/splice) mutations and none (silent/no mutations) per screen, per gene #
