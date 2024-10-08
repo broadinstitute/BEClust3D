@@ -75,7 +75,7 @@ def clustering(
         df_hits_clust = df_hits_clust.merge(pd.DataFrame(dict_hits), how='left', on=['unipos'])
 
     df_hits_clust.fillna('-')
-    hits_clust_filename = edits_filedir / f"cluster_LFC3D/{structureid}_MetaAggr_Hits_Clust_p_l001.tsv"
+    hits_clust_filename = edits_filedir / f"cluster_LFC3D/{structureid}_{screen_name}_MetaAggr_Hits_Clust_p_l001.tsv"
     df_hits_clust.to_csv(hits_clust_filename, sep='\t', index=False)
 
     # PLOT #
@@ -134,7 +134,7 @@ def clustering_distance(
         plt.show()
 
         # CLUSTER INDEX AND LENGTH
-        hits_clust_filename = edits_filedir / f"cluster_LFC3D/{structureid}_MetaAggr_Hits_Clust_p_l001.tsv"
+        hits_clust_filename = edits_filedir / f"cluster_LFC3D/{structureid}_{name}_Aggr_Hits_Clust_p_l001.tsv"
         df_pvals_hits_clust = pd.read_csv(hits_clust_filename, sep = '\t')
         df_pvals_clust = df_pvals_hits_clust.loc[(df_pvals_hits_clust[col] == 'p<'+str(pthr)), ]
         df_pvals_clust = df_pvals_clust.reset_index(drop=True)

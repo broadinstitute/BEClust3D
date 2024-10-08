@@ -29,9 +29,9 @@ def hypothesis_tests(
 
     # AGGREGATE ACROSS SCREENS FOR HYPOTHESIS #
     # MW AND KS TESTS HYPOTHESIS 1 #
-    hypothesis_one(df_Inputs, unique_genes, edits_filedir, cases, controls, comp_name, 
+    df_MW1_input = hypothesis_one(df_Inputs, unique_genes, edits_filedir, cases, controls, comp_name, 
                    screen_names, gene_col, mut_col, val_col, testtype='MannWhitney')
-    hypothesis_one(df_Inputs, unique_genes, edits_filedir, 
+    df_KS1_input = hypothesis_one(df_Inputs, unique_genes, edits_filedir, 
                    cases, controls, comp_name, 
                    screen_names, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
     hypothesis_plot(edits_filedir, screen_names, 'screenid', 'gene_name', 
@@ -39,15 +39,17 @@ def hypothesis_tests(
     hypothesis_plot(edits_filedir, unique_genes, 'gene_name', 'screenid', 
                     testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1')
     # MW AND KS TESTS HYPOTHESIS 2 #
-    hypothesis_two(df_Inputs, unique_genes, edits_filedir, cases, controls, comp_name, 
+    df_MW2_input = hypothesis_two(df_Inputs, unique_genes, edits_filedir, cases, controls, comp_name, 
                    screen_names, gene_col, mut_col, val_col, testtype='MannWhitney')
-    hypothesis_two(df_Inputs, unique_genes, edits_filedir, 
+    df_KS2_input = hypothesis_two(df_Inputs, unique_genes, edits_filedir, 
                    cases, controls, comp_name, 
                    screen_names, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
     hypothesis_plot(edits_filedir, screen_names, 'screenid', 'gene_name', 
                     testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')
     hypothesis_plot(edits_filedir, unique_genes, 'gene_name', 'screenid', 
                     testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')
+    
+    return df_MW1_input, df_MW2_input, df_KS1_input, df_KS2_input
 
 
 def add_to_row(
@@ -143,8 +145,6 @@ def hypothesis_plot(
     plt.tight_layout()
     plot_filename = f"plots/hypothesis{hypothesis}_scatterplot.pdf"
     plt.savefig(edits_filedir / plot_filename, dpi=500)
-
-    return df_MW_input, df_KS_input
 
 
 # HYPOTHESIS 1: There is a significant difference in the signal (LFC) #
