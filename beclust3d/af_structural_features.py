@@ -480,6 +480,7 @@ def af_structural_features(
 
     df_dssp = pd.read_csv(edits_filedir / dssp_parsed_filename, sep = '\t')
     df_coord = count_aa_within_radius(edits_filedir, coord_filename, radius=radius)
+    df_coord = count_aa_within_radius(edits_filedir, coord_filename, radius=radius)
 
     coord_dssp_filename = f"{structureid}_coord_struc_features.tsv"
     df_coord_dssp = degree_of_burial(df_dssp, df_coord, edits_filedir, coord_dssp_filename)
