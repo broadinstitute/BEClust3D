@@ -204,40 +204,41 @@ def parse_coord(
 def query_dssp(
     edits_filedir, af_filename, dssp_filename, 
 ): 
-    rest_url = 'https://www3.cmbi.umcn.nl/xssp/xssp/'
-    pdb_file_path = str(edits_filedir / af_filename)
-    files = {'file_': open(pdb_file_path, 'rb')}
+    if not os.path.exists(edits_filedir / dssp_filename): 
+        rest_url = 'https://www3.cmbi.umcn.nl/xssp/xssp/'
+        pdb_file_path = str(edits_filedir / af_filename)
+        files = {'file_': open(pdb_file_path, 'rb')}
 
-    url_create = f'{rest_url}api/create/pdb_file/dssp/'
-    r = requests.post(url_create, files=files)
-    r.raise_for_status()
-    job_id = json.loads(r.text)['id']
-    print(f'MKDSSP API Job ID is {job_id}')
-    print('Fetching job result ...')
-
-    ready = False
-    while not ready:
-        url_status = f'{rest_url}api/status/pdb_file/dssp/{job_id}/'
-        r = requests.get(url_status)
+        url_create = f'{rest_url}api/create/pdb_file/dssp/'
+        r = requests.post(url_create, files=files)
         r.raise_for_status()
-        status = json.loads(r.text)['status']
+        job_id = json.loads(r.text)['id']
+        print(f'MKDSSP API Job ID is {job_id}')
+        print('Fetching job result ...')
 
-        if status == 'SUCCESS':
-            ready = True
-        elif status in ['FAILURE', 'REVOKED']:
-            raise Exception(json.loads(r.text)['message'])
+        ready = False
+        while not ready:
+            url_status = f'{rest_url}api/status/pdb_file/dssp/{job_id}/'
+            r = requests.get(url_status)
+            r.raise_for_status()
+            status = json.loads(r.text)['status']
+
+            if status == 'SUCCESS':
+                ready = True
+            elif status in ['FAILURE', 'REVOKED']:
+                raise Exception(json.loads(r.text)['message'])
+            else:
+                time.sleep(5)
         else:
-            time.sleep(5)
-    else:
-        url_result = f'{rest_url}api/result/pdb_file/dssp/{job_id}/'
-        r = requests.get(url_result)
-        r.raise_for_status()
-        result = json.loads(r.text)['result']
+            url_result = f'{rest_url}api/result/pdb_file/dssp/{job_id}/'
+            r = requests.get(url_result)
+            r.raise_for_status()
+            result = json.loads(r.text)['result']
 
-    f = open(str(edits_filedir / dssp_filename), "w")
-    f.write(result)
-    f.close()
-    print('MKDSSP query complete.')
+        f = open(str(edits_filedir / dssp_filename), "w")
+        f.write(result)
+        f.close()
+        print('MKDSSP query complete.')
 
 def parse_dssp(
         edits_filedir, 
@@ -399,7 +400,8 @@ def degree_of_burial(
         # CALCULATE #
         sum_dBurial = 0
         for naa_pos in naa_pos_list: 
-            sum_dBurial += round(df_coord_dssp.at[int(naa_pos)-1, "dBurial"], 2)
+            if naa_pos != '': 
+                sum_dBurial += round(df_coord_dssp.at[int(naa_pos)-1, "dBurial"], 2)
         norm_sum_dBurial = round(sum_dBurial / len(naa_list), 2)
         aa_wise_cdBurial.append(round(norm_sum_dBurial * taa_dBurial, 3))
 
@@ -418,7 +420,8 @@ def degree_of_burial(
 
 def af_structural_features(
         workdir, 
-        input_gene, input_uniprot, structureid, radius
+        input_gene, input_uniprot, structureid, radius=6.0, 
+        user_uniprot='', user_pdb='', user_dssp='', 
 ): 
     """
     Description
@@ -445,11 +448,19 @@ def af_structural_features(
         os.mkdir(edits_filedir)
     
     out_fasta = edits_filedir / f"{input_gene}_{input_uniprot}.tsv"
-    uFasta_file = query_uniprot(edits_filedir, input_uniprot)
+    if len(user_uniprot) > 0: # USER INPUT FOR UNIPROT #
+        assert os.path.isfile(edits_filedir / user_uniprot), f'{user_uniprot} does not exist'
+        uFasta_file = edits_filedir / user_uniprot
+    else: # QUERY DATABASE #
+        uFasta_file = query_uniprot(edits_filedir, input_uniprot)
     parse_uniprot(uFasta_file, out_fasta)
 
     af_filename = f"AF_{input_uniprot}.pdb"
-    query_af(edits_filedir, af_filename, structureid)
+    if len(user_pdb) > 0: # USER INPUT FOR ALPHAFOLD #
+        assert os.path.isfile(edits_filedir / user_pdb), f'{user_pdb} does not exist'
+        os.rename(edits_filedir / user_pdb, edits_filedir / af_filename)
+    else: # QUERY DATABASE #
+        query_af(edits_filedir, af_filename, structureid)
 
     fastalist_filename = f"{input_gene}_{input_uniprot}.tsv"
     af_processed_filename = f"{structureid}_processed.pdb"
@@ -458,12 +469,17 @@ def af_structural_features(
     parse_coord(edits_filedir, af_processed_filename, fastalist_filename, coord_filename)
 
     dssp_filename = f"{structureid}_processed.dssp"
-    query_dssp(edits_filedir, af_filename, dssp_filename)
+    if len(user_dssp) > 0: # USER INPUT FOR DSSP #
+        assert os.path.isfile(edits_filedir / user_dssp), f'{user_dssp} does not exist'
+        os.rename(edits_filedir / user_dssp, edits_filedir / dssp_filename)
+    else: # QUERY DATABASE #
+        query_dssp(edits_filedir, af_filename, dssp_filename)
     alphafold_dssp_filename = f"{structureid}_processed.dssp"
     dssp_parsed_filename = f"{structureid}_dssp_parsed.tsv"
     parse_dssp(edits_filedir, alphafold_dssp_filename, fastalist_filename, dssp_parsed_filename)
 
     df_dssp = pd.read_csv(edits_filedir / dssp_parsed_filename, sep = '\t')
+    df_coord = count_aa_within_radius(edits_filedir, coord_filename, radius=radius)
     df_coord = count_aa_within_radius(edits_filedir, coord_filename, radius=radius)
 
     coord_dssp_filename = f"{structureid}_coord_struc_features.tsv"
