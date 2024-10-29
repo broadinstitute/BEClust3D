@@ -15,7 +15,7 @@ from _average_split_bin_plots_ import *
 def average_split_bin(
         df_LFC_LFCrN_LFC3D_LFC3DrN, 
         workdir, input_gene, structureid, input_screens, 
-        nRandom=1000, pthr=0.05, 
+        nRandom=1000, pthr=0.05, score_type='LFC3D', 
 ): 
     """
     Description
@@ -44,8 +44,8 @@ def average_split_bin(
     edits_filedir = Path(workdir + '/' + input_gene)
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
-    if not os.path.exists(edits_filedir / 'LFC3D'):
-        os.mkdir(edits_filedir / 'LFC3D')
+    if not os.path.exists(edits_filedir / score_type):
+        os.mkdir(edits_filedir / score_type)
 
     df_bidir = pd.DataFrame()
     df_bidir['unipos'] = df_LFC_LFCrN_LFC3D_LFC3DrN['unipos']
@@ -55,7 +55,7 @@ def average_split_bin(
 
         screen_name = input_screen.split('.')[0]
         header_LFC = f"{screen_name}_LFC"
-        header_LFC3D = f"{screen_name}_LFC3D"
+        header_LFC3D = f"{screen_name}_{score_type}"
         if header_LFC not in df_LFC_LFCrN_LFC3D_LFC3DrN.columns: # make sure screen gene combo exists
             warnings.warn(f'{screen_name} screen not found for {input_gene}')
             continue
@@ -81,7 +81,7 @@ def average_split_bin(
             taa_SUM_LFC3Dr, taa_SUM_LFC3Dr_neg, taa_SUM_LFC3Dr_pos = 0.0, 0.0, 0.0
 
             for r in range(0, nRandom):
-                col_head =  f'{screen_name}_LFC3Dr{str(r+1)}'
+                col_head =  f'{screen_name}_{score_type}r{str(r+1)}'
                 taa_LFC3Dr_raw = df_LFC_LFCrN_LFC3D_LFC3DrN.at[aa, col_head] # target LFC3D (randomized)
                 
                 taa_LFC3Dr_pos, taa_LFC3Dr_neg = 0.0, 0.0
@@ -100,11 +100,11 @@ def average_split_bin(
             taa_wise_AVG_LFC3Dr_pos.append(round(taa_SUM_LFC3Dr_pos/nRandom, 3))
             taa_wise_AVG_LFC3Dr.append(round(taa_SUM_LFC3Dr/nRandom, 3))
 
-        df_bidir[f"{screen_name}_LFC3D_neg"]      = taa_wise_LFC3D_neg ## LFC3D_neg/s
-        df_bidir[f"{screen_name}_LFC3D_pos"]      = taa_wise_LFC3D_pos ## LFC3D_pos/s
-        df_bidir[f"{screen_name}_AVG_LFC3Dr"]     = taa_wise_AVG_LFC3Dr ## AVG_LFC3Dr/s
-        df_bidir[f"{screen_name}_AVG_LFC3Dr_neg"] = taa_wise_AVG_LFC3Dr_neg ## AVG_LFC3Dr_neg/s
-        df_bidir[f"{screen_name}_AVG_LFC3Dr_pos"] = taa_wise_AVG_LFC3Dr_pos ## AVG_LFC3Dr_pos/s   
+        df_bidir[f"{screen_name}_{score_type}_neg"]      = taa_wise_LFC3D_neg ## LFC3D_neg/s
+        df_bidir[f"{screen_name}_{score_type}_pos"]      = taa_wise_LFC3D_pos ## LFC3D_pos/s
+        df_bidir[f"{screen_name}_AVG_{score_type}r"]     = taa_wise_AVG_LFC3Dr ## AVG_LFC3Dr/s
+        df_bidir[f"{screen_name}_AVG_{score_type}r_neg"] = taa_wise_AVG_LFC3Dr_neg ## AVG_LFC3Dr_neg/s
+        df_bidir[f"{screen_name}_AVG_{score_type}r_pos"] = taa_wise_AVG_LFC3Dr_pos ## AVG_LFC3Dr_pos/s   
     
         # BINNING #
         df_LFC_LFC3D_dis = df_bidir[['unipos', 'unires', header_LFC, header_LFC3D]].copy()
@@ -132,12 +132,12 @@ def average_split_bin(
 
         arr_LFC3D_discrete, arr_LFC3D_weight = binning(df_bidir, df_LFC3D_neg_stats, df_LFC3D_pos_stats, 
                                                        quantile_values.values(), header_LFC3D )
-        df_LFC_LFC3D_dis[f"{screen_name}_LFC3D_dis"]  = arr_LFC3D_discrete
-        df_LFC_LFC3D_dis[f"{screen_name}_LFC3D_wght"] = arr_LFC3D_weight
+        df_LFC_LFC3D_dis[f"{screen_name}_{score_type}_dis"]  = arr_LFC3D_discrete
+        df_LFC_LFC3D_dis[f"{screen_name}_{score_type}_wght"] = arr_LFC3D_weight
 
-    out_filename = edits_filedir / f"LFC3D/{input_gene}_LFC_LFC3D_LFC3Dr_bidirectional.tsv"
+    out_filename = edits_filedir / f"{score_type}/{input_gene}_LFC_{score_type}_{score_type}r_bidirectional.tsv"
     df_bidir.to_csv(out_filename, sep='\t', index=False)
-    out_filename = edits_filedir / f"LFC3D/{input_gene}_LFC_LFC3D_dis_wght_Signal_Only_per_Screen.tsv"
+    out_filename = edits_filedir / f"{score_type}/{input_gene}_LFC_{score_type}_dis_wght_Signal_Only_per_Screen.tsv"
     df_LFC_LFC3D_dis.to_csv(out_filename, sep = '\t', index=False)
 
     df_z = pd.DataFrame()
@@ -146,15 +146,15 @@ def average_split_bin(
 
         df_z['unipos'] = df_bidir['unipos']
         df_z['unires'] = df_bidir['unires']
-        df_z[f'{screen_name}_SUM_LFC3D_neg'] = df_bidir[f'{screen_name}_LFC3D_neg']
-        df_z[f'{screen_name}_SUM_LFC3D_pos'] = df_bidir[f'{screen_name}_LFC3D_pos']
-        df_z[f'{screen_name}_AVG_LFC3Dr_neg'] = df_bidir[f'{screen_name}_AVG_LFC3Dr_neg']
-        df_z[f'{screen_name}_AVG_LFC3Dr_pos'] = df_bidir[f'{screen_name}_AVG_LFC3Dr_pos']
+        df_z[f'{screen_name}_SUM_{score_type}_neg'] = df_bidir[f'{screen_name}_{score_type}_neg']
+        df_z[f'{screen_name}_SUM_{score_type}_pos'] = df_bidir[f'{screen_name}_{score_type}_pos']
+        df_z[f'{screen_name}_AVG_{score_type}r_neg'] = df_bidir[f'{screen_name}_AVG_{score_type}r_neg']
+        df_z[f'{screen_name}_AVG_{score_type}r_pos'] = df_bidir[f'{screen_name}_AVG_{score_type}r_pos']
 
         # CALCULATE Z SCORE #
-        colnames = [f'{screen_name}_SUM_LFC3D_neg', f'{screen_name}_SUM_LFC3D_pos']
-        params = [{'mu':df_bidir[f'{screen_name}_AVG_LFC3Dr_neg'].mean(), 's':df_bidir[f'{screen_name}_AVG_LFC3Dr_neg'].std()}, 
-                  {'mu':df_bidir[f'{screen_name}_AVG_LFC3Dr_pos'].mean(), 's':df_bidir[f'{screen_name}_AVG_LFC3Dr_pos'].std()} ]
+        colnames = [f'{screen_name}_SUM_{score_type}_neg', f'{screen_name}_SUM_{score_type}_pos']
+        params = [{'mu':df_bidir[f'{screen_name}_AVG_{score_type}r_neg'].mean(), 's':df_bidir[f'{screen_name}_AVG_{score_type}r_neg'].std()}, 
+                  {'mu':df_bidir[f'{screen_name}_AVG_{score_type}r_pos'].mean(), 's':df_bidir[f'{screen_name}_AVG_{score_type}r_pos'].std()} ]
         lists_LFC3D = [{'z':[], 'p':[], 'lab':[]}, {'z':[], 'p':[], 'lab':[]}, ]
 
         for i in range(0, len(df_z)):
@@ -172,15 +172,16 @@ def average_split_bin(
                     lists['p'].append(signal_p)
                     lists['lab'].append(signal_plabel)
 
-        dict_z = {f'{screen_name}_SUM_LFC3D_neg_z':lists_LFC3D[0]['z'], f'{screen_name}_SUM_LFC3D_neg_p':lists_LFC3D[0]['p'], f'{screen_name}_SUM_LFC3D_neg_psig':lists_LFC3D[0]['lab'], 
-                  f'{screen_name}_SUM_LFC3D_pos_z':lists_LFC3D[1]['z'], f'{screen_name}_SUM_LFC3D_pos_p':lists_LFC3D[1]['p'], f'{screen_name}_SUM_LFC3D_pos_psig':lists_LFC3D[1]['lab'], }
+        dict_z = {f'{screen_name}_SUM_{score_type}_neg_z':lists_LFC3D[0]['z'], f'{screen_name}_SUM_{score_type}_neg_p':lists_LFC3D[0]['p'], 
+                  f'{screen_name}_SUM_{score_type}_neg_psig':lists_LFC3D[0]['lab'], f'{screen_name}_SUM_{score_type}_pos_z':lists_LFC3D[1]['z'], 
+                  f'{screen_name}_SUM_{score_type}_pos_p':lists_LFC3D[1]['p'], f'{screen_name}_SUM_{score_type}_pos_psig':lists_LFC3D[1]['lab'], }
         df_z = pd.concat([df_z, pd.DataFrame(dict_z)], axis=1)
         df_z.round(4)
 
         # PLOTS #
-        LFC3D_plots(df_z, edits_filedir, input_gene, pthr, screen_name+'_', )
+        LFC3D_plots(df_z, edits_filedir, input_gene, pthr, screen_name+'_', score_type=score_type, )
 
-    filename = edits_filedir / f"LFC3D/{structureid}_NonAggr_LFC3D_and_randomized_background.tsv"
+    filename = edits_filedir / f"{score_type}/{structureid}_NonAggr_{score_type}_and_randomized_background.tsv"
     df_z.to_csv(filename, "\t", index=False)
 
     return df_bidir, df_LFC_LFC3D_dis, df_z

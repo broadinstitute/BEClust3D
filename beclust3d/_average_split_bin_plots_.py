@@ -69,7 +69,6 @@ def binning_lfc3d(
         df_3daggr_clean[colname] = df_3daggr_clean[colname].astype(float)
         df = df_3daggr_clean.loc[df_3daggr_clean[colname] != 0.0, ]
         df = df.reset_index(drop=True)
-        # print(f"length of {colname}: " + str(len(df)))
         res['dfstats'] = df[colname].describe()
         res['p1'] = round(df[colname].quantile(quantile_numbers[colname][0]), 4) # (bottom 10th percentile)
         res['p2'] = round(df[colname].quantile(quantile_numbers[colname][1]), 4) # (bottom 5th percentile)
@@ -88,37 +87,37 @@ def binning_lfc3d(
 
 
 def LFC3D_plots(
-        df_Z, edits_filedir, input_gene, pthr, name='', 
+        df_Z, edits_filedir, input_gene, pthr, name='', score_type='LFC3D', 
 ): 
     # HISTOGRAMS #
-    histogram_params = [(name+'AVG_LFC3Dr_neg', name+f'SUM_LFC3D_neg', 'Negative'), 
-                        (name+'AVG_LFC3Dr_pos', name+f'SUM_LFC3D_pos', 'Positive'), ]
+    histogram_params = [(f'{name}AVG_{score_type}r_neg', f'{name}SUM_{score_type}_neg', 'Negative'), 
+                        (f'{name}AVG_{score_type}r_pos', f'{name}SUM_{score_type}_pos', 'Positive'), ]
     res_neg, res_pos = metaaggregation_histogram(
         df_Z, histogram_params, edits_filedir, input_gene, name=name, )
     if res_neg is None or res_pos is None: 
         return None
 
-    df_Z = binning_lfc3d(df_Z, colnames=[name+'SUM_LFC3D_neg',name+'SUM_LFC3D_pos'],)
+    df_Z = binning_lfc3d(df_Z, colnames=[f'{name}SUM_{score_type}_neg',f'{name}SUM_{score_type}_pos'],)
 
     # HISPLOTS #
-    hisplots_params = [(name+'SUM_LFC3D_neg_dis', name+f'SUM_LFC3D_neg', name+'SUM_LFC3D_neg_psig', 'Negative P-Value'), 
-                       (name+'SUM_LFC3D_neg_dis', name+f'SUM_LFC3D_neg', name+'SUM_LFC3D_neg_dis', 'Negative P-Value'), 
-                       (name+'SUM_LFC3D_pos_dis', name+f'SUM_LFC3D_pos', name+'SUM_LFC3D_pos_psig', 'Positive P-Value'), 
-                       (name+'SUM_LFC3D_pos_dis', name+f'SUM_LFC3D_pos', name+'SUM_LFC3D_pos_dis', 'Positive P-Value'), ]
+    hisplots_params = [(f'{name}SUM_{score_type}_neg_dis', f'{name}SUM_{score_type}_neg', f'{name}SUM_{score_type}_neg_psig', 'Negative P-Value'), 
+                       (f'{name}SUM_{score_type}_neg_dis', f'{name}SUM_{score_type}_neg', f'{name}SUM_{score_type}_neg_dis', 'Negative P-Value'), 
+                       (f'{name}SUM_{score_type}_pos_dis', f'{name}SUM_{score_type}_pos', f'{name}SUM_{score_type}_pos_psig', 'Positive P-Value'), 
+                       (f'{name}SUM_{score_type}_pos_dis', f'{name}SUM_{score_type}_pos', f'{name}SUM_{score_type}_pos_dis', 'Positive P-Value'), ]
     metaaggregation_hisplot(
-        df_Z, hisplots_params, filedir=edits_filedir, input_gene=input_gene, name=name, )
+        df_Z, hisplots_params, filedir=edits_filedir, input_gene=input_gene, name=name, score_type=score_type, )
 
     # SCATTERPLOT #
-    scatterplot_params = [(name+'SUM_LFC3D_neg_dis', name+'SUM_LFC3D_neg_psig', name+f'SUM_LFC3D_neg', 'Negative'), 
-                          (name+'SUM_LFC3D_pos_dis', name+'SUM_LFC3D_pos_psig', name+f'SUM_LFC3D_pos', 'Positive')]
+    scatterplot_params = [(f'{name}SUM_{score_type}_neg_dis', f'{name}SUM_{score_type}_neg_psig', f'{name}SUM_{score_type}_neg', 'Negative'), 
+                          (f'{name}SUM_{score_type}_pos_dis', f'{name}SUM_{score_type}_pos_psig', f'{name}SUM_{score_type}_pos', 'Positive')]
     metaaggregation_scatterplot(
-        df_Z, scatterplot_params, filedir=edits_filedir, input_gene=input_gene, pthr=pthr, name=name, )
+        df_Z, scatterplot_params, filedir=edits_filedir, input_gene=input_gene, pthr=pthr, name=name, score_type=score_type, )
     
     # Z SCORE SCATTERPLOT #
-    scatterplot_params = [(name+'SUM_LFC3D_neg_dis', name+'SUM_LFC3D_neg_dis', name+f'SUM_LFC3D_neg_z', 'Negative'), 
-                          (name+'SUM_LFC3D_pos_dis', name+'SUM_LFC3D_pos_dis', name+f'SUM_LFC3D_pos_z', 'Positive')]
+    scatterplot_params = [(f'{name}SUM_{score_type}_neg_dis', f'{name}SUM_{score_type}_neg_dis', f'{name}SUM_{score_type}_neg_z', 'Negative'), 
+                          (f'{name}SUM_{score_type}_pos_dis', f'{name}SUM_{score_type}_pos_dis', f'{name}SUM_{score_type}_pos_z', 'Positive')]
     metaaggregation_scatterplot(
-        df_Z, scatterplot_params, filedir=edits_filedir, input_gene=input_gene, pthr=pthr, name=name, colors=True, )
+        df_Z, scatterplot_params, filedir=edits_filedir, input_gene=input_gene, pthr=pthr, name=name, score_type=score_type, colors=True, )
 
 
 def metaaggregation_histogram(
@@ -184,7 +183,7 @@ def metaaggregation_histogram(
     return results_list[0], results_list[1]
 
 def metaaggregation_hisplot(
-        df_meta, params, filedir, input_gene, name, 
+        df_meta, params, filedir, input_gene, name, score_type, 
 ): 
     """
     Description
@@ -206,11 +205,11 @@ def metaaggregation_hisplot(
         ax[i].set_axisbelow(True)
 
     plt.subplots_adjust(wspace=0.3)
-    out_name = filedir / f"plots/{input_gene}_{name}_Aggr_LFC3D_histogram.png"
+    out_name = filedir / f"plots/{input_gene}_{name}_Aggr_{score_type}_histogram.png"
     plt.savefig(out_name, dpi=300) 
 
 def metaaggregation_scatterplot(
-        df_meta, params, filedir, input_gene, pthr, name, colors=False, 
+        df_meta, params, filedir, input_gene, pthr, name, score_type, colors=False, 
 ): 
     """
     Description
@@ -252,5 +251,5 @@ def metaaggregation_scatterplot(
         ax[i].set_axisbelow(True)
 
     plt.subplots_adjust(wspace=0.3)
-    outname = filedir / f"plots/{input_gene}_{name}_Aggr_LFC3D_dot_per_residue.png"
+    outname = filedir / f"plots/{input_gene}_{name}_Aggr_{score_type}_dot_per_residue.png"
     plt.savefig(outname, dpi=300)

@@ -17,7 +17,7 @@ import warnings
 def metaaggregation(
     df_LFC_LFC3D, workdir, 
     input_gene, structureid, input_screens, 
-    nRandom=1000, pthr=0.05, 
+    nRandom=1000, pthr=0.05, score_type='LFC3D', 
 ): 
     """
     Description
@@ -64,7 +64,7 @@ def metaaggregation(
 
         for input_screen in input_screens: 
             screen_name = input_screen.split('.')[0]
-            header_LFC3D = f"{screen_name}_LFC3D"
+            header_LFC3D = f"{screen_name}_{score_type}"
             if header_LFC3D not in df_LFC_LFC3D.columns: 
                 warnings.warn(f'{header_LFC3D} not in input df_LFC_LFC3D')
                 continue
@@ -78,8 +78,8 @@ def metaaggregation(
         list_sum_LFC3D_neg.append(res_sum_LFC3D_neg)
         list_sum_LFC3D_pos.append(res_sum_LFC3D_pos)
 
-    df_meta['SUM_LFC3D_neg'] = list_sum_LFC3D_neg 
-    df_meta['SUM_LFC3D_pos'] = list_sum_LFC3D_pos
+    df_meta[f'SUM_{score_type}_neg'] = list_sum_LFC3D_neg 
+    df_meta[f'SUM_{score_type}_pos'] = list_sum_LFC3D_pos
     del list_sum_LFC3D_neg, list_sum_LFC3D_pos
 
     # RANDOMIZE #
@@ -92,7 +92,7 @@ def metaaggregation(
 
             for input_screen in input_screens: # sum across screens
                 screen_name = input_screen.split('.')[0]
-                header_LFC3D = f"{screen_name}_LFC3Dr{str(r+1)}"
+                header_LFC3D = f"{screen_name}_{score_type}r{str(r+1)}"
                 if header_LFC3D not in df_LFC_LFC3D.columns: 
                     # warnings.warn(f'{header_LFC3D} not in input df_LFC_LFC3D')
                     continue
@@ -106,8 +106,8 @@ def metaaggregation(
             list_sum_LFC3D_neg.append(res_sum_LFC3D_neg)
             list_sum_LFC3D_pos.append(res_sum_LFC3D_pos)
 
-        dict_META[f'SUM_LFC3Dr{str(r+1)}_neg'] = list_sum_LFC3D_neg
-        dict_META[f'SUM_LFC3Dr{str(r+1)}_pos'] = list_sum_LFC3D_pos
+        dict_META[f'SUM_{score_type}r{str(r+1)}_neg'] = list_sum_LFC3D_neg
+        dict_META[f'SUM_{score_type}r{str(r+1)}_pos'] = list_sum_LFC3D_pos
         del list_sum_LFC3D_neg, list_sum_LFC3D_pos
 
     df_meta = pd.concat([df_meta, pd.DataFrame(dict_META)], axis=1)
@@ -119,26 +119,26 @@ def metaaggregation(
         res_sum_LFC3D_neg, res_sum_LFC3D_pos = 0.0, 0.0
 
         for r in range(0, nRandom): 
-            LFC3D_neg = df_meta.at[i, f'SUM_LFC3Dr{str(r+1)}_neg']
+            LFC3D_neg = df_meta.at[i, f'SUM_{score_type}r{str(r+1)}_neg']
             res_sum_LFC3D_neg += float(LFC3D_neg)
-            LFC3D_pos = df_meta.at[i, f'SUM_LFC3Dr{str(r+1)}_pos']
+            LFC3D_pos = df_meta.at[i, f'SUM_{score_type}r{str(r+1)}_pos']
             res_sum_LFC3D_pos += float(LFC3D_pos)
         
         list_avg_LFC3D_neg.append(res_sum_LFC3D_neg / nRandom)
         list_avg_LFC3D_pos.append(res_sum_LFC3D_pos / nRandom)
 
-    df_meta['AVG_LFC3Dr_neg'] = list_avg_LFC3D_neg 
-    df_meta['AVG_LFC3Dr_pos'] = list_avg_LFC3D_pos
+    df_meta[f'AVG_{score_type}r_neg'] = list_avg_LFC3D_neg 
+    df_meta[f'AVG_{score_type}r_pos'] = list_avg_LFC3D_pos
     del list_avg_LFC3D_neg, list_avg_LFC3D_pos
 
     # DELETE ALL RANDOM COLUMNS #
-    df_meta = df_meta.drop(columns=[f'SUM_LFC3Dr{str(r+1)}_neg' for r in range(0, nRandom)])
-    df_meta = df_meta.drop(columns=[f'SUM_LFC3Dr{str(r+1)}_pos' for r in range(0, nRandom)])
+    df_meta = df_meta.drop(columns=[f'SUM_{score_type}r{str(r+1)}_neg' for r in range(0, nRandom)])
+    df_meta = df_meta.drop(columns=[f'SUM_{score_type}r{str(r+1)}_pos' for r in range(0, nRandom)])
 
     # CONVERT SIGNAL TO Z SCORE #
-    colnames = ['SUM_LFC3D_neg', 'SUM_LFC3D_pos']
-    params = [{'mu':df_meta['AVG_LFC3Dr_neg'].mean(), 's':df_meta['AVG_LFC3Dr_neg'].std()}, 
-              {'mu':df_meta['AVG_LFC3Dr_pos'].mean(), 's':df_meta['AVG_LFC3Dr_pos'].std()} ]
+    colnames = [f'SUM_{score_type}_neg', f'SUM_{score_type}_pos']
+    params = [{'mu':df_meta[f'AVG_{score_type}r_neg'].mean(), 's':df_meta[f'AVG_{score_type}r_neg'].std()}, 
+              {'mu':df_meta[f'AVG_{score_type}r_pos'].mean(), 's':df_meta[f'AVG_{score_type}r_pos'].std()} ]
     lists_LFC3D = [{'z':[], 'p':[], 'lab':[]}, {'z':[], 'p':[], 'lab':[]}, ]
 
     for i in range(0, len(df_meta)):
@@ -156,16 +156,17 @@ def metaaggregation(
                 lists['p'].append(signal_p)
                 lists['lab'].append(signal_plabel)
     
-    dict_META = {'SUM_LFC3D_neg_z':lists_LFC3D[0]['z'], 'SUM_LFC3D_neg_p':lists_LFC3D[0]['p'], 'SUM_LFC3D_neg_psig':lists_LFC3D[0]['lab'], 
-                 'SUM_LFC3D_pos_z':lists_LFC3D[1]['z'], 'SUM_LFC3D_pos_p':lists_LFC3D[1]['p'], 'SUM_LFC3D_pos_psig':lists_LFC3D[1]['lab'], }
+    dict_META = {f'SUM_{score_type}_neg_z':lists_LFC3D[0]['z'], f'SUM_{score_type}_neg_p':lists_LFC3D[0]['p'], 
+                 f'SUM_{score_type}_neg_psig':lists_LFC3D[0]['lab'], f'SUM_{score_type}_pos_z':lists_LFC3D[1]['z'], 
+                 f'SUM_{score_type}_pos_p':lists_LFC3D[1]['p'], f'SUM_{score_type}_pos_psig':lists_LFC3D[1]['lab'], }
     df_meta_Z = pd.concat([df_meta, pd.DataFrame(dict_META)], axis=1)
     df_meta_Z.round(4)
 
-    filename = edits_filedir / f"metaaggregation/{structureid}_MetaAggr_LFC3D_and_randomized_background.tsv"
+    filename = edits_filedir / f"metaaggregation/{structureid}_MetaAggr_{score_type}_and_randomized_background.tsv"
     df_meta_Z.to_csv(filename, "\t", index=False)
     
     # PLOTS #
-    LFC3D_plots(df_meta_Z, edits_filedir, input_gene, pthr, )
+    LFC3D_plots(df_meta_Z, edits_filedir, input_gene, pthr, score_type=score_type, )
 
     return df_meta_Z
     

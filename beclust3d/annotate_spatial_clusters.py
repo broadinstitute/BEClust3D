@@ -23,13 +23,14 @@ def clustering(
         screen_name = '', 
         i_affn='euclidean', i_link='single', n_clusters=None, 
         max_distances=20, pthr=0.05, 
+        score_type='LFC3D', 
 ):
 
     edits_filedir = Path(workdir + '/' + input_gene)
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
-    if not os.path.exists(edits_filedir / 'cluster_LFC3D'):
-        os.mkdir(edits_filedir / 'cluster_LFC3D')
+    if not os.path.exists(edits_filedir / f'cluster_{score_type}'):
+        os.mkdir(edits_filedir / f'cluster_{score_type}')
 
     df_hits_clust = df_pvals.copy()
     df_hits_clust["x_coord"] = df_struc_consvr["x_coord"]
@@ -39,8 +40,8 @@ def clustering(
     # CLUSTERING #
     arr_d_thr = [float(i+1) for i in range(max_distances)]
     ### kinda convoluted
-    hits = {'negative': {'name':'_'.join([screen_name, 'SUM_LFC3D_neg_psig']).strip('_'), 'arr':[]},
-            'positive'  : {'name':'_'.join([screen_name, 'SUM_LFC3D_pos_psig']).strip('_'), 'arr':[]}, }
+    hits = {'negative': {'name':'_'.join([screen_name, f'SUM_{score_type}_neg_psig']).strip('_'), 'arr':[]},
+            'positive'  : {'name':'_'.join([screen_name, f'SUM_{score_type}_pos_psig']).strip('_'), 'arr':[]}, }
     
     for key, val in hits.items(): 
         df_pvals_temp = df_hits_clust.loc[(df_hits_clust[val['name']] == 'p<'+str(pthr)), ]
@@ -75,13 +76,13 @@ def clustering(
         df_hits_clust = df_hits_clust.merge(pd.DataFrame(dict_hits), how='left', on=['unipos'])
 
     df_hits_clust.fillna('-')
-    hits_clust_filename = edits_filedir / f"cluster_LFC3D/{structureid}_{screen_name}_MetaAggr_Hits_Clust_p_l001.tsv"
+    hits_clust_filename = edits_filedir / f"cluster_{score_type}/{structureid}_{screen_name}_MetaAggr_Hits_Clust_p_l001.tsv"
     df_hits_clust.to_csv(hits_clust_filename, sep='\t', index=False)
 
     # PLOT #
-    cluster_distance_filename = edits_filedir / f"cluster_LFC3D/{structureid}_MetaAggr_Hits_Clust_Dist_Stat_pl001.tsv"
+    cluster_distance_filename = edits_filedir / f"cluster_{score_type}/{structureid}_MetaAggr_Hits_Clust_Dist_Stat_pl001.tsv"
     plot_cluster_distance(arr_d_thr, [hits['negative']['arr'], hits['positive']['arr']], 
-                          cluster_distance_filename, edits_filedir, input_gene, screen_name, )
+                          cluster_distance_filename, edits_filedir, input_gene, screen_name, score_type)
 
     return arr_d_thr, (hits['negative']['arr'], hits['positive']['arr'])
 
@@ -91,6 +92,7 @@ def clustering_distance(
         workdir, input_gene, input_uniprot, structureid, 
         screen_name='', 
         i_affn='euclidean', i_link='single', n_clusters=None, pthr=0.05, 
+        score_type='LFC3D', 
 ):
     
     edits_filedir = Path(workdir + '/' + input_gene)
@@ -105,8 +107,8 @@ def clustering_distance(
     df_hits_clust["z_coord"] = df_struc_consvr["z_coord"]
 
     ### kinda convoluted
-    names = {'Negative' :'_'.join([screen_name, 'SUM_LFC3D_neg_psig']).strip('_'), 
-             'Positive' :'_'.join([screen_name, 'SUM_LFC3D_pos_psig']).strip('_') }
+    names = {'Negative' :'_'.join([screen_name, f'SUM_{score_type}_neg_psig']).strip('_'), 
+             'Positive' :'_'.join([screen_name, f'SUM_{score_type}_pos_psig']).strip('_') }
     for name, col in names.items(): # for sensitizing and resistant
 
         df_pvals_hits_coord = pd.DataFrame()
@@ -134,7 +136,7 @@ def clustering_distance(
         plt.show()
 
         # CLUSTER INDEX AND LENGTH
-        hits_clust_filename = edits_filedir / f"cluster_LFC3D/{structureid}_{name}_Aggr_Hits_Clust_p_l001.tsv"
+        hits_clust_filename = edits_filedir / f"cluster_{score_type}/{structureid}_{screen_name}_MetaAggr_Hits_Clust_p_l001.tsv"
         df_pvals_hits_clust = pd.read_csv(hits_clust_filename, sep = '\t')
         df_pvals_clust = df_pvals_hits_clust.loc[(df_pvals_hits_clust[col] == 'p<'+str(pthr)), ]
         df_pvals_clust = df_pvals_clust.reset_index(drop=True)
@@ -151,7 +153,7 @@ def clustering_distance(
 
 
 def plot_cluster_distance(
-        x, ys, out_filename, edits_filedir, input_gene, screen_name, 
+        x, ys, out_filename, edits_filedir, input_gene, screen_name, score_type, 
 ): 
     dist_stat = pd.DataFrame()
     dist_stat['cluster_distance'] = x
@@ -166,7 +168,7 @@ def plot_cluster_distance(
     plt.xlabel('Cluster Radius')
     plt.ylabel('Number of Clusters')
     plt.title(f'Positive vs Negative Clusters {input_gene}')
-    plt.savefig(edits_filedir / f"cluster_LFC3D/{input_gene}_{screen_name}_cluster_distance.png") 
+    plt.savefig(edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_cluster_distance.png") 
     dist_stat.to_csv(out_filename, sep = '\t', index=False)
 
 def plot_dendrogram(
