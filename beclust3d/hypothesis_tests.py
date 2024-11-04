@@ -36,8 +36,9 @@ def hypothesis_tests(
                    screen_names, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
     hypothesis_plot(edits_filedir, screen_names, 'screenid', 'gene_name', 
                     testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1')
-    hypothesis_plot(edits_filedir, unique_genes, 'gene_name', 'screenid', 
-                    testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1')
+    if len(input_screens > 1):
+        hypothesis_plot(edits_filedir, unique_genes, 'gene_name', 'screenid', 
+                        testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1')
     # MW AND KS TESTS HYPOTHESIS 2 #
     hypothesis_two(df_Inputs, unique_genes, edits_filedir, cases, controls, comp_name, 
                    screen_names, gene_col, mut_col, val_col, testtype='MannWhitney')
@@ -46,8 +47,9 @@ def hypothesis_tests(
                    screen_names, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
     hypothesis_plot(edits_filedir, screen_names, 'screenid', 'gene_name', 
                     testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')
-    hypothesis_plot(edits_filedir, unique_genes, 'gene_name', 'screenid', 
-                    testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')
+    if len(input_screens > 1):
+        hypothesis_plot(edits_filedir, unique_genes, 'gene_name', 'screenid', 
+                        testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')
 
 
 def add_to_row(
