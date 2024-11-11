@@ -42,6 +42,12 @@ def conservation(
             the name of the input human uniprot id
         input_mouse_uniid: str, required
             the name of the input mouse uniprot id
+        email: str, required
+            user's email for querying MUSCLE
+        title: str, required
+            title of job queued
+        wait_time: int, optional
+            wait time before retrieving
 
     Returns
         df_alignconserv: pandas dataframe
@@ -84,12 +90,6 @@ def query_protein_fasta(
     """
     Description
         Query a Uniprot ID for .fasta file
-    Params
-        edits_filedir: str, required
-            the Path to the main directory
-    Returns
-        response_body: str
-            The amino acid sequence of the Uniprot ID
     """
 
     # QUERY UNIPROT #
@@ -114,16 +114,6 @@ def alignment_muscle(
     """
     Description
         Query ebi.ac.uk for MUSCLE alignment
-    Params
-        edits_filedir: str, required
-            the Path to the main directory
-        email: str, required
-            email
-        title: str, required
-            title for your queried job
-    Returns
-        job_url_code: str
-            a code for the MUSCLE job
     """
     # POST MUSCLE #
     url = 'https://www.ebi.ac.uk/Tools/services/rest/muscle/run'
