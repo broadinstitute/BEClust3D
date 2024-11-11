@@ -18,13 +18,51 @@ import os
 import warnings
 
 def clustering(
-        df_struc_consvr, df_pvals, 
+        df_struc, df_pvals, 
         workdir, input_gene, structureid, 
         screen_name = '', 
         n_clusters=None, i_affn='euclidean', i_link='single', 
         max_distances=20, pthr=0.05, score_type='LFC3D', aggr_func=np.sum, 
 ): 
     """
+    Description
+        Calculates number of clusters for a range of clustering radii
+
+    Params
+        df_struc: pandas dataframe, required
+            DataFrame output from af_structural_features()
+        df_pvals: pandas dataframe
+            from previous step average_split_bin_lfc3d() or average_split_bin_metaaggregation()
+        workdir: str, required
+            the working directory
+        input_gene: str, required
+            the name of the input human gene
+        input_screen: str, required
+            the name of the input screen
+        structureid: str, required
+            the name of the AF and uniprot input
+        screen_name: str, optional
+            the name of the input screen
+        n_clusters: int, optional
+            the number of randomize iterations
+        i_affn: str, optional
+            AgglomerativeClustering metric input
+        i_link: str, optional
+            AgglomerativeClustering linkage input
+        max_distances: int, optional
+            the upper limit of the range to test for clustering threshold
+        pthr: float, optional
+            the p-value threshold
+        score_type: str, optional
+            'LFC' or 'LFC3D'
+        aggr_func: function, optional
+            the function to apply ie np.sum np.min, np.max, np.median, np.mean
+
+    Returns
+    arr_d_thr: list of ints
+        values for clustering radius
+    yvals: list of lists of ints
+        2 lists (neg and pos) where the values are number of clusters
     """
 
     edits_filedir = Path(workdir + '/' + input_gene)
@@ -34,9 +72,9 @@ def clustering(
         os.mkdir(edits_filedir / f'cluster_{score_type}')
 
     df_hits_clust = df_pvals.copy()
-    df_hits_clust["x_coord"] = df_struc_consvr["x_coord"]
-    df_hits_clust["y_coord"] = df_struc_consvr["y_coord"]
-    df_hits_clust["z_coord"] = df_struc_consvr["z_coord"]
+    df_hits_clust["x_coord"] = df_struc["x_coord"]
+    df_hits_clust["y_coord"] = df_struc["y_coord"]
+    df_hits_clust["z_coord"] = df_struc["z_coord"]
 
     # CLUSTERING #
     arr_d_thr = [float(i+1) for i in range(max_distances)]
@@ -78,16 +116,54 @@ def clustering(
     yvals = [hits['negative']['arr'], hits['positive']['arr']]
     plot_cluster_distance(arr_d_thr, yvals, clust_dist_filename, edits_filedir, input_gene, screen_name, score_type)
 
-    return arr_d_thr, (hits['negative']['arr'], hits['positive']['arr'])
+    return arr_d_thr, yvals
 
 def clustering_distance(
-        df_struc_consvr, df_pvals, 
+        df_struc, df_pvals, 
         thr_distance, 
         workdir, input_gene, input_uniprot, structureid, screen_name='', 
         i_affn='euclidean', i_link='single', n_clusters=None, pthr=0.05, 
         score_type='LFC3D', aggr_func=np.sum, 
 ): 
     """
+    Description
+        Calculates number of clusters for one clustering radius
+
+    Params
+        df_struc: pandas dataframe, required
+            DataFrame output from af_structural_features()
+        df_pvals: pandas dataframe
+            from previous step average_split_bin_lfc3d() or average_split_bin_metaaggregation()
+        thr_distance: int
+            the chosen clustering radius
+        workdir: str, required
+            the working directory
+        input_gene: str, required
+            the name of the input human gene
+        input_screen: str, required
+            the name of the input screen
+        structureid: str, required
+            the name of the AF and uniprot input
+        screen_name: str, optional
+            the name of the input screen
+        i_affn: str, optional
+            AgglomerativeClustering metric input
+        i_link: str, optional
+            AgglomerativeClustering linkage input
+        n_clusters: int, optional
+            the number of randomize iterations
+        pthr: float, optional
+            the p-value threshold
+        score_type: str, optional
+            'LFC' or 'LFC3D'
+        aggr_func: function, optional
+            the function to apply ie np.sum np.min, np.max, np.median, np.mean
+
+    Returns
+    arr_d_thr: list of ints
+        values for clustering radius
+    yvals: list of lists of ints
+        2 lists (neg and pos) where the values are number of clusters
     """
     
     edits_filedir = Path(workdir + '/' + input_gene)
@@ -97,9 +173,9 @@ def clustering_distance(
         os.mkdir(edits_filedir / 'plots')
 
     df_hits_clust = df_pvals.copy()
-    df_hits_clust["x_coord"] = df_struc_consvr["x_coord"]
-    df_hits_clust["y_coord"] = df_struc_consvr["y_coord"]
-    df_hits_clust["z_coord"] = df_struc_consvr["z_coord"]
+    df_hits_clust["x_coord"] = df_struc["x_coord"]
+    df_hits_clust["y_coord"] = df_struc["y_coord"]
+    df_hits_clust["z_coord"] = df_struc["z_coord"]
 
     names = {'Negative' :'_'.join([screen_name, f'{aggr_func.__name__.upper()}_{score_type}_neg_psig']).strip('_'), 
              'Positive' :'_'.join([screen_name, f'{aggr_func.__name__.upper()}_{score_type}_pos_psig']).strip('_') }
