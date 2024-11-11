@@ -21,10 +21,11 @@ def clustering(
         df_struc_consvr, df_pvals, 
         workdir, input_gene, structureid, 
         screen_name = '', 
-        i_affn='euclidean', i_link='single', n_clusters=None, 
-        max_distances=20, pthr=0.05, 
-        score_type='LFC3D', 
-):
+        n_clusters=None, i_affn='euclidean', i_link='single', 
+        max_distances=20, pthr=0.05, score_type='LFC3D', aggr_func=np.sum, 
+): 
+    """
+    """
 
     edits_filedir = Path(workdir + '/' + input_gene)
     if not os.path.exists(edits_filedir):
@@ -39,9 +40,8 @@ def clustering(
 
     # CLUSTERING #
     arr_d_thr = [float(i+1) for i in range(max_distances)]
-    ### kinda convoluted
-    hits = {'negative': {'name':'_'.join([screen_name, f'SUM_{score_type}_neg_psig']).strip('_'), 'arr':[]},
-            'positive'  : {'name':'_'.join([screen_name, f'SUM_{score_type}_pos_psig']).strip('_'), 'arr':[]}, }
+    hits = {'negative': {'name':'_'.join([screen_name, f'{aggr_func.__name__.upper()}_{score_type}_neg_psig']).strip('_'), 'arr':[]},
+            'positive': {'name':'_'.join([screen_name, f'{aggr_func.__name__.upper()}_{score_type}_pos_psig']).strip('_'), 'arr':[]}, }
     
     for key, val in hits.items(): 
         df_pvals_temp = df_hits_clust.loc[(df_hits_clust[val['name']] == 'p<'+str(pthr)), ]
@@ -51,12 +51,7 @@ def clustering(
 
         for thr_distance in arr_d_thr: # for every radius value 1.0 to 20.0
             colname_hits = f"{key}_hit_clust_{str(round(thr_distance))}"
-            
-            df_pvals_hits_coord = pd.DataFrame()
-            df_pvals_hits_coord['x_coord'] = df_pvals_temp['x_coord']
-            df_pvals_hits_coord['y_coord'] = df_pvals_temp['y_coord']
-            df_pvals_hits_coord['z_coord'] = df_pvals_temp['z_coord']
-            np_META_hits_coord = np.array(df_pvals_hits_coord)
+            np_META_hits_coord = np.array(df_pvals_temp[['x_coord', 'y_coord', 'z_coord']].copy())
             
             func_clustering = AgglomerativeClustering(n_clusters=n_clusters, metric=i_affn, 
                                                       linkage=i_link, distance_threshold=thr_distance)
@@ -64,11 +59,10 @@ def clustering(
             if np_META_hits_coord.shape[0] < 2: 
                 warnings.warn(f"Not enough data to perform agglomerative clustering")
                 return None, None
-            clustering = func_clustering.fit(np_META_hits_coord)
-            clus_lbl = clustering.labels_
+            clus_lbl = func_clustering.fit(np_META_hits_coord).labels_
             n_c_output = int(max(clus_lbl)+1)
 
-            print(f'Number of clusters of {key} hits:', '@ d = ', thr_distance, n_c_output)
+            print(f'Number of clusters of {key} hits: @ d = {thr_distance} {n_c_output}')
             val['arr'].append(n_c_output)
             df_pvals_temp[colname_hits] = clus_lbl
             dict_hits[colname_hits] = clus_lbl
@@ -76,24 +70,25 @@ def clustering(
         df_hits_clust = df_hits_clust.merge(pd.DataFrame(dict_hits), how='left', on=['unipos'])
 
     df_hits_clust.fillna('-')
-    hits_clust_filename = edits_filedir / f"cluster_{score_type}/{structureid}_{screen_name}_MetaAggr_Hits_Clust_p_l001.tsv"
+    hits_clust_filename = edits_filedir / f"cluster_{score_type}/{structureid}_{screen_name}_Aggr_Hits.tsv"
     df_hits_clust.to_csv(hits_clust_filename, sep='\t', index=False)
 
     # PLOT #
-    cluster_distance_filename = edits_filedir / f"cluster_{score_type}/{structureid}_MetaAggr_Hits_Clust_Dist_Stat_pl001.tsv"
-    plot_cluster_distance(arr_d_thr, [hits['negative']['arr'], hits['positive']['arr']], 
-                          cluster_distance_filename, edits_filedir, input_gene, screen_name, score_type)
+    clust_dist_filename = edits_filedir / f"cluster_{score_type}/{structureid}_{screen_name}_Aggr_Hits_List.tsv" 
+    yvals = [hits['negative']['arr'], hits['positive']['arr']]
+    plot_cluster_distance(arr_d_thr, yvals, clust_dist_filename, edits_filedir, input_gene, screen_name, score_type)
 
     return arr_d_thr, (hits['negative']['arr'], hits['positive']['arr'])
 
 def clustering_distance(
         df_struc_consvr, df_pvals, 
         thr_distance, 
-        workdir, input_gene, input_uniprot, structureid, 
-        screen_name='', 
+        workdir, input_gene, input_uniprot, structureid, screen_name='', 
         i_affn='euclidean', i_link='single', n_clusters=None, pthr=0.05, 
-        score_type='LFC3D', 
-):
+        score_type='LFC3D', aggr_func=np.sum, 
+): 
+    """
+    """
     
     edits_filedir = Path(workdir + '/' + input_gene)
     if not os.path.exists(edits_filedir):
@@ -106,18 +101,17 @@ def clustering_distance(
     df_hits_clust["y_coord"] = df_struc_consvr["y_coord"]
     df_hits_clust["z_coord"] = df_struc_consvr["z_coord"]
 
-    ### kinda convoluted
-    names = {'Negative' :'_'.join([screen_name, f'SUM_{score_type}_neg_psig']).strip('_'), 
-             'Positive' :'_'.join([screen_name, f'SUM_{score_type}_pos_psig']).strip('_') }
+    names = {'Negative' :'_'.join([screen_name, f'{aggr_func.__name__.upper()}_{score_type}_neg_psig']).strip('_'), 
+             'Positive' :'_'.join([screen_name, f'{aggr_func.__name__.upper()}_{score_type}_pos_psig']).strip('_') }
     for name, col in names.items(): # for sensitizing and resistant
 
-        df_pvals_hits_coord = pd.DataFrame()
+        df_pvals_hits = pd.DataFrame()
         df_pvals_temp = df_hits_clust.loc[(df_pvals[col] == 'p<'+str(pthr)), ]
         df_pvals_temp = df_pvals_temp.reset_index(drop=True)
-        df_pvals_hits_coord['x_coord'] = df_pvals_temp['x_coord']
-        df_pvals_hits_coord['y_coord'] = df_pvals_temp['y_coord']
-        df_pvals_hits_coord['z_coord'] = df_pvals_temp['z_coord']
-        np_META_hits_coord = np.array(df_pvals_hits_coord)
+        df_pvals_hits['x_coord'] = df_pvals_temp['x_coord']
+        df_pvals_hits['y_coord'] = df_pvals_temp['y_coord']
+        df_pvals_hits['z_coord'] = df_pvals_temp['z_coord']
+        np_META_hits_coord = np.array(df_pvals_hits)
 
         func_clustering = AgglomerativeClustering(n_clusters=n_clusters, metric=i_affn, 
                                                   linkage=i_link, distance_threshold=thr_distance)
@@ -127,27 +121,22 @@ def clustering_distance(
             raise None
         clustering = func_clustering.fit(np_META_hits_coord)
         clus_lbl = clustering.labels_
-        n_c_output = int(max(clus_lbl) + 1)
-        print(f'Number of clusters of {name} hits:', n_c_output)
+        print(f'Number of clusters of {name} hits: {int(max(clus_lbl)+1)}')
 
-        dendogram_filename = edits_filedir / f"plots/{input_gene}_{input_uniprot}_{name}_hits_Dendogram_p_l001_{str(int(thr_distance))}A.png"
+        dendogram_filename = edits_filedir / f"plots/{input_gene}_{input_uniprot}_{name}_Dendogram_{str(int(thr_distance))}A.png"
         fig = plot_dendrogram(clustering, df_pvals_temp, dendogram_filename, name, input_gene, )
         plt.savefig(dendogram_filename, dpi = 300)
         plt.show()
 
         # CLUSTER INDEX AND LENGTH
-        hits_clust_filename = edits_filedir / f"cluster_{score_type}/{structureid}_{screen_name}_MetaAggr_Hits_Clust_p_l001.tsv"
-        df_pvals_hits_clust = pd.read_csv(hits_clust_filename, sep = '\t')
-        df_pvals_clust = df_pvals_hits_clust.loc[(df_pvals_hits_clust[col] == 'p<'+str(pthr)), ]
-        df_pvals_clust = df_pvals_clust.reset_index(drop=True)
-        name = name.lower()
-        clust_indices = df_pvals_clust[f'{name}_hit_clust_{str(int(thr_distance))}'].unique()
+        hits_clust_filename = edits_filedir / f"cluster_{score_type}/{structureid}_{screen_name}_Aggr_Hits.tsv"
+        df_pvals_clust = pd.read_csv(hits_clust_filename, sep = '\t')
+        df_pvals_clust = df_pvals_clust.loc[(df_pvals_clust[col] == 'p<'+str(pthr)), ].reset_index(drop=True)
+        clust_indices = df_pvals_clust[f'{name.lower()}_hit_clust_{str(int(thr_distance))}'].unique()
 
         for c in clust_indices: 
-            this_c_data = df_pvals_clust.loc[df_pvals_clust[f'{name}_hit_clust_{str(int(thr_distance))}'] == c, ]
-            this_c_data = this_c_data.reset_index(drop=True)
-            this_c_len = len(this_c_data)
-            print(c, ':', this_c_len, ':', this_c_data.at[0, 'unipos'], '-', this_c_data.at[len(this_c_data)-1, 'unipos'])
+            this_c_data = df_pvals_clust.loc[df_pvals_clust[f'{name.lower()}_hit_clust_{str(int(thr_distance))}'] == c, ].reset_index(drop=True)
+            print(f'{c} : {len(this_c_data)} : ', this_c_data.at[0, 'unipos'], '-', this_c_data.at[len(this_c_data)-1, 'unipos'])
 
     return clust_indices
 
@@ -155,20 +144,17 @@ def clustering_distance(
 def plot_cluster_distance(
         x, ys, out_filename, edits_filedir, input_gene, screen_name, score_type, 
 ): 
-    dist_stat = pd.DataFrame()
-    dist_stat['cluster_distance'] = x
-    dist_stat['n_sens_clusters'] = ys[0]
-    dist_stat['n_resi_clusters'] = ys[1]
-
+    dist_stat = pd.DataFrame({'clust_dist': x, 'n_sens_clust': ys[0], 'n_resi_clust': ys[1]})
     fig, ax = plt.subplots()
 
-    sns.lineplot(data=dist_stat, x="cluster_distance", y="n_sens_clusters")
-    sns.lineplot(data=dist_stat, x="cluster_distance", y="n_resi_clusters")
+    sns.lineplot(data=dist_stat, x="clust_dist", y="n_sens_clust")
+    sns.lineplot(data=dist_stat, x="clust_dist", y="n_resi_clust")
 
     plt.xlabel('Cluster Radius')
     plt.ylabel('Number of Clusters')
     plt.title(f'Positive vs Negative Clusters {input_gene}')
     plt.savefig(edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_cluster_distance.png") 
+
     dist_stat.to_csv(out_filename, sep = '\t', index=False)
 
 def plot_dendrogram(
@@ -189,12 +175,10 @@ def plot_dendrogram(
         counts[i] = current_count
 
     linkage_matrix = np.column_stack(
-        [clustering.children_, clustering.distances_, counts]
-    ).astype(float)
+        [clustering.children_, clustering.distances_, counts]).astype(float)
     xlbl = list(df['unipos'])
 
-    # plot the corresponding dendrogram
-    dendrogram(linkage_matrix, color_threshold=6.0, 
-               labels=xlbl, leaf_rotation=90.)
+    # PLOT CORRESPONDING DENDROGRAM #
+    dendrogram(linkage_matrix, color_threshold=6.0, labels=xlbl, leaf_rotation=90.)
     plt.title(f'{input_gene} {name} Clusters')
-    plt.savefig(dendogram_filename, dpi=300) 
+    plt.savefig(dendogram_filename, dpi=300)

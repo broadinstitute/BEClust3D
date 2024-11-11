@@ -6,7 +6,6 @@ Description: Translated from Notebook 3.1
 
 """
 
-import pandas as pd
 import re
 from pathlib import Path
 import numpy as np
@@ -15,6 +14,13 @@ import re
 import warnings
 
 from _preprocess_be_results_plots_ import *
+
+aa_map = {
+    'ALA': 'A',  'ARG': 'R',  'ASN': 'N',  'ASP': 'D',  'CYS': 'C',  
+    'GLN': 'Q',  'GLU': 'E',  'GLY': 'G',  'HIS': 'H',  'ILE': 'I',  
+    'LEU': 'L',  'LYS': 'K',  'MET': 'M',  'PHE': 'F',  'PRO': 'P',  
+    'SER': 'S',  'THR': 'T',  'TRP': 'W',  'TYR': 'Y',  'VAL': 'V', 
+}
 
 # These have to be predefined, too much of the code is dependent on these categories #
 mut_categories = ["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"]
@@ -119,6 +125,9 @@ def parse_base_editing_results(
             df_exploded = df.explode(edits_col) # EACH ROW IS A MUTATION #
             df_exploded['edit_pos'] = df_exploded[edits_col].str.extract('(\d+)')
             df_exploded['refAA'], df_exploded['altAA'] = df_exploded[edits_col].str[0], df_exploded[edits_col].str[-1]
+            # IF 3 LETTER CODES ARE USED, TRANSLATE TO 1 LETTER CODE #
+            df_exploded['refAA'] = df_exploded['refAA'].str.upper().map(aa_map)
+            df_exploded['altAA'] = df_exploded['altAA'].str.upper().map(aa_map)
             df_subset = df_exploded[[edits_col, 'edit_pos', 'refAA', 'altAA', val_col]].rename(columns={edits_col: 'this_edit', val_col: 'LFC'})
 
             if mut == 'Missense': 
