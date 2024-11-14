@@ -14,112 +14,121 @@ import statistics
 import scipy.stats as stats
 from scipy.stats import mannwhitneyu
 
+# HELPER FUNCTIONS #
+
+def calculate_stats(signal, param, pthr):
+    """
+    Helper function to calculate stats: z, p, plabel
+    """
+
+    if param['s'] == 0:
+        return 0, 0, 0
+    signal_z = statistics.NormalDist(mu=param['mu'], sigma=param['s']).zscore(signal)
+    signal_p = stats.norm.sf(abs(signal_z))
+    signal_plabel = f'p<{str(pthr)}' if signal_p < pthr else f'p>={str(pthr)}'
+    return signal_z, signal_p, signal_plabel
+
 def binning(
-        df_LFC_LFC3D, df_LFC3D_neg_stats, df_LFC3D_pos_stats, 
+        df_LFC_LFC3D, df_neg_stats, df_pos_stats, 
         quantile_vals, LFC3D_header
-):
+): 
     NEG_10p_v, POS_90p_v, NEG_05p_v, POS_95p_v = quantile_vals
     # binning and weighting 
-    arr_LFC3D_discrete = []
+    arr_LFC3D_disc = []
     arr_LFC3D_weight = []
 
     for i in range(0, len(df_LFC_LFC3D)): 
         LFC3D = df_LFC_LFC3D.at[i, LFC3D_header]
         if LFC3D == '-' or LFC3D == 0.0:
-            LFC3D_discrete = '-'
-            LFC3D_weight = 0.0
+            LFC3D_disc, LFC3D_weight = '-', 0.0
         else: 
             LFC3Df = round(float(LFC3D), 3)
-            # aligned for better readability
-            if                               LFC3Df <= NEG_05p_v:                 LFC3D_discrete, LFC3D_weight = 'NEG_05p', -0.95
-            elif                 NEG_05p_v < LFC3Df <= NEG_10p_v:                 LFC3D_discrete, LFC3D_weight = 'NEG_10p', -0.9
-            elif                 NEG_10p_v < LFC3Df <= df_LFC3D_neg_stats['25%']: LFC3D_discrete, LFC3D_weight = 'NEG_25p', -0.75
-            elif df_LFC3D_neg_stats['25%'] < LFC3Df <= df_LFC3D_neg_stats['50%']: LFC3D_discrete, LFC3D_weight = 'NEG_50p', -0.5
-            elif df_LFC3D_neg_stats['50%'] < LFC3Df <= df_LFC3D_neg_stats['75%']: LFC3D_discrete, LFC3D_weight = 'NEG_75p', -0.25
-            elif df_LFC3D_neg_stats['75%'] < LFC3Df <= df_LFC3D_neg_stats['max']: LFC3D_discrete, LFC3D_weight = 'NEG_100p', -0.05
-            elif df_LFC3D_pos_stats['25%'] > LFC3Df >= df_LFC3D_pos_stats['min']: LFC3D_discrete, LFC3D_weight = 'POS_0p', 0.05
-            elif df_LFC3D_pos_stats['50%'] > LFC3Df >= df_LFC3D_pos_stats['25%']: LFC3D_discrete, LFC3D_weight = 'POS_25p', 0.25
-            elif df_LFC3D_pos_stats['75%'] > LFC3Df >= df_LFC3D_pos_stats['50%']: LFC3D_discrete, LFC3D_weight = 'POS_50p', 0.50
-            elif                 POS_90p_v > LFC3Df >= df_LFC3D_pos_stats['75%']: LFC3D_discrete, LFC3D_weight = 'POS_75p', 0.75
-            elif                 POS_95p_v > LFC3Df >= POS_90p_v:                 LFC3D_discrete, LFC3D_weight = 'POS_90p', 0.90
-            elif                             LFC3Df >= POS_95p_v:                 LFC3D_discrete, LFC3D_weight = 'POS_95p', 0.95
+            # ALIGNED FOR BETTER READABILITY #
+            if                         LFC3Df <= NEG_05p_v:           LFC3D_disc, LFC3D_weight = 'NEG_05p', -0.95
+            elif           NEG_05p_v < LFC3Df <= NEG_10p_v:           LFC3D_disc, LFC3D_weight = 'NEG_10p', -0.9
+            elif           NEG_10p_v < LFC3Df <= df_neg_stats['25%']: LFC3D_disc, LFC3D_weight = 'NEG_25p', -0.75
+            elif df_neg_stats['25%'] < LFC3Df <= df_neg_stats['50%']: LFC3D_disc, LFC3D_weight = 'NEG_50p', -0.5
+            elif df_neg_stats['50%'] < LFC3Df <= df_neg_stats['75%']: LFC3D_disc, LFC3D_weight = 'NEG_75p', -0.25
+            elif df_neg_stats['75%'] < LFC3Df <= df_neg_stats['max']: LFC3D_disc, LFC3D_weight = 'NEG_100p', -0.05
+            elif df_pos_stats['25%'] > LFC3Df >= df_pos_stats['min']: LFC3D_disc, LFC3D_weight = 'POS_0p', 0.05
+            elif df_pos_stats['50%'] > LFC3Df >= df_pos_stats['25%']: LFC3D_disc, LFC3D_weight = 'POS_25p', 0.25
+            elif df_pos_stats['75%'] > LFC3Df >= df_pos_stats['50%']: LFC3D_disc, LFC3D_weight = 'POS_50p', 0.50
+            elif           POS_90p_v > LFC3Df >= df_pos_stats['75%']: LFC3D_disc, LFC3D_weight = 'POS_75p', 0.75
+            elif           POS_95p_v > LFC3Df >= POS_90p_v:           LFC3D_disc, LFC3D_weight = 'POS_90p', 0.90
+            elif                       LFC3Df >= POS_95p_v:           LFC3D_disc, LFC3D_weight = 'POS_95p', 0.95
 
-        arr_LFC3D_discrete.append(LFC3D_discrete)
+        arr_LFC3D_disc.append(LFC3D_disc)
         arr_LFC3D_weight.append(LFC3D_weight)
-
-    return arr_LFC3D_discrete, arr_LFC3D_weight
+    return arr_LFC3D_disc, arr_LFC3D_weight
 
 def binning_lfc3d(
-        df_meta, colnames, 
+        df_meta, col, 
 ): 
     """
     Description
         Helper function to bin the top 10 and bottom 10 % of points
     """
     
-    df_3daggr_list = [pd.DataFrame() for _ in colnames]
-    quantile_numbers = {colnames[0]: (0.1, 0.05), 
-                        colnames[1]: (0.9, 0.95), }
-    results = {}
+    df_3d_list = [pd.DataFrame() for _ in col]
+    quantile_numbers = {col[0]: (0.1, 0.05), col[1]: (0.9, 0.95)}
+    result = {}
 
-    for colname, df in zip(colnames, df_3daggr_list): 
+    for colname, df in zip(col, df_3d_list): 
         res = {}
-        df_3daggr_clean = df_meta.loc[df_meta[colname] != 0.0, ]
-        df_3daggr_clean = df_3daggr_clean.reset_index(drop=True)
-        df_3daggr_clean[colname] = df_3daggr_clean[colname].astype(float)
-        df = df_3daggr_clean.loc[df_3daggr_clean[colname] != 0.0, ]
-        df = df.reset_index(drop=True)
-        # print(f"length of {colname}: " + str(len(df)))
+        df_3d_clean = df_meta.loc[df_meta[colname] != 0.0, ].reset_index(drop=True)
+        df_3d_clean[colname] = df_3d_clean[colname].astype(float)
+        df = df_3d_clean.loc[df_3d_clean[colname] != 0.0, ].reset_index(drop=True)
+
         res['dfstats'] = df[colname].describe()
         res['p1'] = round(df[colname].quantile(quantile_numbers[colname][0]), 4) # (bottom 10th percentile)
         res['p2'] = round(df[colname].quantile(quantile_numbers[colname][1]), 4) # (bottom 5th percentile)
-        results[colname] = res
+        result[colname] = res
 
-    df_3daggr_neg_stats, df_3daggr_pos_stats = results[colnames[0]]['dfstats'], results[colnames[1]]['dfstats']
-    NEG_10p_v, NEG_05p_v = results[colnames[0]]['p1'], results[colnames[0]]['p2']
-    POS_90p_v, POS_95p_v = results[colnames[1]]['p1'], results[colnames[1]]['p2']
+    df_neg_stats, df_pos_stats = result[col[0]]['dfstats'], result[col[1]]['dfstats']
+    bins = [result[col[0]]['p1'], result[col[1]]['p1'], result[col[0]]['p2'], result[col[1]]['p2']]
 
-    for colname, df in zip(colnames, df_3daggr_list): 
-        arr_LFC3D_discrete, _ = binning(df_meta, df_3daggr_neg_stats, df_3daggr_pos_stats, 
-                                        [NEG_10p_v, POS_90p_v, NEG_05p_v, POS_95p_v], colname)
-        df_meta[colname+'_dis'] = arr_LFC3D_discrete
+    for colname, df in zip(col, df_3d_list): 
+        arr_LFC3D_disc, _ = binning(df_meta, df_neg_stats, df_pos_stats, bins, colname)
+        df_meta[colname+'_dis'] = arr_LFC3D_disc
 
     return df_meta
 
+# PLOTS #
 
 def LFC3D_plots(
-        df_Z, edits_filedir, input_gene, pthr, name='', 
+        df_Z, edits_filedir, input_gene, pthr, 
+        name='', func='SUM', score='LFC3D', 
 ): 
+    neg, pos = f'{name}{func}_{score}_neg', f'{name}{func}_{score}_pos'
+
     # HISTOGRAMS #
-    histogram_params = [(name+'AVG_LFC3Dr_neg', name+f'SUM_LFC3D_neg', 'Negative'), 
-                        (name+'AVG_LFC3Dr_pos', name+f'SUM_LFC3D_pos', 'Positive'), ]
-    res_neg, res_pos = metaaggregation_histogram(
-        df_Z, histogram_params, edits_filedir, input_gene, name=name, )
+    histogram_params = [(f'{name}AVG_{score}r_neg', neg, 'Negative'), 
+                        (f'{name}AVG_{score}r_pos', pos, 'Positive'), ]
+    res_neg, res_pos = metaaggregation_histogram(df_Z, histogram_params, edits_filedir, 
+                                                 input_gene, name=name)
     if res_neg is None or res_pos is None: 
         return None
-
-    df_Z = binning_lfc3d(df_Z, colnames=[name+'SUM_LFC3D_neg',name+'SUM_LFC3D_pos'],)
+    df_Z = binning_lfc3d(df_Z, col=[neg, pos])
 
     # HISPLOTS #
-    hisplots_params = [(name+'SUM_LFC3D_neg_dis', name+f'SUM_LFC3D_neg', name+'SUM_LFC3D_neg_psig', 'Negative P-Value'), 
-                       (name+'SUM_LFC3D_neg_dis', name+f'SUM_LFC3D_neg', name+'SUM_LFC3D_neg_dis', 'Negative P-Value'), 
-                       (name+'SUM_LFC3D_pos_dis', name+f'SUM_LFC3D_pos', name+'SUM_LFC3D_pos_psig', 'Positive P-Value'), 
-                       (name+'SUM_LFC3D_pos_dis', name+f'SUM_LFC3D_pos', name+'SUM_LFC3D_pos_dis', 'Positive P-Value'), ]
-    metaaggregation_hisplot(
-        df_Z, hisplots_params, filedir=edits_filedir, input_gene=input_gene, name=name, )
+    hisplots_params = [(f'{neg}_dis', neg, f'{neg}_psig', 'Negative P-Value'), 
+                       (f'{neg}_dis', neg, f'{neg}_dis', 'Negative P-Value'), 
+                       (f'{pos}_dis', pos, f'{pos}_psig', 'Positive P-Value'), 
+                       (f'{pos}_dis', pos, f'{pos}_dis', 'Positive P-Value'), ]
+    metaaggregation_hisplot(df_Z, hisplots_params, edits_filedir, input_gene, 
+                            name, score)
 
     # SCATTERPLOT #
-    scatterplot_params = [(name+'SUM_LFC3D_neg_dis', name+'SUM_LFC3D_neg_psig', name+f'SUM_LFC3D_neg', 'Negative'), 
-                          (name+'SUM_LFC3D_pos_dis', name+'SUM_LFC3D_pos_psig', name+f'SUM_LFC3D_pos', 'Positive')]
-    metaaggregation_scatterplot(
-        df_Z, scatterplot_params, filedir=edits_filedir, input_gene=input_gene, pthr=pthr, name=name, )
+    scatterplot_params = [(f'{neg}_dis', f'{neg}_psig', neg, 'Negative'), 
+                          (f'{pos}_dis', f'{pos}_psig', pos, 'Positive')]
+    metaaggregation_scatterplot(df_Z, scatterplot_params, edits_filedir, input_gene, 
+                                pthr, name, score)
     
     # Z SCORE SCATTERPLOT #
-    scatterplot_params = [(name+'SUM_LFC3D_neg_dis', name+'SUM_LFC3D_neg_dis', name+f'SUM_LFC3D_neg_z', 'Negative'), 
-                          (name+'SUM_LFC3D_pos_dis', name+'SUM_LFC3D_pos_dis', name+f'SUM_LFC3D_pos_z', 'Positive')]
-    metaaggregation_scatterplot(
-        df_Z, scatterplot_params, filedir=edits_filedir, input_gene=input_gene, pthr=pthr, name=name, colors=True, )
-
+    scatterplot_params = [(f'{neg}_dis', f'{neg}_dis', f'{neg}_z', 'Negative'), 
+                          (f'{pos}_dis', f'{pos}_dis', f'{pos}_z', 'Positive')]
+    metaaggregation_scatterplot(df_Z, scatterplot_params, edits_filedir, input_gene, 
+                                pthr, name, score, colors=True)
 
 def metaaggregation_histogram(
         df_meta, params, filedir, input_gene, name, 
@@ -133,37 +142,34 @@ def metaaggregation_histogram(
     results_list = []
 
     for i, (avg, sum, out) in enumerate(params): 
-
-        results = {}
+        res = {}
         df_meta_plot = pd.DataFrame()
         df_meta_plot['unipos'] = df_meta['unipos']
         df_meta_plot[sum] = df_meta[sum]
         df_meta_plot[avg] = df_meta[avg]
 
         U1, p = mannwhitneyu(df_meta_plot[sum], df_meta_plot[avg], method="asymptotic" )
-        results['mannwhitneyu U1'], results['mannwhitneyu p'] = U1, p
+        res['mannwhitneyu U1'], res['mannwhitneyu p'] = U1, p
         r, p = stats.pearsonr(df_meta_plot[sum], df_meta_plot[avg] )
-        results['pearsonr r'], results['pearsonr p'] = r, p
-
+        res['pearsonr r'], res['pearsonr p'] = r, p
         # SUM #
         temp = df_meta_plot[sum]
-        results['sum min'], results['sum mean'] = temp.min(), temp.mean()
-        results['sum med'], results['sum std'] = temp.median(), temp.std()
+        res['sum min'], res['sum mean'] = temp.min(), temp.mean()
+        res['sum med'], res['sum std'] = temp.median(), temp.std()
 
-        if results['sum std'] == 0: 
+        if res['sum std'] == 0: 
             return None
-        z = statistics.NormalDist(mu=results['sum mean'], sigma=results['sum std']).zscore(-4.6)
-        results['z'], results['p cdf'], results['p sf'] = z, stats.norm.cdf(z), stats.norm.sf(abs(z))
-
+        z = statistics.NormalDist(mu=res['sum mean'], sigma=res['sum std']).zscore(-4.6)
+        res['z'], res['p cdf'], res['p sf'] = z, stats.norm.cdf(z), stats.norm.sf(abs(z))
         # AVG #
         temp = df_meta_plot[avg]
-        results['avg min'], results['avg mean'] = temp.min(), temp.mean()
-        results['avg med'], results['avg std'] = temp.median(), temp.std()
+        res['avg min'], res['avg mean'] = temp.min(), temp.mean()
+        res['avg med'], res['avg std'] = temp.median(), temp.std()
 
         # PLOT #
         df_meta_plot.plot.area(x='unipos', alpha=0.55, stacked = False, ax=ax[i])
-        ax[i].axhline(y = results['sum mean'], color = 'r', linestyle = '-')
-        ax[i].axhline(y = results['sum mean']-results['sum std'], color = 'r', linestyle = '--')
+        ax[i].axhline(y = res['sum mean'], color = 'r', linestyle = '-')
+        ax[i].axhline(y = res['sum mean']-res['sum std'], color = 'r', linestyle = '--')
 
         ax[i].legend(loc='lower left', borderaxespad=0)
         ax[i].set_xticks(np.arange(0,len(df_meta), 100))
@@ -176,7 +182,7 @@ def metaaggregation_histogram(
         ax[i].set_axisbelow(True)
 
         del temp, df_meta_plot
-        results_list.append(results)
+        results_list.append(res)
     
     plt.subplots_adjust(wspace=0.3)
     out_filename = filedir / f"plots/{input_gene}_{name}_signal_vs_background.png"
@@ -184,7 +190,7 @@ def metaaggregation_histogram(
     return results_list[0], results_list[1]
 
 def metaaggregation_hisplot(
-        df_meta, params, filedir, input_gene, name, 
+        df_meta, params, filedir, input_gene, name, score, 
 ): 
     """
     Description
@@ -206,11 +212,11 @@ def metaaggregation_hisplot(
         ax[i].set_axisbelow(True)
 
     plt.subplots_adjust(wspace=0.3)
-    out_name = filedir / f"plots/{input_gene}_{name}_Aggr_LFC3D_histogram.png"
+    out_name = filedir / f"plots/{input_gene}_{name}_{score}_histogram.png"
     plt.savefig(out_name, dpi=300) 
 
 def metaaggregation_scatterplot(
-        df_meta, params, filedir, input_gene, pthr, name, colors=False, 
+        df_meta, params, filedir, input_gene, pthr, name, score, colors=False, 
 ): 
     """
     Description
@@ -231,7 +237,6 @@ def metaaggregation_scatterplot(
                 ax[i].axhline(y = -1.96, color = 'r', linestyle = '--')
                 ax[i].axhline(y = -2.58, color = 'r', linestyle = '--')
             sns.scatterplot(data=df_combined_clean, x="unipos", y=y, hue=pval, palette='tab10', ax=ax[i])
-
         else: # 2 COLORS #
             df_combined_psig = df_meta.loc[df_meta[pval] == 'p<'+str(pthr), ]
             if 'pos' in dis: 
@@ -252,5 +257,6 @@ def metaaggregation_scatterplot(
         ax[i].set_axisbelow(True)
 
     plt.subplots_adjust(wspace=0.3)
-    outname = filedir / f"plots/{input_gene}_{name}_Aggr_LFC3D_dot_per_residue.png"
+    if colors: outname = filedir / f"plots/{input_gene}_{name}_{score}_scatter_colored.png"
+    else: outname = filedir / f"plots/{input_gene}_{name}_{score}_scatter.png"
     plt.savefig(outname, dpi=300)

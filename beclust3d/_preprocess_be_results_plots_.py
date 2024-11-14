@@ -27,20 +27,14 @@ def mann_whitney_test(
 ): 
     """
     Description
-        A helper function to run the Mann Whitney test on
-        'Missense', 'Silent', 'Nonsense', 'No Mutation'
-
-    Returns
-        df_InputGene_edits_list: list of Pandas Dataframes
-            A list of dataframes, for each category of mutations
-        comparisons: dict
-            A dictionary of each screen comparison and their Mann Whitney results
+        Run the Mann Whitney test on 'Missense', 'Silent', 'Nonsense', 'No Mutation'
     """
+
     muts_dicts_list = [{} for _ in mut_categories_unspaced]
     for mut, mut_dict in zip(mut_categories_unspaced, muts_dicts_list): 
         list_mut = []
         for screen_name in screen_names: 
-            edits_filename = f"screendata/{input_gene}_{screen_name}_{mut}_edits_list.tsv"
+            edits_filename = f"screendata/{input_gene}_{screen_name}_{mut}.tsv"
             df_temp = pd.read_csv(edits_filedir / edits_filename, sep = '\t')
             list_mut.extend(df_temp['LFC'].tolist())
             del df_temp
@@ -64,15 +58,8 @@ def violin_plot(
     """
     Description
         Graph a violin plot of LFC distribution by category
-
-    Returns
-        means: list of floats
-            List of means for each mutation category
-        stds: list of floats
-            List of standard deviations for each mutation category
-        medians: list of floats
-            List of medians for each mutation category
     """
+
     plt.rcParams.update({'font.size': 10})
     fig, ax = plt.subplots(1, 2, figsize=(12,6))
 
@@ -90,16 +77,22 @@ def violin_plot(
     plt.suptitle(f'{screen_name}_{input_gene}')
 
     plt.tight_layout()
-    plotname = edits_filedir / f"plots/{screen_name}_{input_gene}_LFC_dist_muttype.pdf"
+    plotname = edits_filedir / f"plots/{screen_name}_{input_gene}_LFC_dist_by_muttype.pdf"
     plt.savefig(plotname, dpi=300)
 
     return means, stds, medians
+
 
 def counts_by_gene(
     df_inputs, 
     gene_col, mut_col, 
     edits_filedir, title, 
 ): 
+    """
+    Description
+        Graph a bar plot of counts by category per gene
+    """
+
     mut_categories_spaced_sort = sorted(mut_categories_spaced)
     # FIND HOW MANY PLOTS NEEDED #
     unique_genes = set()
@@ -128,7 +121,7 @@ def counts_by_gene(
     for ax in ax.axes.flat:
         for idx in range(len(ax.containers)):
             ax.bar_label(ax.containers[idx])
-            
+
     plt.subplots_adjust(top=0.9)
     plt.suptitle(title)
 
@@ -142,6 +135,11 @@ def violin_by_gene(
     gene_col, mut_col, val_col, 
     edits_filedir, title
 ): 
+    """
+    Description
+        Graph a violin plot of LFC values by category per gene
+    """
+    
     mut_categories_spaced_sort = sorted(mut_categories_spaced)
     # FIND HOW MANY PLOTS NEEDED #
     unique_genes = set()
@@ -151,7 +149,7 @@ def violin_by_gene(
     plot_dim = math.ceil(math.sqrt(len(unique_genes)))
 
     # VIOLIN PLOT SETUP #
-    plt.rcParams.update({'font.size': 9})
+    plt.rcParams.update({'font.size': 10})
     fig, axes = plt.subplots(nrows=plot_dim, ncols=plot_dim, sharex=False, sharey=True, 
                              figsize=(19,17), gridspec_kw={'hspace':0.3, 'wspace':0.1})
     axes = axes.flatten()

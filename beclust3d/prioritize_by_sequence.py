@@ -15,11 +15,22 @@ from scipy.stats import norm
 
 from _prioritize_by_sequence_plots_ import *
 
+
+def get_plabel(z_LFC, direction):
+    if direction == 'negative': 
+        thresholds = [(-3.29,'-p=0.001'), (-2.58,'-p=0.01'), (-1.96,'-p=0.05'), (-1.65,'-p=0.1'), (-1.0,'-p=0.3')] 
+    else: 
+        thresholds = [(3.29,'+p=0.001'), (2.58,'+p=0.01'), (1.96,'+p=0.05'), (1.65,'+p=0.1'), (1.0,'+p=0.3')]
+    for threshold, label in thresholds:
+        if (direction == 'negative' and z_LFC < threshold) or (direction == 'positive' and z_LFC > threshold):
+            return label
+    return '-p=1.0' if direction=='negative' else '+p=1.0'
+
 def prioritize_by_sequence(
     df_struc, df_consrv, df_nomutation, 
     workdir, 
     input_gene, input_screen, structureid, 
-    function_type='mean', 
+    screen_name='', function_type='mean', 
 ): 
     """
     Description
@@ -31,6 +42,8 @@ def prioritize_by_sequence(
             DataFrame output from af_structural_features()
         df_consrv: pandas dataframe, required
             DataFrame output from conservation()
+        df_nomutation: pandas dataframe, required
+            DataFrame output from preprocess_be_results() to calculate baseline on
         workdir: str, required
             the working directory
         input_gene: str, required
@@ -39,28 +52,34 @@ def prioritize_by_sequence(
             the name of the input screen
         structureid: str, required
             the name of the AF and uniprot input
+        screen_name: str, optional
+            the name of the input screen
+        function_type: str, optional
+            indicates the type of supported aggregation function for a residue
 
     Returns
-        df_struc_consvr: pandas dataframe
+        df_protein: pandas dataframe
             DataFrame
     """
-    screen_name = input_screen.split('.')[0]
+    
     edits_filedir = Path(workdir)
     edits_filedir = edits_filedir / input_gene
+    if not screen_name: 
+        screen_name = input_screen.split('.')[0]
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'screendata'):
         os.mkdir(edits_filedir / 'screendata')
 
-    df_struc_consvr = df_struc
+    df_protein = df_struc
     if df_consrv is None: 
-        df_struc_consvr['human_res_pos'] = df_struc_consvr['unipos']
-        df_struc_consvr['conservation']  = 'None'
+        df_protein['human_res_pos'] = df_protein['unipos']
+        df_protein['conservation']  = 'None'
     else: 
-        df_struc_consvr['human_res_pos'] = df_consrv['human_res_pos']
-        df_struc_consvr['mouse_res_pos'] = df_consrv['mouse_res_pos']
-        df_struc_consvr['mouse_res']     = df_consrv['mouse_res']
-        df_struc_consvr['conservation']  = df_consrv['conservation']
+        df_protein['human_res_pos'] = df_consrv['human_res_pos']
+        df_protein['mouse_res_pos'] = df_consrv['mouse_res_pos']
+        df_protein['mouse_res']     = df_consrv['mouse_res']
+        df_protein['conservation']  = df_consrv['conservation']
     del df_struc, df_consrv
 
     # ALLOW USER TO PICK AGGREGATION FUNCTION #
@@ -72,21 +91,21 @@ def prioritize_by_sequence(
         case _: warnings.warn('Warning: Invalid Function Type (mean, median, min, max)')
 
     struc_consrv_filename =  f"screendata/{input_gene}_{structureid}_struc_consrv.tsv"
-    df_struc_consvr.to_csv(edits_filedir / struc_consrv_filename, sep = "\t", index=False)
+    df_protein.to_csv(edits_filedir / struc_consrv_filename, sep = "\t", index=False)
 
     # FOR EACH EDIT TYPE, AGGREGATE LFC AND EDITS WITH CONSERVATION #
-    for edit_type in ['Missense', 'Silent', 'Nonsense']: 
+    for mut in ['Missense', 'Silent', 'Nonsense']: 
 
-        in_filename = f"screendata/{input_gene}_{screen_name}_{edit_type}_edits_list.tsv"
+        in_filename = f"screendata/{input_gene}_{screen_name.replace(' ','_')}_{mut.replace(' ','_')}.tsv"
         df_edit = pd.read_csv(edits_filedir / in_filename, sep='\t')
         
         arr_unique_LFC = []
         arr_all_edits = []
 
         # FOR EACH RESIDUE #
-        for i in range(len(df_struc_consvr)): 
-            human_res_pos = df_struc_consvr.at[i, 'human_res_pos'] ### rewrite, and also rename human_res_pos
-            df_pos_edits = df_edit.loc[df_edit['edit_pos'] == int(human_res_pos), ].reset_index() ### rewrite
+        for i in range(len(df_protein)): 
+            human_res_pos = df_protein.at[i, 'human_res_pos']
+            df_pos_edits = df_edit.loc[df_edit['edit_pos'] == int(human_res_pos), ].reset_index() ###
 
             if len(df_pos_edits) > 1: 
                 pos_LFCscore_list = df_pos_edits['LFC'].tolist()
@@ -103,69 +122,53 @@ def prioritize_by_sequence(
             arr_unique_LFC.append(unique_LFC_res)
             arr_all_edits.append(all_edits_res)
 
-        df_struc_consvr[f'mean_{edit_type}_LFC'] = arr_unique_LFC
-        df_struc_consvr[f'all_{edit_type}_edits'] = arr_all_edits
+        df_protein[f'{function_type}_{mut}_LFC'] = arr_unique_LFC
+        df_protein[f'all_{mut}_edits'] = arr_all_edits
 
         # CALCULATE Z SCORE #
+        neg_mask = df_nomutation['LFC'] < 0.0 # NEG #
+        pos_mask = df_nomutation['LFC'] > 0.0 # POS #
+        mu_neg, sigma_neg = df_nomutation.loc[neg_mask, 'LFC'].mean(), df_nomutation.loc[neg_mask, 'LFC'].std()
+        mu_pos, sigma_pos = df_nomutation.loc[pos_mask, 'LFC'].mean(), df_nomutation.loc[pos_mask, 'LFC'].std()
 
         list_z_LFC, list_p_LFC, list_plab_LFC = [], [], []
-        # negative
-        df_nomutation_neg = df_nomutation.loc[df_nomutation['LFC'] < 0.0, ]
-        mu_neg = df_nomutation_neg['LFC'].mean()
-        sigma_neg = df_nomutation_neg['LFC'].std()
-        # positive
-        df_nomutation_pos = df_nomutation.loc[df_nomutation['LFC'] > 0.0, ]
-        mu_pos = df_nomutation_pos['LFC'].mean()
-        sigma_pos = df_nomutation_pos['LFC'].std()
 
-        for i in range(len(df_struc_consvr)):
-            LFC_raw = df_struc_consvr.at[i, f'mean_{edit_type}_LFC']
+        for i in range(len(df_protein)):
+            LFC_raw = df_protein.at[i, f'{function_type}_{mut}_LFC']
 
-            if LFC_raw == '-':
+            if LFC_raw == '-': 
                 LFC, z_LFC, p_LFC, plab_LFC = 0.0, '-', 1.0, 'p=1.0'
-            else:
-                LFC = float(df_struc_consvr.at[i, f'mean_{edit_type}_LFC'])
+            else: 
+                LFC = float(df_protein.at[i, f'{function_type}_{mut}_LFC'])
 
                 if (LFC < 0.0):
                     z_LFC = statistics.NormalDist(mu=mu_neg, sigma=sigma_neg).zscore(LFC)
                     p_LFC = norm.sf(abs(z_LFC))
-                    if            z_LFC < -3.29: plab_LFC = '-p=0.001'
-                    elif -3.29 <= z_LFC < -2.58: plab_LFC = '-p=0.01'
-                    elif -2.58 <= z_LFC < -1.96: plab_LFC = '-p=0.05'
-                    elif -1.96 <= z_LFC < -1.65: plab_LFC = '-p=0.1'
-                    elif -1.65 <= z_LFC < -1.0:  plab_LFC = '-p=0.3'
-                    else:                        plab_LFC = '-p=1.0'
-
+                    plab_LFC = get_plabel(z_LFC, direction='negative')
                 elif (LFC > 0.0):
                     z_LFC = statistics.NormalDist(mu=mu_pos, sigma=sigma_pos).zscore(LFC)
                     p_LFC = norm.sf(abs(z_LFC))
-                    if   3.29 < z_LFC:         plab_LFC = '+p=0.001'
-                    elif 2.58 < z_LFC <= 3.29: plab_LFC = '+p=0.01'
-                    elif 1.96 < z_LFC <= 2.58: plab_LFC = '+p=0.05'
-                    elif 1.65 < z_LFC <= 1.95: plab_LFC = '+p=0.1'
-                    elif  1.0 < z_LFC <= 1.65: plab_LFC = '+p=0.3'
-                    else:                      plab_LFC = '+p=1.0'
-
+                    plab_LFC = get_plabel(z_LFC, direction='positive')
                 else: plab_LFC = 'p=1.0'
 
             list_z_LFC.append(z_LFC)
             list_p_LFC.append(p_LFC)
             list_plab_LFC.append(plab_LFC)
 
-        df_struc_consvr[f'mean_{edit_type}_LFC_Z'] = list_z_LFC
-        df_struc_consvr[f'mean_{edit_type}_LFC_p'] = list_p_LFC
-        df_struc_consvr[f'mean_{edit_type}_LFC_plab'] = list_plab_LFC
-        df_struc_consvr.round(4)
+        df_protein[f'{function_type}_{mut}_LFC_Z'] = list_z_LFC
+        df_protein[f'{function_type}_{mut}_LFC_p'] = list_p_LFC
+        df_protein[f'{function_type}_{mut}_LFC_plab'] = list_plab_LFC
+        df_protein.round(4)
 
         # PLOT SCATTERPLOT AND COUNTS PLOT #
-        if edit_type == 'Missense': 
-            counts_by_residue(df_struc_consvr, edits_filedir, input_gene, screen_name, edit_type, )
-            scatterplot_by_residue(df_struc_consvr, edits_filedir, input_gene, screen_name, edit_type, function_type, )
-            scatterplot_by_residue(df_struc_consvr, edits_filedir, input_gene, screen_name, edit_type, function_type, input='_Z')
-            dual_scatterplot_by_residue(df_struc_consvr, edits_filedir, input_gene, screen_name)
-            dual_histogram_by_residue(df_struc_consvr, edits_filedir, input_gene, screen_name)
+        if mut == 'Missense': 
+            counts_by_residue(df_protein, edits_filedir, input_gene, screen_name, mut, )
+            scatterplot_by_residue(df_protein, edits_filedir, input_gene, screen_name, mut, function_type, )
+            scatterplot_by_residue(df_protein, edits_filedir, input_gene, screen_name, mut, function_type, input='_Z')
+            dual_scatterplot_by_residue(df_protein, edits_filedir, input_gene, screen_name, function_type)
+            dual_histogram_by_residue(df_protein, edits_filedir, input_gene, screen_name, function_type)
 
-    strcons_edits_filename = f"screendata/{input_gene}_{screen_name}_struc_consrv_proteinedits.tsv"
-    df_struc_consvr.to_csv(edits_filedir / strcons_edits_filename, sep = '\t', index=False)
+    strcons_edits_filename = f"screendata/{input_gene}_{screen_name.replace(' ','_')}_proteinedits.tsv"
+    df_protein.to_csv(edits_filedir / strcons_edits_filename, sep = '\t', index=False)
 
-    return df_struc_consvr
+    return df_protein

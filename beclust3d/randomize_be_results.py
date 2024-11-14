@@ -12,7 +12,7 @@ import numpy as np
 import os
 
 def randomize_be_results(df_missense, 
-                         workdir, input_gene, input_screen, 
+                         workdir, input_gene, input_screen, screen_name='', 
                          nRandom=1000, val_colname = 'LFC', 
                          ): 
     """
@@ -30,8 +30,12 @@ def randomize_be_results(df_missense,
             the name of the input gene ie 'TP53'
         input_screen: str, required
             the name of the input screen file ie 'ABE_screen_K562s.txt'
+        screen_names: str, optional
+            the name of the input screens
         nRandom: int, optional
             the number of randomize iterations
+        val_colname: str, optional
+            the name of the column with LFC values
 
     Returns
         df_missense: pandas dataframe
@@ -40,9 +44,10 @@ def randomize_be_results(df_missense,
     """
 
     # NAME VARIABLES, PATHS, CREATE DIRECTORIES #
-    screen_name = input_screen.split('.')[0]
     edits_filedir = Path(workdir)
     edits_filedir = edits_filedir / input_gene
+    if not screen_name: 
+        screen_name = input_screen.split('.')[0]
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'randomized_screendata'):
@@ -56,7 +61,7 @@ def randomize_be_results(df_missense,
     df_missense = pd.concat((df_missense, pd.DataFrame(dict_temp)), axis=1)
 
     # SAVE RESULTS #
-    out_filename = edits_filedir / f"randomized_screendata/{input_gene}_{screen_name}_missense_edits_randomized.tsv"
+    out_filename = edits_filedir / f"randomized_screendata/{input_gene}_{screen_name.replace(' ','_')}_Missense_rand.tsv"
     df_missense.to_csv(out_filename, sep='\t', index=False)
     
     return df_missense

@@ -12,11 +12,11 @@ import numpy as np
 
 def counts_by_residue(
     df_struc_consvr, 
-    edits_filedir, input_gene, screen_name, edit_type, 
+    edits_filedir, input_gene, screen_name, mut, 
 ): 
     # PREP DATA #
-    counts = df_struc_consvr[f'all_{edit_type}_edits'].str.count(';').fillna(0).astype(int)+1
-    counts[df_struc_consvr[f'all_{edit_type}_edits'] == '-'] = 0
+    counts = df_struc_consvr[f'all_{mut}_edits'].str.count(';').fillna(0).astype(int)+1
+    counts[df_struc_consvr[f'all_{mut}_edits'] == '-'] = 0
 
     # PLOT #
     fig, ax = plt.subplots(figsize=(10, 4))
@@ -27,23 +27,23 @@ def counts_by_residue(
 
     ax = sns.barplot(x=df_struc_consvr['unipos'], y=counts, 
                      color='steelblue', edgecolor='steelblue')
-    ax.set_ylabel(f"Count of {edit_type} Mutations")
+    ax.set_ylabel(f"Count of {mut} Mutations")
     ax.set_xlabel(f"unipos")
-    ax.set_title(f"{input_gene} Count of {edit_type} Mutations {screen_name}")
+    ax.set_title(f"{input_gene} Count of {mut} Mutations {screen_name}")
     ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
     plt.xticks(np.arange(0, len(df_struc_consvr), 50), rotation = 90)
 
-    counts_filename = f"plots/{input_gene}_{screen_name}_num_{edit_type}_per_residue.pdf"
+    counts_filename = f"plots/{input_gene}_{screen_name}_num_{mut}_per_res.pdf"
     plt.savefig(edits_filedir / counts_filename, dpi=300)
 
 def scatterplot_by_residue(
     df_struc_consvr, 
     edits_filedir, input_gene, screen_name, 
-    edit_type, function_type, input='', 
+    mut, function_type, input='', 
 ): 
     # PREP DATA #
     x_list = df_struc_consvr['unipos'].tolist()
-    y_list = df_struc_consvr[f'{function_type}_{edit_type}_LFC{input}'].tolist()
+    y_list = df_struc_consvr[f'{function_type}_{mut}_LFC{input}'].tolist()
     x_vals = [x for x, y in zip(x_list, y_list) if y!='-']
     y_vals = [float(y) for y in y_list if y!='-']
 
@@ -58,20 +58,20 @@ def scatterplot_by_residue(
     ax.axhline(1.0, c="blue", linestyle="--")
     ax.axhline(0.0, c="gray", linestyle="--")
     sns.scatterplot(ax=ax, x=x_vals, y=y_vals, color='steelblue', edgecolor='steelblue')
-    ax.set_ylabel(f"{edit_type} LFC{input} Score")
+    ax.set_ylabel(f"{mut} LFC{input} Score")
     ax.set_xlabel(f"unipos")
-    ax.set_title(f'{input_gene} {edit_type} LFC{input} Score By Residue {screen_name}')
+    ax.set_title(f'{input_gene} {mut} LFC{input} Score By Residue {screen_name}')
     plt.xticks(np.arange(0, len(df_struc_consvr), 50), rotation = 90)
 
-    scatter_filename = f"plots/{input_gene}_{screen_name}_{edit_type}_lfc{input}_score_by_residue.pdf"
+    scatter_filename = f"plots/{input_gene}_{screen_name}_{mut}_lfc{input}_score_by_res.pdf"
     plt.savefig(edits_filedir / scatter_filename, dpi=300)
 
 def dual_scatterplot_by_residue(
-    df_struc_consvr, edits_filedir, input_gene, screen_name, edit_type='Missense', 
+    df_struc_consvr, edits_filedir, input_gene, screen_name, function_type, mut='Missense', 
 ): 
-    df_struc_consvr = df_struc_consvr[df_struc_consvr[f'mean_{edit_type}_LFC'] != '-']
-    df_struc_consvr_pos = df_struc_consvr[df_struc_consvr[f'mean_{edit_type}_LFC'] > 0.0]
-    df_struc_consvr_neg = df_struc_consvr[df_struc_consvr[f'mean_{edit_type}_LFC'] < 0.0]
+    df_struc_consvr = df_struc_consvr[df_struc_consvr[f'{function_type}_{mut}_LFC'] != '-']
+    df_struc_consvr_pos = df_struc_consvr[df_struc_consvr[f'{function_type}_{mut}_LFC'] > 0.0]
+    df_struc_consvr_neg = df_struc_consvr[df_struc_consvr[f'{function_type}_{mut}_LFC'] < 0.0]
 
     fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(12, 6))
     for ax in axs: 
@@ -84,7 +84,7 @@ def dual_scatterplot_by_residue(
     axs[0].axhline(1.0, c="blue", linestyle="--")
     axs[0].axhline(0.0, c="gray", linestyle="--")
     sns.scatterplot(ax=axs[0], data=df_struc_consvr_pos, x="unipos", 
-                    y=f'mean_{edit_type}_LFC_Z', hue=f'mean_{edit_type}_LFC_plab', palette='tab10')
+                    y=f'{function_type}_{mut}_LFC_Z', hue=f'{function_type}_{mut}_LFC_plab', palette='tab10')
     axs[0].legend(bbox_to_anchor=(1.005, 1), loc='upper left', borderaxespad=0)
     axs[0].set_title(f'Positive LFC Values')
 
@@ -92,18 +92,18 @@ def dual_scatterplot_by_residue(
     axs[1].axhline(1.0, c="blue", linestyle="--")
     axs[1].axhline(0.0, c="gray", linestyle="--")
     sns.scatterplot(ax=axs[1], data=df_struc_consvr_neg, x="unipos", 
-                    y=f'mean_{edit_type}_LFC_Z', hue=f'mean_{edit_type}_LFC_plab', palette='tab10')
+                    y=f'{function_type}_{mut}_LFC_Z', hue=f'{function_type}_{mut}_LFC_plab', palette='tab10')
     axs[1].legend(bbox_to_anchor=(1.005, 1), loc='upper left', borderaxespad=0)
     axs[1].set_title(f'Negative LFC Values')
 
     plt.subplots_adjust(wspace=0.3)
     plt.suptitle(f'{input_gene} LFC_Z Score {screen_name}')
 
-    scatter_filename = f"plots/{input_gene}_{screen_name}_{edit_type}_lfc_z_score_by_residue_posneg.pdf"
+    scatter_filename = f"plots/{input_gene}_{screen_name}_{mut}_lfcz_scatter_by_bin_posneg.pdf"
     plt.savefig(edits_filedir / scatter_filename, dpi=300)
 
 def dual_histogram_by_residue(
-    df_struc_consvr, edits_filedir, input_gene, screen_name, edit_type='Missense', 
+    df_struc_consvr, edits_filedir, input_gene, screen_name, function_type, mut='Missense', 
 ):  
     fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(12, 6))
     for ax in axs: 
@@ -112,11 +112,11 @@ def dual_histogram_by_residue(
         ax.grid(which='major', color='white', linewidth=0.5)
         ax.set_axisbelow(True)
 
-    df_struc_consvr = df_struc_consvr[df_struc_consvr[f'mean_{edit_type}_LFC'] != '-']
-    df_struc_consvr_pos = df_struc_consvr[df_struc_consvr[f'mean_{edit_type}_LFC'] > 0.0]
-    df_struc_consvr_neg = df_struc_consvr[df_struc_consvr[f'mean_{edit_type}_LFC'] < 0.0]
-    plot1 = sns.histplot(ax=axs[0], data=df_struc_consvr_pos, x=f'mean_{edit_type}_LFC', hue=f'mean_{edit_type}_LFC_plab', bins=80, palette='tab10')
-    plot2 = sns.histplot(ax=axs[1], data=df_struc_consvr_neg, x=f'mean_{edit_type}_LFC', hue=f'mean_{edit_type}_LFC_plab', bins=80, palette='tab10')
+    df_struc_consvr = df_struc_consvr[df_struc_consvr[f'{function_type}_{mut}_LFC'] != '-']
+    df_struc_consvr_pos = df_struc_consvr[df_struc_consvr[f'{function_type}_{mut}_LFC'] > 0.0]
+    df_struc_consvr_neg = df_struc_consvr[df_struc_consvr[f'{function_type}_{mut}_LFC'] < 0.0]
+    plot1 = sns.histplot(ax=axs[0], data=df_struc_consvr_pos, x=f'{function_type}_{mut}_LFC', hue=f'{function_type}_{mut}_LFC_plab', bins=80, palette='tab10')
+    plot2 = sns.histplot(ax=axs[1], data=df_struc_consvr_neg, x=f'{function_type}_{mut}_LFC', hue=f'{function_type}_{mut}_LFC_plab', bins=80, palette='tab10')
 
     # give corresponding titles
     plot1.set_title(f'Positive LFC Counts')
@@ -124,5 +124,5 @@ def dual_histogram_by_residue(
     plt.suptitle(f'{input_gene} Mean Missense LFC Counts {screen_name}')
     plt.subplots_adjust(wspace=0.1)
 
-    hist_filename = f"plots/{input_gene}_{screen_name}_{edit_type}_lfc_score_by_bin_posneg.pdf"
+    hist_filename = f"plots/{input_gene}_{screen_name}_{mut}_lfc_hist_by_bin_posneg.pdf"
     plt.savefig(edits_filedir / hist_filename, dpi=300)

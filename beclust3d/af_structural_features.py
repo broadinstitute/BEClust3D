@@ -39,14 +39,7 @@ def query_uniprot(
 ): 
     """
     Description
-        A function to query UniProt for the protein sequence
-    Params
-        edits_filedir: str, required
-            the Path to the main directory
-        input_uniprot: str, required
-            the Uniprot ID for a particular protein
-    Returns
-        filename of the output protein sequence .fasta                
+        A function to query UniProt for the protein sequence         
     """
 
     # QUERY FASTA FILE #
@@ -64,17 +57,9 @@ def parse_uniprot(
     """
     Description
         A function to process UniProt .fasta into 
-        a list of positions and amino acids.
-    Params
-        edits_filedir: str, required
-            the Path to the main directory
-        input_uniprot: str, required
-            the Uniprot ID for a particular protein
-        input_gene: str, required
-            the name of the input human gene
-    Returns
-        None
+        a list of positions and amino acids
     """
+    
     # OPEN INPUT AND OUTPUT FILES #
     uFasta_list = open(out_fasta, "w")
     uFasta_list.write('unipos\tunires\n')
@@ -100,16 +85,6 @@ def query_af(
     """
     Description
         A function to query AlphaFold for the protein structure
-    Params
-        edits_filedir: str, required
-            the Path to the main directory
-        input_uniprot: str, required
-            the Uniprot ID for a particular protein
-        structureid: str, required
-            the name of the AF and uniprot input
-    Returns
-        af_filename
-            filename of the output protein structure .pdb
     """
 
     # QUERY ALPHAFOLD #
@@ -126,11 +101,6 @@ def parse_af(
     """
     Description
         Process AlphaFold structure for all atoms and their information
-    Params
-        edits_filedir: str, required
-            the Path to the main directory
-    Returns
-        None
     """
 
     # PREPROCESS AF TO KEEP ATOMS #
@@ -155,11 +125,6 @@ def parse_coord(
     Description
         Take in processed AlphaFold and processed fasta and parse
         coordinates and values
-    Params
-        edits_filedir: str, required
-            the Path to the main directory
-    Returns
-        None
     """
 
     # GET COORDS AND CONFID VALS FROM PROCESSED AF #
@@ -248,11 +213,6 @@ def parse_dssp(
     """
     Description
         A function to parse .dssp file for burial, phi, psi, etc
-    Params
-        edits_filedir: str, required
-            the Path to the main directory
-    Returns
-        None
     """
 
     # PARSE DSSP #
@@ -317,15 +277,6 @@ def count_aa_within_radius(
     Description
         Count the number of residues within [radius] Angstroms
         of the focal residue
-    Params
-        edits_filedir: str, required
-            the Path to the main directory
-        radius: float, optional
-            the radius in which to count other residues
-    Returns
-        df_coord: 
-            a dataframe containing the residues of the protein, 
-            and which residues are within [radius] Angstroms
     """
 
     # COUNT AMINO ACIDS IN 6A DISTANCE AND TEIR IDENTITY #
@@ -368,23 +319,8 @@ def degree_of_burial(
     """
     Description
         Calculate the degree of burial per residue with maxRSA metric
-
-    Params
-        df_dssp: pandas DataFrame, required
-            a dataframe containing the processed .dssp information
-        df_coord: pandas DataFrame, required
-            a dataframe containing the residues within range of the key residue
-        edits_filedir: str, required
-            the Path to the main directory
-        structureid: str, required
-            the name of the AF and uniprot input
-
-    Returns
-        df_coord_dssp: pandas DataFrame
-            a dataframe of coordinates and structural features
-        coord_dssp_filename: 
-            filename of df_coord_dssp
     """
+
     maxRSA = df_dssp["RSA"].max()
     df_dssp['dBurial'] = round(maxRSA - df_dssp["RSA"], 3)
     df_coord_dssp = pd.merge(df_coord, df_dssp, on=["unipos", "unires"])
@@ -437,6 +373,14 @@ def af_structural_features(
             the Uniprot ID for a particular protein
         structureid: str, required
             the name of the AF and uniprot input
+        radius: float, optional
+            the radius over which to extrapolate LFC3D score
+        user_uniprot: str, optional
+            a user input uniprot sequence
+        user_pdb: str, optional
+            a user input pdb structure
+        user_dssp: str, optional
+            a user input dssp dataframe
 
     Returns
         df_coord_dssp: pandas DataFrame
