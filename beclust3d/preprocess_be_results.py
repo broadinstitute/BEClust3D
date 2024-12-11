@@ -147,12 +147,12 @@ def parse_base_editing_results(
     # AGGREGATE ACROSS SCREENS FOR PLOTS #
     # MANN WHITNEY TEST and VIOLIN PLOTS #
     if len(input_screens) > 1:
-        for df, screen_name in zip(df_Inputs, screen_names): 
+        for df, screen_name in zip(input_dfs, screen_names): 
             df_muts, mw_res = mann_whitney_test(edits_filedir, [screen_name], input_gene)
             df_muts['LFC_direction'] = np.where(df_muts['LFC'] < 0, 'neg', 'pos')
             # VIOLIN PLOTS #
             violin_plot(df_muts, edits_filedir, input_gene, screen_name)
-        if len(df_Inputs) > 1: 
+        if len(input_dfs) > 1: 
             df_muts, mw_res = mann_whitney_test(edits_filedir, screen_names, input_gene, )
             df_muts['LFC_direction'] = np.where(df_muts['LFC'] < 0, 'neg', 'pos')
             # VIOLIN PLOTS #
