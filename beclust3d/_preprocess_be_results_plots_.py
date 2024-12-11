@@ -35,9 +35,12 @@ def mann_whitney_test(
         list_mut = []
         for screen_name in screen_names: 
             edits_filename = f"screendata/{input_gene}_{screen_name}_{mut}.tsv"
-            df_temp = pd.read_csv(edits_filedir / edits_filename, sep = '\t')
-            list_mut.extend(df_temp['LFC'].tolist())
-            del df_temp
+            try:
+                df_temp = pd.read_csv(edits_filedir / edits_filename, sep='\t')
+                list_mut.extend(df_temp['LFC'].tolist())
+                del df_temp
+            except FileNotFoundError:
+                list_mut.extend([])
         mut_dict['LFC'] = list_mut
         mut_dict['muttype'] = mut
     muts_dicts = dict(map(lambda i, j : (i, j) , mut_categories_unspaced, muts_dicts_list))
