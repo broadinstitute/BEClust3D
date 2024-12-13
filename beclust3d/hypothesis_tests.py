@@ -14,8 +14,8 @@ mut_categories_unspaced = [mc.replace(' ','_') for mc in mut_categories_spaced]
 
 def hypothesis_tests(
     input_dfs, workdir, 
-    input_gene, input_screens, 
-    cases, controls, comp_name, screen_names=[], 
+    input_gene, screen_names, 
+    cases, controls, comp_name, 
     mut_col='Mutation category', val_col='logFC', gene_col='Target Gene Symbol', 
 ): 
     """
@@ -33,8 +33,6 @@ def hypothesis_tests(
 
     edits_filedir = Path(workdir)
     edits_filedir = edits_filedir / input_gene
-    if not screen_names: # for screen_names being an empty list
-        screen_names = [input_screen.split('.')[0] for input_screen in input_screens]
     if not os.path.exists(edits_filedir): 
         os.mkdir(edits_filedir)
 
@@ -51,7 +49,7 @@ def hypothesis_tests(
                                   screen_names, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
     hypothesis_plot(edits_filedir, screen_names, 'screenid', 'gene_name', 
                     testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1')
-    if len(input_screens) > 1:
+    if len(screen_names) > 1:
         hypothesis_plot(edits_filedir, unique_genes, 'gene_name', 'screenid', 
                         testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1')
     # MW AND KS TESTS HYPOTHESIS 2 #
@@ -62,7 +60,7 @@ def hypothesis_tests(
     hypothesis_plot(edits_filedir, screen_names, 'screenid', 'gene_name', 
                     testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')
 
-    if len(input_screens) > 1:
+    if len(screen_names) > 1:
         hypothesis_plot(edits_filedir, unique_genes, 'gene_name', 'screenid', 
                         testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')
         
@@ -158,7 +156,7 @@ def hypothesis_plot(
         ax.set_ylabel('KS -log(P-Value)')
 
     # SAVE PLOT #
-    plt.subplots_adjust(wspace=0.1)
+    plt.subplots_adjust(wspace=0.1, hspace=0.4)
     plt.tight_layout()
     plot_filename = f"plots/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.pdf"
     plt.savefig(edits_filedir / plot_filename, dpi=500)

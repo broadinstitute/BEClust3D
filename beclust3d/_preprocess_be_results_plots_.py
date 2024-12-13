@@ -97,33 +97,42 @@ def counts_by_gene(
     """
 
     mut_categories_spaced_sort = sorted(mut_categories_spaced)
-    # FIND HOW MANY PLOTS NEEDED #
-    unique_genes = set()
-    for df_input in df_inputs: 
-        unique_genes.update(df_input[gene_col].unique().tolist())
-    unique_genes = sorted(unique_genes)
+
+    # Compute unique genes efficiently
+    all_genes = pd.concat([df[gene_col] for df in df_inputs], ignore_index=True)
+    unique_genes = sorted(all_genes.unique().tolist())
     plot_dim = math.ceil(math.sqrt(len(unique_genes)))
 
-    plt.rcParams.update({'font.size': 10})
-    # MUTATION COUNTS ACROSS SCREENS BY GENE #
-    df_mutation_counts = pd.DataFrame(columns = ['Gene'] + mut_categories_spaced_sort, index=[0])
-    for idx, gene in enumerate(unique_genes): 
-        res = [gene] + [0 for _ in range(len(mut_categories_spaced_sort))]
-        for df_input in df_inputs:  
-            df_current_gene = df_input.loc[df_input[gene_col] == gene,]
-            for j, mutcat in enumerate(mut_categories_spaced_sort): 
-                res[j+1] += len(df_current_gene.loc[df_current_gene[mut_col] == mutcat, ])
-        df_mutation_counts.loc[idx] = res
+    # Compute mutation counts for each gene and mutation category
+    df_all = pd.concat(df_inputs, ignore_index=True)
+    df_mutation_counts = (
+        df_all.groupby([gene_col, mut_col])
+        .size()
+        .unstack(fill_value=0)
+        .reindex(columns=mut_categories_spaced_sort, fill_value=0)
+        .reset_index()
+    )
+    df_mutation_counts.columns = ['Gene'] + mut_categories_spaced_sort
 
-    df_plot = df_mutation_counts.melt("Gene", var_name="Mut Type", value_name="Count")
+    # # MUTATION COUNTS ACROSS SCREENS BY GENE #
+    # df_mutation_counts = pd.DataFrame(columns = ['Gene'] + mut_categories_spaced_sort, index=[0])
+    # for idx, gene in enumerate(unique_genes): 
+    #     res = [gene] + [0 for _ in range(len(mut_categories_spaced_sort))]
+    #     for df_input in df_inputs:  
+    #         df_current_gene = df_input.loc[df_input[gene_col] == gene,]
+    #         for j, mutcat in enumerate(mut_categories_spaced_sort): 
+    #             res[j+1] += len(df_current_gene.loc[df_current_gene[mut_col] == mutcat, ])
+    #     df_mutation_counts.loc[idx] = res
+
     # BARPLOT #
+    df_plot = df_mutation_counts.melt("Gene", var_name="Mut Type", value_name="Count")
     sns.set_style("darkgrid")
     ax = sns.catplot(data=df_plot, kind="bar", col_wrap=plot_dim, 
-                     x="Mut Type", y="Count", hue="Mut Type", col="Gene", sharex = False)
-    
+                    x="Mut Type", y="Count", hue="Mut Type", col="Gene", sharex=False)
+
     for ax in ax.axes.flat:
-        for idx in range(len(ax.containers)):
-            ax.bar_label(ax.containers[idx])
+        for container in ax.containers:
+            ax.bar_label(container)
 
     plt.subplots_adjust(top=0.9)
     plt.suptitle(title)
@@ -187,7 +196,7 @@ def violin_by_gene(
     # REMOVE UNUSSED AXES
     for j in range(idx + 1, len(axes)):
         axes[j].set_visible(False)
-
+    
     plt.suptitle(title)
     plt.subplots_adjust(top=0.9, wspace=0.1)
 
