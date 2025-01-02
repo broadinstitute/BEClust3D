@@ -9,6 +9,7 @@ Description: Helper Functions for Prioritize by Sequence
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+import pandas as pd
 
 def counts_by_residue(
     df_struc_consvr, 
@@ -35,7 +36,42 @@ def counts_by_residue(
 
     counts_filename = f"plots/{input_gene}_{screen_name}_num_{mut}_per_res.pdf"
     plt.savefig(edits_filedir / counts_filename, dpi=300)
+    # plt.close(fig)
 
+def stdev_by_residue(
+    df_struc_consvr, 
+    edits_filedir, input_gene, screen_name, function_name, mut, yaxis=True,
+): 
+    # PREP DATA #
+    xvals = df_struc_consvr['unipos']
+    yvals = pd.to_numeric(df_struc_consvr[f'{function_name}_{mut}_LFC'], errors='coerce').fillna(0)
+    stdevs = pd.to_numeric(df_struc_consvr[f'{function_name}_{mut}_LFC_stdev'], errors='coerce').fillna(0)
+    xvals_filtered = xvals[stdevs != 0]
+    if yaxis: yvals_filtered = yvals[stdevs != 0]
+    else: yvals_filtered = [0]*len(xvals_filtered)
+    stdevs_filtered = stdevs[stdevs != 0]
+
+    # PLOT #
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.set_facecolor('#EBEBEB')
+    [ax.spines[side].set_visible(False) for side in ax.spines]
+    ax.grid(which='major', color='white', linewidth=0.5)
+    ax.set_axisbelow(True)
+
+    ax.errorbar(x=xvals_filtered, y=yvals_filtered, yerr=stdevs_filtered, 
+                color='steelblue', ls=' ', marker='o', capsize=3, capthick=1, ecolor='black', 
+                # fmt='-', color='steelblue', ecolor='steelblue'
+                )
+    ax.set_ylabel(f"Standard Deviations of {mut} Mutations")
+    ax.set_xlabel(f"unipos")
+    ax.set_title(f"{input_gene} Standard Dev of {mut} Mutations {screen_name}")
+    ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+    plt.xticks(np.arange(0, len(df_struc_consvr), 50), rotation = 90)
+
+    stdev_filename = f"plots/{input_gene}_{screen_name}_stdev_{mut}_per_res.pdf"
+    plt.savefig(edits_filedir / stdev_filename, dpi=300)
+    # plt.close(fig)
+    
 def scatterplot_by_residue(
     df_struc_consvr, 
     edits_filedir, input_gene, screen_name, 
@@ -65,6 +101,7 @@ def scatterplot_by_residue(
 
     scatter_filename = f"plots/{input_gene}_{screen_name}_{mut}_lfc{input}_score_by_res.pdf"
     plt.savefig(edits_filedir / scatter_filename, dpi=300)
+    # plt.close(fig)
 
 def dual_scatterplot_by_residue(
     df_struc_consvr, edits_filedir, input_gene, screen_name, function_type, mut='Missense', 
@@ -101,6 +138,7 @@ def dual_scatterplot_by_residue(
 
     scatter_filename = f"plots/{input_gene}_{screen_name}_{mut}_lfcz_scatter_by_bin_posneg.pdf"
     plt.savefig(edits_filedir / scatter_filename, dpi=300)
+    # plt.close(fig)
 
 def dual_histogram_by_residue(
     df_struc_consvr, edits_filedir, input_gene, screen_name, function_type, mut='Missense', 
@@ -126,3 +164,4 @@ def dual_histogram_by_residue(
 
     hist_filename = f"plots/{input_gene}_{screen_name}_{mut}_lfc_hist_by_bin_posneg.pdf"
     plt.savefig(edits_filedir / hist_filename, dpi=300)
+    # plt.close(fig)
