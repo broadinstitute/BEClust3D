@@ -7,14 +7,15 @@ Description: Translated from Notebook 3.3
 """
 
 import pandas as pd
+import numpy as np
 from pathlib import Path
 import os
 import warnings
 
 def calculate_lfc3d(
         df_str_cons, 
-        workdir, input_gene, input_screens, screen_names=[], 
-        nRandom=1000, function_type='mean', mut='Missense', 
+        workdir, input_gene, screen_names, str_cons_filenames, str_cons_rand_filenames, 
+        nRandom=1000, function_type='mean', mut='Missense', function_3Daggr=np.mean, 
 ): 
     """
     Description
@@ -27,8 +28,8 @@ def calculate_lfc3d(
             the working directory
         input_gene: str, required
             the name of the input human gene
-        input_screens: str, required
-            the name of the input screen
+        screen_names: list of str, required
+            the names of the input screens
         nRandom: int, optional
             the number of randomize iterations
 
@@ -38,8 +39,6 @@ def calculate_lfc3d(
     """
 
     edits_filedir = Path(workdir + '/' +  input_gene)
-    if not screen_names: # for screen_names being an empty list
-        screen_names = [input_screen.split('.')[0] for input_screen in input_screens]
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'LFC3D'):
@@ -50,49 +49,40 @@ def calculate_lfc3d(
     df_struct_3d['unires'] = df_str_cons['unires']
 
     # FOR EVERY SCREEN #
-    for input_screen, screen_name in zip(input_screens, screen_names):
+    for screen_name, filename, rand_filename in zip(screen_names, str_cons_filenames, str_cons_rand_filenames):
 
-        str_cons_filename = edits_filedir / f"screendata/{input_gene}_{screen_name}_proteinedits.tsv"
-        if not os.path.exists(str_cons_filename): 
-            warnings.warn(f"{str_cons_filename} does not exist")
-            if len(input_screens) == 1: 
-                return None
-            continue
-        df_struc_edits = pd.read_csv(str_cons_filename, sep = "\t")
+        if not os.path.exists(edits_filedir / filename): 
+            warnings.warn(f"{filename} does not exist")
+        df_struc_edits = pd.read_csv(edits_filedir / filename, sep = "\t")
 
         taa_wise_norm_LFC = []
-        for aa in range(len(df_struc_edits)): # for every residue
-            taa_naa_wBE_LFC, sum_taa_naa_LFC = helper(df_struc_edits, aa, lookup=f'{function_type}_{mut}_LFC')
-            if taa_naa_wBE_LFC == 0:
+        for aa in range(len(df_struc_edits)): # FOR EVERY RESIDUE #
+            taa_naa_LFC_vals = helper(df_struc_edits, aa, lookup=f'{function_type}_{mut}_LFC')
+            if len(taa_naa_LFC_vals) == 0:
                 taa_wise_norm_LFC.append('-')
             else: 
-                taa_wise_norm_LFC.append(str(round(sum_taa_naa_LFC/taa_naa_wBE_LFC, 3)))
+                taa_wise_norm_LFC.append(str(round(function_3Daggr(taa_naa_LFC_vals), 3)))
         
         df_struct_3d[f"{screen_name}_LFC"] = df_struc_edits[f'{function_type}_{mut}_LFC']
         df_struct_3d[f"{screen_name}_LFC_Z"] = df_struc_edits[f'{function_type}_{mut}_LFC_Z']
         df_struct_3d[f"{screen_name}_LFC3D"] = taa_wise_norm_LFC
     
-        str_cons_filename = edits_filedir / f"randomized_screendata/{input_gene}_{screen_name}_{mut}_proteinedits_rand.tsv"
-        screen_name = input_screen.split('.')[0]
-        if not os.path.exists(str_cons_filename): 
-            warnings.warn(f"{str_cons_filename} does not exist")
-            if len(input_screens) == 1: 
-                return None
-            continue
-        
-        df_struc_edits = pd.read_csv(str_cons_filename, sep = "\t")
+        if not os.path.exists(edits_filedir / rand_filename): 
+            warnings.warn(f"{rand_filename} does not exist")
+        df_struc_edits_rand = pd.read_csv(edits_filedir / rand_filename, sep = "\t")
+
         dict_temp = {}
         for r in range(0, nRandom):
             taa_wise_norm_LFC = []
 
-            for aa in range(0, len(df_struc_edits)):
-                taa_naa_wBE_LFC, sum_taa_naa_LFC = helper(df_struc_edits, aa, lookup=f'{function_type}_missense_LFC')
-                if taa_naa_wBE_LFC == 0:
+            for aa in range(0, len(df_struc_edits_rand)):
+                taa_naa_LFC_vals = helper(df_struc_edits_rand, aa, lookup=f'{function_type}_missense_LFCr{str(r+1)}') ### issue this isn't randomized, is that ok?
+                if len(taa_naa_LFC_vals) == 0:
                     taa_wise_norm_LFC.append('-')
                 else: 
-                    taa_wise_norm_LFC.append(str(round(sum_taa_naa_LFC/taa_naa_wBE_LFC, 3)))
+                    taa_wise_norm_LFC.append(str(round(function_3Daggr(taa_naa_LFC_vals), 3)))
 
-            dict_temp[f"{screen_name}_LFCr{str(r+1)}"] = df_struc_edits[f'{function_type}_missense_LFCr{str(r+1)}']
+            dict_temp[f"{screen_name}_LFCr{str(r+1)}"] = df_struc_edits_rand[f'{function_type}_missense_LFCr{str(r+1)}']
             dict_temp[f"{screen_name}_LFC3Dr{str(r+1)}"] = taa_wise_norm_LFC
 
         df_struct_3d = pd.concat((df_struct_3d, pd.DataFrame(dict_temp)), axis=1)
@@ -105,25 +95,20 @@ def calculate_lfc3d(
 def helper(
     df_struc_edits, aa, lookup
 ): 
-    taa_naa_wBE_LFC, sum_taa_naa_LFC = 0, 0.0
-
+    # naa IS NEIGHBORING AMINO ACIDS #
+    # taa IS THIS AMINO ACID #
+    taa_naa_LFC_vals = []
+    taa_LFC = df_struc_edits.at[aa, lookup] # target LFC
     naa_pos_str = df_struc_edits.at[aa, 'Naa_pos']
-    # there are no residues nearby for low radius
-    if not isinstance(naa_pos_str, float): 
+
+    if taa_LFC != '-': # VALUE FOR THIS RESIDUE #
+        taa_naa_LFC_vals.append(float(taa_LFC))
+
+    if isinstance(naa_pos_str, str): # CHECK NEIGHBORING RESIDUES #
         naa_pos_list = naa_pos_str.split(';') # neighboring residue positions
-        taa_LFC = df_struc_edits.at[aa, lookup] # target LFC
-
-        if taa_LFC != '-':
-            taa_naa_wBE_LFC, sum_taa_naa_LFC = 1, float(taa_LFC)
-
         for naa_pos in naa_pos_list: 
             naa_LFC = df_struc_edits.at[int(naa_pos)-1, lookup]
             if naa_LFC != '-': 
-                sum_taa_naa_LFC += float(naa_LFC)
-                taa_naa_wBE_LFC += 1
-    else: 
-        taa_LFC = df_struc_edits.at[aa, lookup] # target LFC
-        if taa_LFC != '-':
-            taa_naa_wBE_LFC, sum_taa_naa_LFC = 1, float(taa_LFC)
+                taa_naa_LFC_vals.append(float(naa_LFC))       
 
-    return taa_naa_wBE_LFC, sum_taa_naa_LFC
+    return taa_naa_LFC_vals

@@ -43,9 +43,7 @@ def parse_base_editing_results(
             the working directory
         input_gene: str, required
             the name of the input gene
-        input_screen: list of str, required
-            the names of the input screen files
-        screen_names: list of str, optional
+        screen_names: list of str, required
             the names of the input screens
         mut_col: str, optional
             column name that indicates the type of mutation
