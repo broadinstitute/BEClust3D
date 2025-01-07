@@ -162,7 +162,7 @@ def hypothesis_plot(
     
     # SAVE PLOT #
     # plt.subplots_adjust(wspace=0.1, hspace=0.4)
-    plt.tight_layout()
+    # plt.tight_layout()
     plot_filename = f"plots/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.pdf"
     plt.savefig(edits_filedir / plot_filename, dpi=500)
 
