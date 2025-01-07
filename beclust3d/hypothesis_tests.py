@@ -4,6 +4,7 @@ import seaborn as sns
 import numpy as np
 from pathlib import Path
 import os
+from matplotlib.widgets import Slider
 
 from scipy.stats import mannwhitneyu
 from scipy.stats import ks_2samp
@@ -104,16 +105,20 @@ def hypothesis_plot(
     else: axes_list = [axes[i,0] for i in range(len(category_names))] # FOR MULTIPLE SCREEN #
 
     # PLOT MW #
+    i, ibool = 0, True
     for ax, name in zip(axes_list, category_names):
         plot1 = sns.scatterplot(ax=ax, data=df_MW_input[df_MW_input[cat_colname]==name], 
                                 x=f"U_{partial_col_header}", y=f"p_{partial_col_header}", 
-                                hue=hue_colname, palette='tab20', s=100, alpha=0.7, edgecolor='k' )
+                                hue=hue_colname, palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=ibool)
         ax.axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
         ax.axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
 
         # LEGEND AND Y AXIS #
-        handles, labels = plot1.get_legend_handles_labels()
-        ax.legend(handles, labels, title=hue_colname, bbox_to_anchor=(1.0, 1), loc='upper left')
+        if ibool: 
+            handles, labels = plot1.get_legend_handles_labels()
+            ax.legend(handles, labels, title=hue_colname, bbox_to_anchor=(1.0, 1), loc='upper left')
+            i += 1
+            ibool = False
         ax.set_ylabel(f'-log10({f"p_{partial_col_header}"})')
         ax.set_title(f'Hypothesis {hypothesis}: Mann-Whitney {name}')
 
@@ -154,9 +159,9 @@ def hypothesis_plot(
         # LABELS #
         ax.set_xlabel('KS D-Value')
         ax.set_ylabel('KS -log(P-Value)')
-
+    
     # SAVE PLOT #
-    plt.subplots_adjust(wspace=0.1, hspace=0.4)
+    # plt.subplots_adjust(wspace=0.1, hspace=0.4)
     plt.tight_layout()
     plot_filename = f"plots/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.pdf"
     plt.savefig(edits_filedir / plot_filename, dpi=500)
