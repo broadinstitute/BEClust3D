@@ -130,17 +130,17 @@ def average_split_bin(
     df_z['unires'] = df_bidir['unires']
 
     for screen_name in screen_names: # FOR EVERY SCREEN INDIVIDUALLY #
-        df_z[f'{screen_name}_SUM_{score_type}_neg'] = df_bidir[f'{screen_name}_{score_type}_neg']
-        df_z[f'{screen_name}_SUM_{score_type}_pos'] = df_bidir[f'{screen_name}_{score_type}_pos']
+        df_z[f'{screen_name}_{score_type}_neg'] = df_bidir[f'{screen_name}_{score_type}_neg']
+        df_z[f'{screen_name}_{score_type}_pos'] = df_bidir[f'{screen_name}_{score_type}_pos']
         df_z[f'{screen_name}_AVG_{score_type}r_neg'] = df_bidir[f'{screen_name}_AVG_{score_type}r_neg']
         df_z[f'{screen_name}_AVG_{score_type}r_pos'] = df_bidir[f'{screen_name}_AVG_{score_type}r_pos']
 
         # CALCULATE Z SCORE #
-        colnames = [f'{screen_name}_SUM_{score_type}_{sign}' for sign in ['neg', 'pos']]
-        params = [{'mu': df_bidir[f'{screen_name}_AVG_{score_type}r_{sign}'].mean(),
-                   's': df_bidir[f'{screen_name}_AVG_{score_type}r_{sign}'].std()} 
+        colnames = [f'{screen_name}_{score_type}_{sign}' for sign in ['neg', 'pos']]
+        params = [{'mu': df_bidir[f'{screen_name}_{score_type}_{sign}'].mean(),
+                   's': df_bidir[f'{screen_name}_{score_type}_{sign}'].std()} 
                    for sign in ['neg', 'pos']]
-        result_data = {f'{screen_name}_SUM_{score_type}_{sign}_{suffix}': [] 
+        result_data = {f'{screen_name}_{score_type}_{sign}_{suffix}': [] 
                        for sign in ['neg', 'pos'] for suffix in ['z', 'p', 'psig']}
 
         for i in range(len(df_z)):
@@ -149,9 +149,9 @@ def average_split_bin(
                 signal_z, signal_p, signal_plabel = calculate_stats(signal, param, pthr)
                 
                 # Append results to the dictionary
-                result_data[f'{screen_name}_SUM_{score_type}_{sign}_z'].append(signal_z)
-                result_data[f'{screen_name}_SUM_{score_type}_{sign}_p'].append(signal_p)
-                result_data[f'{screen_name}_SUM_{score_type}_{sign}_psig'].append(signal_plabel)
+                result_data[f'{screen_name}_{score_type}_{sign}_z'].append(signal_z)
+                result_data[f'{screen_name}_{score_type}_{sign}_p'].append(signal_p)
+                result_data[f'{screen_name}_{score_type}_{sign}_psig'].append(signal_plabel)
 
         df_z = pd.concat([df_z, pd.DataFrame(result_data)], axis=1).round(4)
 

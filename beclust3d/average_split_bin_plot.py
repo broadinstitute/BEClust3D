@@ -19,11 +19,20 @@ def average_split_bin_plots(
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'plots'):
         os.mkdir(edits_filedir / 'plots')
-    neg, pos = f'{name}{func}_{score_type}_neg', f'{name}{func}_{score_type}_pos'
+
+    if len(func) == 0: 
+        neg = '_'.join([name, f'{score_type}_neg'])
+        pos = '_'.join([name, f'{score_type}_pos'])
+    elif len(name) == 0: 
+        neg = '_'.join([func, f'{score_type}_neg'])
+        pos = '_'.join([func, f'{score_type}_pos'])
+    else: 
+        neg = '_'.join([name, func, f'{score_type}_neg'])
+        pos = '_'.join([name, func, f'{score_type}_pos'])
 
     # HISTOGRAMS #
-    histogram_params = [(f'{name}AVG_{score_type}r_neg', neg, 'Negative'), 
-                        (f'{name}AVG_{score_type}r_pos', pos, 'Positive'), ]
+    histogram_params = [(f'{name}_AVG_{score_type}r_neg'.strip('_'), neg, 'Negative'), 
+                        (f'{name}_AVG_{score_type}r_pos'.strip('_'), pos, 'Positive'), ]
     res_neg, res_pos = metaaggregation_histogram(df_Z, histogram_params, edits_filedir, 
                                                  input_gene, name=name)
     if res_neg is None or res_pos is None: 

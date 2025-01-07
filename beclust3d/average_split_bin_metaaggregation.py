@@ -107,15 +107,15 @@ def metaaggregation(
             list_sum_LFC3D_neg.append(res_sum_LFC3D_neg)
             list_sum_LFC3D_pos.append(res_sum_LFC3D_pos)
             
-        dict_META[f'SUM_{score_type}r{str(r+1)}_neg'] = list_sum_LFC3D_neg
-        dict_META[f'SUM_{score_type}r{str(r+1)}_pos'] = list_sum_LFC3D_pos
+        dict_META[f'{aggr_func_name}_{score_type}r{str(r+1)}_neg'] = list_sum_LFC3D_neg
+        dict_META[f'{aggr_func_name}_{score_type}r{str(r+1)}_pos'] = list_sum_LFC3D_pos
         del list_sum_LFC3D_neg, list_sum_LFC3D_pos
 
     # APPEND RESULTS TO DF #
     df_rand_temp = pd.DataFrame(dict_META)
     # COMPUTE AVG #
-    avg_neg = ( df_rand_temp[[f'SUM_{score_type}r{r}_neg' for r in range(1, nRandom + 1)]].mean(axis=1) )
-    avg_pos = ( df_rand_temp[[f'SUM_{score_type}r{r}_pos' for r in range(1, nRandom + 1)]].mean(axis=1) )
+    avg_neg = ( df_rand_temp[[f'{aggr_func_name}_{score_type}r{str(r+1)}_neg' for r in range(nRandom)]].mean(axis=1) )
+    avg_pos = ( df_rand_temp[[f'{aggr_func_name}_{score_type}r{str(r+1)}_pos' for r in range(nRandom)]].mean(axis=1) )
 
     df_bidir_meta[f'AVG_{score_type}r_neg'] = avg_neg
     df_bidir_meta[f'AVG_{score_type}r_pos'] = avg_pos
@@ -149,11 +149,11 @@ def metaaggregation(
     df_LFC_LFC3D_dis.to_csv(out_filename_dis, sep = '\t', index=False)
 
     # CONVERT SIGNAL TO Z SCORE #
-    colnames = [f'SUM_{score_type}_{sign}' for sign in ['neg', 'pos']]
-    params = [{'mu': df_bidir_meta[f'AVG_{score_type}r_{sign}'].mean(),
-                's': df_bidir_meta[f'AVG_{score_type}r_{sign}'].std()} 
+    colnames = [f'{aggr_func_name}_{score_type}_{sign}' for sign in ['neg', 'pos']]
+    params = [{'mu': df_bidir_meta[f'{aggr_func_name}_{score_type}_{sign}'].mean(), 
+                's': df_bidir_meta[f'{aggr_func_name}_{score_type}_{sign}'].std()} 
                 for sign in ['neg', 'pos']]
-    result_data = {f'SUM_{score_type}_{sign}_{suffix}': [] 
+    result_data = {f'{aggr_func_name}_{score_type}_{sign}_{suffix}': [] 
                     for sign in ['neg', 'pos'] for suffix in ['z', 'p', 'psig']}
 
     for i in range(len(df_bidir_meta)):
@@ -162,9 +162,9 @@ def metaaggregation(
             signal_z, signal_p, signal_plabel = calculate_stats(signal, param, pthr)
             
             # Append results to the dictionary
-            result_data[f'SUM_{score_type}_{sign}_z'].append(signal_z)
-            result_data[f'SUM_{score_type}_{sign}_p'].append(signal_p)
-            result_data[f'SUM_{score_type}_{sign}_psig'].append(signal_plabel)
+            result_data[f'{aggr_func_name}_{score_type}_{sign}_z'].append(signal_z)
+            result_data[f'{aggr_func_name}_{score_type}_{sign}_p'].append(signal_p)
+            result_data[f'{aggr_func_name}_{score_type}_{sign}_psig'].append(signal_plabel)
 
     df_meta_Z = pd.concat([df_bidir_meta, pd.DataFrame(result_data)], axis=1).round(4)
 

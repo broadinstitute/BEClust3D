@@ -30,7 +30,7 @@ def prioritize_by_sequence(
     df_struc, df_consrv, df_nomutation, 
     workdir, 
     input_gene, screen_name, structureid, file_dict, 
-    function=statistics.mean, function_name='MEAN', 
+    function=statistics.mean, function_name='mean', 
 ): 
     """
     Description
@@ -160,7 +160,7 @@ def prioritize_by_sequence(
 def plots_by_sequence(
     df_protein, 
     workdir, 
-    input_gene, screen_name, function_name='MEAN', 
+    input_gene, screen_name, function_name='mean', 
 ): 
     edits_filedir = Path(workdir)
     edits_filedir = edits_filedir / input_gene
