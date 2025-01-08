@@ -39,7 +39,6 @@ def randomize_by_sequence(
     """
 
     edits_filedir = Path(workdir)
-    edits_filedir = edits_filedir / input_gene
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'randomized_screendata'):

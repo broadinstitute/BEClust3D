@@ -63,7 +63,6 @@ def parse_base_editing_results(
     """
 
     edits_filedir = Path(workdir)
-    edits_filedir = edits_filedir / input_gene
     if not os.path.exists(edits_filedir): 
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'screendata'):
@@ -157,7 +156,6 @@ def plot_base_editing_results(
     """
 
     edits_filedir = Path(workdir)
-    edits_filedir = edits_filedir / input_gene
     if not os.path.exists(edits_filedir): 
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'plots'):

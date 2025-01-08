@@ -38,9 +38,11 @@ def calculate_lfc3d(
             a dataframe listing calculated LFC3D scores and their randomizations
     """
 
-    edits_filedir = Path(workdir + '/' +  input_gene)
+    edits_filedir = Path(workdir)
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
+    if not os.path.exists(edits_filedir / 'LFC'):
+        os.mkdir(edits_filedir / 'LFC')
     if not os.path.exists(edits_filedir / 'LFC3D'):
         os.mkdir(edits_filedir / 'LFC3D')
 

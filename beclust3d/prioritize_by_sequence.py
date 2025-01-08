@@ -62,7 +62,6 @@ def prioritize_by_sequence(
     """
     
     edits_filedir = Path(workdir)
-    edits_filedir = edits_filedir / input_gene
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'screendata'):
@@ -163,7 +162,6 @@ def plots_by_sequence(
     input_gene, screen_name, function_name='mean', 
 ): 
     edits_filedir = Path(workdir)
-    edits_filedir = edits_filedir / input_gene
     # PLOT SCATTERPLOT AND COUNTS PLOT #
     counts_by_residue(df_protein, edits_filedir, input_gene, screen_name, 'Missense', )
     stdev_by_residue(df_protein, edits_filedir, input_gene, screen_name, function_name, 'Missense')

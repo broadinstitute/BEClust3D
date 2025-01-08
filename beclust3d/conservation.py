@@ -61,7 +61,6 @@ def conservation(
             with column headers alignment_pos human_res_pos human_res mouse_res_pos mouse_res conservation
     """
     edits_filedir = Path(workdir)
-    edits_filedir = edits_filedir / input_human_gene
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
 

@@ -62,7 +62,7 @@ def clustering(
         2 lists (neg and pos) where the values are number of clusters
     """
 
-    edits_filedir = Path(workdir + '/' + input_gene)
+    edits_filedir = Path(workdir)
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / f'cluster_{score_type}'):
@@ -178,7 +178,7 @@ def clustering_distance(
         2 lists (neg and pos) where the values are number of clusters
     """
     
-    edits_filedir = Path(workdir + '/' + input_gene)
+    edits_filedir = Path(workdir)
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'plots'):

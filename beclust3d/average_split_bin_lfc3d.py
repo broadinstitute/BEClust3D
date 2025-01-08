@@ -41,7 +41,7 @@ def average_split_bin(
             a dataframe listing how scores portion into quantiles
     """
     
-    edits_filedir = Path(workdir + '/' + input_gene)
+    edits_filedir = Path(workdir)
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / score_type):

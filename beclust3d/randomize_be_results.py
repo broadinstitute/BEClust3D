@@ -45,7 +45,6 @@ def randomize_be_results(df_missense,
 
     # NAME VARIABLES, PATHS, CREATE DIRECTORIES #
     edits_filedir = Path(workdir)
-    edits_filedir = edits_filedir / input_gene
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'randomized_screendata'):

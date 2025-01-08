@@ -14,7 +14,7 @@ def average_split_bin_plots(
         df_Z, workdir, input_gene, pthr=0.05, 
         name='', func='SUM', score_type='LFC3D', 
 ): 
-    edits_filedir = Path(workdir + '/' + input_gene)
+    edits_filedir = Path(workdir)
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'plots'):
