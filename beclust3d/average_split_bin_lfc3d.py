@@ -15,7 +15,7 @@ from _average_split_bin_plots_ import *
 def average_split_bin(
         df_LFC_LFC3D_rand, 
         workdir, input_gene, structureid, input_screens, screen_names=[], 
-        nRandom=1000, pthr=0.05, score_type='LFC3D', 
+        nRandom=1000, pthr=0.05, score_type='LFC3D', show_plots=True
 ): 
     """
     Description
@@ -163,7 +163,8 @@ def average_split_bin(
 
         df_z = pd.concat([df_z, pd.DataFrame(result_data)], axis=1).round(4)
         # PLOTS #
-        LFC3D_plots(df_z, edits_filedir, input_gene, pthr, screen_name+'_', score=score_type, )
+        if show_plots:
+            LFC3D_plots(df_z, edits_filedir, input_gene, pthr, screen_name+'_', score=score_type, )
 
     filename = edits_filedir / f"{score_type}/{structureid}_NonAggr_{score_type}.tsv"
     df_z.to_csv(filename, "\t", index=False)
