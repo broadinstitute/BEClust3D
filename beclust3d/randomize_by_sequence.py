@@ -13,8 +13,9 @@ import warnings
 
 def randomize_by_sequence(
         workdir, 
-        input_gene, input_screen, structureid, 
-        screen_name='', nRandom=1000, 
+        struc_consrv_filename, missense_filename, 
+        input_gene, screen_name, 
+        nRandom=1000, 
 ): 
     """
     Description
@@ -27,8 +28,6 @@ def randomize_by_sequence(
             the name of the input human gene
         input_screen: str, required
             the name of the input screen
-        structureid: str, required
-            the name of the AF and uniprot input
         screen_names: str, optional
             the name of the input screen
         nRandom: int, optional
@@ -40,21 +39,16 @@ def randomize_by_sequence(
     """
 
     edits_filedir = Path(workdir)
-    edits_filedir = edits_filedir / input_gene
-    if not screen_name: 
-        screen_name = input_screen.split('.')[0]
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'randomized_screendata'):
         os.mkdir(edits_filedir / 'randomized_screendata')
     
-    struc_consrv_filename =  f"screendata/{input_gene}_{structureid}_struc_consrv.tsv"
     if not os.path.exists(edits_filedir / struc_consrv_filename): 
         warnings.warn(f"{struc_consrv_filename} does not exist")
         return None
     df_protein = pd.read_csv(edits_filedir / struc_consrv_filename, sep = "\t")
 
-    missense_filename = f"randomized_screendata/{input_gene}_{screen_name}_Missense_rand.tsv"
     if not os.path.exists(edits_filedir / missense_filename): 
         warnings.warn(f"{missense_filename} does not exist")
         return None
@@ -80,7 +74,7 @@ def randomize_by_sequence(
     df_protein = pd.concat([df_protein, df_mis_positions], axis=1)
     del df_mis_pos, df_mis_positions, df_missense
 
-    out_filename = f"randomized_screendata/{input_gene}_{screen_name.replace(' ','_')}_Missense_proteinedits_rand.tsv"
+    out_filename = f"randomized_screendata/{input_gene}_{screen_name}_Missense_proteinedits_rand.tsv"
     df_protein.to_csv(edits_filedir / out_filename, sep = '\t', index=False)
 
     return df_protein

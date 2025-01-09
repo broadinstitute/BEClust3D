@@ -29,8 +29,8 @@ def get_plabel(z_LFC, direction):
 def prioritize_by_sequence(
     df_struc, df_consrv, df_nomutation, 
     workdir, 
-    input_gene, input_screen, structureid, 
-    screen_name='', function_type='mean', 
+    input_gene, screen_name, structureid, file_dict, 
+    function=statistics.mean, function_name='mean', 
 ): 
     """
     Description
@@ -48,14 +48,13 @@ def prioritize_by_sequence(
             the working directory
         input_gene: str, required
             the name of the input human gene
-        input_screen: str, required
-            the name of the input screen
         structureid: str, required
             the name of the AF and uniprot input
         screen_name: str, optional
             the name of the input screen
-        function_type: str, optional
+        function: function, optional
             indicates the type of supported aggregation function for a residue
+            options: statistics.mean, statistics.median, min, max
 
     Returns
         df_protein: pandas dataframe
@@ -63,9 +62,6 @@ def prioritize_by_sequence(
     """
     
     edits_filedir = Path(workdir)
-    edits_filedir = edits_filedir / input_gene
-    if not screen_name: 
-        screen_name = input_screen.split('.')[0]
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'screendata'):
@@ -82,24 +78,15 @@ def prioritize_by_sequence(
         df_protein['conservation']  = df_consrv['conservation']
     del df_struc, df_consrv
 
-    # ALLOW USER TO PICK AGGREGATION FUNCTION #
-    match function_type: 
-        case 'mean': function = statistics.mean
-        case 'median': function = statistics.median
-        case 'min': function = min
-        case 'max': function = max
-        case _: warnings.warn('Warning: Invalid Function Type (mean, median, min, max)')
-
     struc_consrv_filename =  f"screendata/{input_gene}_{structureid}_struc_consrv.tsv"
     df_protein.to_csv(edits_filedir / struc_consrv_filename, sep = "\t", index=False)
 
     # FOR EACH EDIT TYPE, AGGREGATE LFC AND EDITS WITH CONSERVATION #
-    for mut in ['Missense', 'Silent', 'Nonsense']: 
-
-        in_filename = f"screendata/{input_gene}_{screen_name.replace(' ','_')}_{mut.replace(' ','_')}.tsv"
+    for in_filename, mut in file_dict.items(): 
         df_edit = pd.read_csv(edits_filedir / in_filename, sep='\t')
         
         arr_unique_LFC = []
+        arr_unique_LFC_stdev = []
         arr_all_edits = []
 
         # FOR EACH RESIDUE #
@@ -108,21 +95,25 @@ def prioritize_by_sequence(
             df_pos_edits = df_edit.loc[df_edit['edit_pos'] == int(human_res_pos), ].reset_index() ###
 
             if len(df_pos_edits) > 1: 
-                pos_LFCscore_list = df_pos_edits['LFC'].tolist()
-                unique_LFC_res = round(function(pos_LFCscore_list), 3)
+                score_list = df_pos_edits['LFC'].tolist()
+                unique_LFC_res = round(function(score_list), 3)
+                stdev_res = np.std(score_list)
 
                 pos_edits_list = df_pos_edits['this_edit'].tolist()
                 all_edits_res = ';'.join(list(set(pos_edits_list)))
-            elif len(df_pos_edits) == 1:   
+            elif len(df_pos_edits) == 1: 
                 unique_LFC_res = round(df_pos_edits.at[0, 'LFC'], 3)
+                stdev_res = 0
                 all_edits_res = df_pos_edits.at[0, 'this_edit']
             else:
-                unique_LFC_res, all_edits_res = '-', '-'
+                unique_LFC_res, all_edits_res, stdev_res = '-', '-', '-'
 
             arr_unique_LFC.append(unique_LFC_res)
+            arr_unique_LFC_stdev.append(stdev_res)
             arr_all_edits.append(all_edits_res)
 
-        df_protein[f'{function_type}_{mut}_LFC'] = arr_unique_LFC
+        df_protein[f'{function_name}_{mut}_LFC'] = arr_unique_LFC
+        df_protein[f'{function_name}_{mut}_LFC_stdev'] = arr_unique_LFC_stdev
         df_protein[f'all_{mut}_edits'] = arr_all_edits
 
         # CALCULATE Z SCORE #
@@ -134,12 +125,12 @@ def prioritize_by_sequence(
         list_z_LFC, list_p_LFC, list_plab_LFC = [], [], []
 
         for i in range(len(df_protein)):
-            LFC_raw = df_protein.at[i, f'{function_type}_{mut}_LFC']
+            LFC_raw = df_protein.at[i, f'{function_name}_{mut}_LFC']
 
             if LFC_raw == '-': 
                 LFC, z_LFC, p_LFC, plab_LFC = 0.0, '-', 1.0, 'p=1.0'
             else: 
-                LFC = float(df_protein.at[i, f'{function_type}_{mut}_LFC'])
+                LFC = float(df_protein.at[i, f'{function_name}_{mut}_LFC'])
 
                 if (LFC < 0.0):
                     z_LFC = statistics.NormalDist(mu=mu_neg, sigma=sigma_neg).zscore(LFC)
@@ -155,20 +146,27 @@ def prioritize_by_sequence(
             list_p_LFC.append(p_LFC)
             list_plab_LFC.append(plab_LFC)
 
-        df_protein[f'{function_type}_{mut}_LFC_Z'] = list_z_LFC
-        df_protein[f'{function_type}_{mut}_LFC_p'] = list_p_LFC
-        df_protein[f'{function_type}_{mut}_LFC_plab'] = list_plab_LFC
+        df_protein[f'{function_name}_{mut}_LFC_Z'] = list_z_LFC
+        df_protein[f'{function_name}_{mut}_LFC_p'] = list_p_LFC
+        df_protein[f'{function_name}_{mut}_LFC_plab'] = list_plab_LFC
         df_protein.round(4)
 
-        # PLOT SCATTERPLOT AND COUNTS PLOT #
-        if mut == 'Missense': 
-            counts_by_residue(df_protein, edits_filedir, input_gene, screen_name, mut, )
-            scatterplot_by_residue(df_protein, edits_filedir, input_gene, screen_name, mut, function_type, )
-            scatterplot_by_residue(df_protein, edits_filedir, input_gene, screen_name, mut, function_type, input='_Z')
-            dual_scatterplot_by_residue(df_protein, edits_filedir, input_gene, screen_name, function_type)
-            dual_histogram_by_residue(df_protein, edits_filedir, input_gene, screen_name, function_type)
-
-    strcons_edits_filename = f"screendata/{input_gene}_{screen_name.replace(' ','_')}_proteinedits.tsv"
+    strcons_edits_filename = f"screendata/{input_gene}_{screen_name}_proteinedits.tsv"
     df_protein.to_csv(edits_filedir / strcons_edits_filename, sep = '\t', index=False)
 
     return df_protein
+
+def plots_by_sequence(
+    df_protein, 
+    workdir, 
+    input_gene, screen_name, function_name='mean', 
+): 
+    edits_filedir = Path(workdir)
+    # PLOT SCATTERPLOT AND COUNTS PLOT #
+    counts_by_residue(df_protein, edits_filedir, input_gene, screen_name, 'Missense', )
+    stdev_by_residue(df_protein, edits_filedir, input_gene, screen_name, function_name, 'Missense')
+    stdev_by_residue(df_protein, edits_filedir, input_gene, screen_name, function_name, 'Missense', yaxis=False)
+    scatterplot_by_residue(df_protein, edits_filedir, input_gene, screen_name, 'Missense', function_name, )
+    scatterplot_by_residue(df_protein, edits_filedir, input_gene, screen_name, 'Missense', function_name, input='_Z')
+    dual_scatterplot_by_residue(df_protein, edits_filedir, input_gene, screen_name, function_name)
+    dual_histogram_by_residue(df_protein, edits_filedir, input_gene, screen_name, function_name)

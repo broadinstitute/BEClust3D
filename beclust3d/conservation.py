@@ -25,11 +25,14 @@ def conservation(
         input_human_gene, input_mouse_gene, 
         input_human_uniid, input_mouse_uniid, 
         email, title, 
+        alignment_filename = '', 
         wait_time=30, 
 ): 
     """
     Description
         Generate dataframes of sequence conservation for each residue. 
+        The default is to query the alignment from protein sequences, 
+        but the user can also upload an alignment file.
 
     Params
         workdir: str, required
@@ -58,23 +61,25 @@ def conservation(
             with column headers alignment_pos human_res_pos human_res mouse_res_pos mouse_res conservation
     """
     edits_filedir = Path(workdir)
-    edits_filedir = edits_filedir / input_human_gene
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
 
     # QUERY UNIPROT AND WRITE TO sequences.fasta #
-    request_filename_human, request_filename_mouse = f"{input_human_uniid}.fasta", f"{input_mouse_uniid}.fasta"
-    human_seq = query_protein_fasta(edits_filedir, request_filename_human)
-    mouse_seq = query_protein_fasta(edits_filedir, request_filename_mouse)
-    seqs_filename = f"sequences.fasta"
-    with open(edits_filedir / seqs_filename, "w") as text_file:
-        text_file.write(human_seq)
-        text_file.write(mouse_seq)
+    if len(alignment_filename) == 0: 
+        request_filename_human, request_filename_mouse = f"{input_human_uniid}.fasta", f"{input_mouse_uniid}.fasta"
+        human_seq = query_protein_fasta(edits_filedir, request_filename_human)
+        mouse_seq = query_protein_fasta(edits_filedir, request_filename_mouse)
+        seqs_filename = f"sequences.fasta"
+        with open(edits_filedir / seqs_filename, "w") as text_file:
+            text_file.write(human_seq)
+            text_file.write(mouse_seq)
 
-    # MUSCLE ALIGNMENT #
-    align_filename = f"Human{input_human_gene}_Mouse{input_mouse_gene}.align"
-    muscle_id = alignment_muscle(edits_filedir, seqs_filename, align_filename, 
-                                 email, title, wait_time )
+        # MUSCLE ALIGNMENT #
+        align_filename = f"Human{input_human_gene}_Mouse{input_mouse_gene}.align"
+        muscle_id = alignment_muscle(edits_filedir, seqs_filename, align_filename, 
+                                     email, title, wait_time )
+    else: 
+        align_filename = alignment_filename
     
     # PARSE ALIGNMENT #
     alignconserv_filename = f"Human{input_human_gene}_Mouse{input_mouse_gene}_align_conservation.tsv"

@@ -4,6 +4,7 @@ import seaborn as sns
 import numpy as np
 from pathlib import Path
 import os
+from matplotlib.widgets import Slider
 
 from scipy.stats import mannwhitneyu
 from scipy.stats import ks_2samp
@@ -14,8 +15,8 @@ mut_categories_unspaced = [mc.replace(' ','_') for mc in mut_categories_spaced]
 
 def hypothesis_tests(
     input_dfs, workdir, 
-    input_gene, input_screens, 
-    cases, controls, comp_name, screen_names=[], 
+    input_gene, screen_names, 
+    cases, controls, comp_name, 
     mut_col='Mutation category', val_col='logFC', gene_col='Target Gene Symbol', 
 ): 
     """
@@ -32,9 +33,6 @@ def hypothesis_tests(
     """
 
     edits_filedir = Path(workdir)
-    edits_filedir = edits_filedir / input_gene
-    if not screen_names: # for screen_names being an empty list
-        screen_names = [input_screen.split('.')[0] for input_screen in input_screens]
     if not os.path.exists(edits_filedir): 
         os.mkdir(edits_filedir)
 
@@ -51,7 +49,7 @@ def hypothesis_tests(
                                   screen_names, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
     hypothesis_plot(edits_filedir, screen_names, 'screenid', 'gene_name', 
                     testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1')
-    if len(input_screens) > 1:
+    if len(screen_names) > 1:
         hypothesis_plot(edits_filedir, unique_genes, 'gene_name', 'screenid', 
                         testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1')
     # MW AND KS TESTS HYPOTHESIS 2 #
@@ -62,7 +60,7 @@ def hypothesis_tests(
     hypothesis_plot(edits_filedir, screen_names, 'screenid', 'gene_name', 
                     testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')
 
-    if len(input_screens) > 1:
+    if len(screen_names) > 1:
         hypothesis_plot(edits_filedir, unique_genes, 'gene_name', 'screenid', 
                         testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')
         
@@ -106,16 +104,18 @@ def hypothesis_plot(
     else: axes_list = [axes[i,0] for i in range(len(category_names))] # FOR MULTIPLE SCREEN #
 
     # PLOT MW #
+    handles, labels = None, None
     for ax, name in zip(axes_list, category_names):
         plot1 = sns.scatterplot(ax=ax, data=df_MW_input[df_MW_input[cat_colname]==name], 
                                 x=f"U_{partial_col_header}", y=f"p_{partial_col_header}", 
-                                hue=hue_colname, palette='tab20', s=100, alpha=0.7, edgecolor='k' )
+                                hue=hue_colname, palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=handles is None)
         ax.axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
         ax.axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
 
+        # GET LEGEND #
+        if handles is None and labels is None:
+            handles, labels = plot1.get_legend_handles_labels()
         # LEGEND AND Y AXIS #
-        handles, labels = plot1.get_legend_handles_labels()
-        ax.legend(handles, labels, title=hue_colname, bbox_to_anchor=(1.0, 1), loc='upper left')
         ax.set_ylabel(f'-log10({f"p_{partial_col_header}"})')
         ax.set_title(f'Hypothesis {hypothesis}: Mann-Whitney {name}')
 
@@ -156,12 +156,19 @@ def hypothesis_plot(
         # LABELS #
         ax.set_xlabel('KS D-Value')
         ax.set_ylabel('KS -log(P-Value)')
-
+    
     # SAVE PLOT #
-    plt.subplots_adjust(wspace=0.1)
+    plt.subplots_adjust(wspace=0.1, hspace=0.1)
     plt.tight_layout()
     plot_filename = f"plots/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.pdf"
     plt.savefig(edits_filedir / plot_filename, dpi=500)
+
+    # CREATE SEPARATE LEGEND PLOT #
+    legend_fig, legend_ax = plt.subplots(figsize=(4, len(handles) * 0.3))
+    legend_ax.axis('off')
+    legend_ax.legend(handles, labels, title=hue_colname, loc='center', fontsize='small', frameon=False)
+    legend_filename = f"plots/hypothesis{hypothesis}_legend_by_{cat_colname}.pdf"
+    legend_fig.savefig(edits_filedir / legend_filename, dpi=500)
 
 
 # HYPOTHESIS 1: There is a significant difference in the signal (LFC) #

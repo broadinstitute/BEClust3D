@@ -12,7 +12,7 @@ import numpy as np
 import os
 
 def randomize_be_results(df_missense, 
-                         workdir, input_gene, input_screen, screen_name='', 
+                         workdir, input_gene, screen_name, 
                          nRandom=1000, val_colname = 'LFC', 
                          ): 
     """
@@ -45,9 +45,6 @@ def randomize_be_results(df_missense,
 
     # NAME VARIABLES, PATHS, CREATE DIRECTORIES #
     edits_filedir = Path(workdir)
-    edits_filedir = edits_filedir / input_gene
-    if not screen_name: 
-        screen_name = input_screen.split('.')[0]
     if not os.path.exists(edits_filedir):
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'randomized_screendata'):
