@@ -213,7 +213,7 @@ def metaaggregation_scatterplot(
 
         ax[i].legend(bbox_to_anchor=(1.005, 1), loc='upper left', borderaxespad=0)
         ax[i].set_xticks(np.arange(0, len(df_meta), 100))
-        ax[i].set_title(out)
+        ax[i].set_title(f"{input_gene} {out}")
 
         # SET BACKGROUND #
         ax[i].set_facecolor('#EBEBEB')
