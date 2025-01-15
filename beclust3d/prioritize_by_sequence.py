@@ -30,7 +30,7 @@ def prioritize_by_sequence(
     df_struc, df_consrv, df_nomutation, 
     workdir, 
     input_gene, screen_name, structureid, file_dict, 
-    function=statistics.mean, function_name='mean', 
+    function=statistics.mean, function_name='mean', target_res_pos='human_res_pos', 
 ): 
     """
     Description
@@ -91,7 +91,7 @@ def prioritize_by_sequence(
 
         # FOR EACH RESIDUE #
         for i in range(len(df_protein)): 
-            human_res_pos = df_protein.at[i, 'human_res_pos']
+            human_res_pos = df_protein.at[i, target_res_pos]
             df_pos_edits = df_edit.loc[df_edit['edit_pos'] == int(human_res_pos), ].reset_index() ###
 
             if len(df_pos_edits) > 1: 
