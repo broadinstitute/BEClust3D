@@ -119,7 +119,7 @@ def parse_base_editing_results(
             df_subset.to_csv(edits_filedir / edits_filename, sep='\t')
             mut_dfs[screen_name][mut] = df_subset
 
-    del df, df_gene, df_mut, df_exploded, df_subset
+    del df_gene, df_mut, df_exploded, df_subset
 
     return mut_dfs
 
