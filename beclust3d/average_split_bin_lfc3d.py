@@ -137,8 +137,8 @@ def average_split_bin(
 
         # CALCULATE Z SCORE #
         colnames = [f'{screen_name}_{score_type}_{sign}' for sign in ['neg', 'pos']]
-        params = [{'mu': df_bidir[f'{screen_name}_{score_type}_{sign}'].mean(),
-                   's': df_bidir[f'{screen_name}_{score_type}_{sign}'].std()} 
+        params = [{'mu': df_bidir[f'{screen_name}_AVG_{score_type}r_{sign}'].mean(),
+                   's': df_bidir[f'{screen_name}_AVG_{score_type}r_{sign}'].std()} 
                    for sign in ['neg', 'pos']]
         result_data = {f'{screen_name}_{score_type}_{sign}_{suffix}': [] 
                        for sign in ['neg', 'pos'] for suffix in ['z', 'p', 'psig']}
