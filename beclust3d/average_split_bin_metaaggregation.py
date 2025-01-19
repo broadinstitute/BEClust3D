@@ -150,8 +150,8 @@ def metaaggregation(
 
     # CONVERT SIGNAL TO Z SCORE #
     colnames = [f'{aggr_func_name}_{score_type}_{sign}' for sign in ['neg', 'pos']]
-    params = [{'mu': df_bidir_meta[f'{aggr_func_name}_{score_type}_{sign}'].mean(), 
-                's': df_bidir_meta[f'{aggr_func_name}_{score_type}_{sign}'].std()} 
+    params = [{'mu': df_bidir_meta[f'AVG_{score_type}r_{sign}'].mean(), 
+                's': df_bidir_meta[f'AVG_{score_type}r_{sign}'].std()} 
                 for sign in ['neg', 'pos']]
     result_data = {f'{aggr_func_name}_{score_type}_{sign}_{suffix}': [] 
                     for sign in ['neg', 'pos'] for suffix in ['z', 'p', 'psig']}

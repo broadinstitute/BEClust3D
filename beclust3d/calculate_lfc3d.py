@@ -11,6 +11,7 @@ import numpy as np
 from pathlib import Path
 import os
 import warnings
+import numpy as np
 
 def calculate_lfc3d(
         df_str_cons, 
@@ -87,11 +88,20 @@ def calculate_lfc3d(
                     taa_naa_LFC_vals = helper(df_struc_edits_rand, aa, lookup=f'{function_type}_missense_LFCr{str(r+1)}') ### issue this isn't randomized, is that ok?
                     if len(taa_naa_LFC_vals) == 0:
                         taa_wise_norm_LFC.append('-')
-                    else: 
-                        taa_wise_norm_LFC.append(str(round(function_3Daggr(taa_naa_LFC_vals), 3)))
+                    else:
+                        taa_wise_norm_LFC.append(round(function_3Daggr(taa_naa_LFC_vals), 3))
                 dict_temp[f"{screen_name}_LFC3Dr{str(r+1)}"] = taa_wise_norm_LFC
 
         df_struct_3d = pd.concat((df_struct_3d, pd.DataFrame(dict_temp)), axis=1)
+        # df_struct_3d = df_struct_3d.replace('-', np.nan)
+
+        # df_struct_3d = df_struct_3d.apply(lambda col: pd.to_numeric(col, errors='coerce'))
+        # df_struct_3d[f"{screen_name}_LFCr_AVG"] = df_struct_3d[[f"{screen_name}_LFCr{str(r+1)}" for r in range(0, nRandom)]].mean(axis=1)
+        # df_struct_3d = df_struct_3d.drop([f'{screen_name}_LFCr{str(r+1)}' for r in range(0, nRandom)], axis=1)
+        # df_struct_3d[f"{screen_name}_LFC3Dr_AVG"] = df_struct_3d[[f'{screen_name}_LFC3Dr{str(r+1)}' for r in range(0, nRandom)]].mean(axis=1)
+        # df_struct_3d = df_struct_3d.drop([f'{screen_name}_LFC3Dr{str(r+1)}' for r in range(0, nRandom)], axis=1)
+        
+        # df_struct_3d.fillna('-')
 
     out_filename = edits_filedir / f"LFC3D/{input_gene}_LFC_LFC3D_LFC3Dr.tsv"
     df_struct_3d.to_csv(out_filename, sep = '\t', index=False)
