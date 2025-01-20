@@ -86,40 +86,45 @@ def metaaggregation(
     df_bidir_meta[header_main] = [sum(x) for x in zip(list_LFC3D_neg, list_LFC3D_pos)]
     del list_LFC3D_neg, list_LFC3D_pos
 
-    # RANDOMIZE #
-    dict_META = {}
-    for r in range(nRandom):
-        list_sum_LFC3D_neg, list_sum_LFC3D_pos = [], []
-        for i in range(len(df_LFC_LFC3D)): 
-            res_sum_LFC3D_neg, res_sum_LFC3D_pos = 0.0, 0.0
+    # PULL RANDOMIZED DATA #
+    lfc3dr_colnames_neg = [f"{screen_name}_AVG_{score_type}r_neg" for screen_name in screen_names]
+    df_bidir_meta[f'AVG_{score_type}r_neg'] = df_LFC_LFC3D[lfc3dr_colnames_neg].mean(axis=1)
+    lfc3dr_colnames_pos = [f"{screen_name}_AVG_{score_type}r_pos" for screen_name in screen_names]
+    df_bidir_meta[f'AVG_{score_type}r_pos'] = df_LFC_LFC3D[lfc3dr_colnames_pos].mean(axis=1)
 
-            for screen_name in screen_names: # sum across screens
-                header_LFC3D = f"{screen_name}_{score_type}r{str(r+1)}"
-                if header_LFC3D not in df_LFC_LFC3D.columns: 
-                    continue
+    # dict_META = {}
+    # for r in range(nRandom):
+    #     list_sum_LFC3D_neg, list_sum_LFC3D_pos = [], []
+    #     for i in range(len(df_LFC_LFC3D)): 
+    #         res_sum_LFC3D_neg, res_sum_LFC3D_pos = 0.0, 0.0
 
-                LFC3D = df_LFC_LFC3D.at[i, header_LFC3D]
-                if (LFC3D != '-') and (float(LFC3D) < 0.0):
-                    res_sum_LFC3D_neg += float(LFC3D)
-                if (LFC3D != '-') and (float(LFC3D) > 0.0):
-                    res_sum_LFC3D_pos += float(LFC3D)
+    #         for screen_name in screen_names: # sum across screens
+    #             header_LFC3D = f"{screen_name}_{score_type}r{str(r+1)}"
+    #             if header_LFC3D not in df_LFC_LFC3D.columns: 
+    #                 continue
 
-            list_sum_LFC3D_neg.append(res_sum_LFC3D_neg)
-            list_sum_LFC3D_pos.append(res_sum_LFC3D_pos)
+    #             LFC3D = df_LFC_LFC3D.at[i, header_LFC3D]
+    #             if (LFC3D != '-') and (float(LFC3D) < 0.0):
+    #                 res_sum_LFC3D_neg += float(LFC3D)
+    #             if (LFC3D != '-') and (float(LFC3D) > 0.0):
+    #                 res_sum_LFC3D_pos += float(LFC3D)
+
+    #         list_sum_LFC3D_neg.append(res_sum_LFC3D_neg)
+    #         list_sum_LFC3D_pos.append(res_sum_LFC3D_pos)
             
-        dict_META[f'{aggr_func_name}_{score_type}r{str(r+1)}_neg'] = list_sum_LFC3D_neg
-        dict_META[f'{aggr_func_name}_{score_type}r{str(r+1)}_pos'] = list_sum_LFC3D_pos
-        del list_sum_LFC3D_neg, list_sum_LFC3D_pos
+    #     dict_META[f'{aggr_func_name}_{score_type}r{str(r+1)}_neg'] = list_sum_LFC3D_neg
+    #     dict_META[f'{aggr_func_name}_{score_type}r{str(r+1)}_pos'] = list_sum_LFC3D_pos
+    #     del list_sum_LFC3D_neg, list_sum_LFC3D_pos
 
-    # APPEND RESULTS TO DF #
-    df_rand_temp = pd.DataFrame(dict_META)
-    # COMPUTE AVG #
-    avg_neg = ( df_rand_temp[[f'{aggr_func_name}_{score_type}r{str(r+1)}_neg' for r in range(nRandom)]].mean(axis=1) )
-    avg_pos = ( df_rand_temp[[f'{aggr_func_name}_{score_type}r{str(r+1)}_pos' for r in range(nRandom)]].mean(axis=1) )
+    # # APPEND RESULTS TO DF #
+    # df_rand_temp = pd.DataFrame(dict_META)
+    # # COMPUTE AVG #
+    # avg_neg = ( df_rand_temp[[f'{aggr_func_name}_{score_type}r{str(r+1)}_neg' for r in range(nRandom)]].mean(axis=1) )
+    # avg_pos = ( df_rand_temp[[f'{aggr_func_name}_{score_type}r{str(r+1)}_pos' for r in range(nRandom)]].mean(axis=1) )
 
-    df_bidir_meta[f'AVG_{score_type}r_neg'] = avg_neg
-    df_bidir_meta[f'AVG_{score_type}r_pos'] = avg_pos
-    del df_rand_temp
+    # df_bidir_meta[f'AVG_{score_type}r_neg'] = avg_neg
+    # df_bidir_meta[f'AVG_{score_type}r_pos'] = avg_pos
+    # del df_rand_temp
 
     # BINNING #
     df_LFC_LFC3D_dis = df_bidir_meta[['unipos', 'unires', header_main]].copy()

@@ -53,6 +53,7 @@ def calculate_lfc3d(
 
     # FOR EVERY SCREEN #
     for screen_name, filename, rand_filename in zip(screen_names, str_cons_filenames, str_cons_rand_filenames):
+        print(screen_name)
         
         # GET LFC and LFC3D VALUES #
         if not os.path.exists(edits_filedir / filename): 
@@ -93,15 +94,30 @@ def calculate_lfc3d(
                 dict_temp[f"{screen_name}_LFC3Dr{str(r+1)}"] = taa_wise_norm_LFC
 
         df_struct_3d = pd.concat((df_struct_3d, pd.DataFrame(dict_temp)), axis=1)
-        # df_struct_3d = df_struct_3d.replace('-', np.nan)
+        df_struct_3d = df_struct_3d.replace('-', np.nan)
+        LFC_colnames   = [f"{screen_name}_LFCr{str(r+1)}" for r in range(0, nRandom)]
+        LFC3D_colnames = [f"{screen_name}_LFC3Dr{str(r+1)}" for r in range(0, nRandom)]
 
-        # df_struct_3d = df_struct_3d.apply(lambda col: pd.to_numeric(col, errors='coerce'))
-        # df_struct_3d[f"{screen_name}_LFCr_AVG"] = df_struct_3d[[f"{screen_name}_LFCr{str(r+1)}" for r in range(0, nRandom)]].mean(axis=1)
-        # df_struct_3d = df_struct_3d.drop([f'{screen_name}_LFCr{str(r+1)}' for r in range(0, nRandom)], axis=1)
-        # df_struct_3d[f"{screen_name}_LFC3Dr_AVG"] = df_struct_3d[[f'{screen_name}_LFC3Dr{str(r+1)}' for r in range(0, nRandom)]].mean(axis=1)
-        # df_struct_3d = df_struct_3d.drop([f'{screen_name}_LFC3Dr{str(r+1)}' for r in range(0, nRandom)], axis=1)
+        df_struct_3d = df_struct_3d.apply(lambda col: pd.to_numeric(col, errors='coerce'))
+        df_struct_3d[f"{screen_name}_AVG_LFCr"]     = df_struct_3d[LFC_colnames].mean(axis=1) # AVG ALL
+        df_struct_3d[f"{screen_name}_AVG_LFCr_neg"] = (df_struct_3d[LFC_colnames]
+                                                        .apply(lambda col: col.map(lambda x: x if x < 0 else np.nan))
+                                                        .sum(axis=1) / nRandom) # AVG NEG
+        df_struct_3d[f"{screen_name}_AVG_LFCr_pos"] = (df_struct_3d[LFC_colnames]
+                                                        .apply(lambda col: col.map(lambda x: x if x > 0 else np.nan))
+                                                        .sum(axis=1) / nRandom) # AVG POS
+        df_struct_3d = df_struct_3d.drop(LFC_colnames, axis=1)
+        df_struct_3d[f"{screen_name}_AVG_LFC3Dr"]     = df_struct_3d[LFC3D_colnames].mean(axis=1) # AVG ALL
+        df_struct_3d[f"{screen_name}_AVG_LFC3Dr_neg"] = (df_struct_3d[LFC3D_colnames]
+                                                        .apply(lambda col: col.map(lambda x: x if x < 0 else np.nan))
+                                                        .sum(axis=1) / nRandom) # AVG NEG
+        df_struct_3d[f"{screen_name}_AVG_LFC3Dr_pos"] = (df_struct_3d[LFC3D_colnames]
+                                                        .apply(lambda col: col.map(lambda x: x if x > 0 else np.nan))
+                                                        .sum(axis=1) / nRandom) # AVG POS
+        df_struct_3d = df_struct_3d.drop(LFC3D_colnames, axis=1)
         
-        # df_struct_3d.fillna('-')
+        df_struct_3d = df_struct_3d.round(4)
+        df_struct_3d = df_struct_3d.fillna('-')
 
     out_filename = edits_filedir / f"LFC3D/{input_gene}_LFC_LFC3D_LFC3Dr.tsv"
     df_struct_3d.to_csv(out_filename, sep = '\t', index=False)

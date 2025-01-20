@@ -35,8 +35,7 @@ def binning_neg_pos(
 ): 
     NEG_10p_v, POS_90p_v, NEG_05p_v, POS_95p_v = quantile_vals
     # binning and weighting 
-    arr_LFC3D_disc = []
-    arr_LFC3D_weight = []
+    arr_LFC3D_disc, arr_LFC3D_weight = [], []
 
     for i in range(0, len(df_LFC_LFC3D)): 
         LFC3D = df_LFC_LFC3D.at[i, LFC3D_header]
@@ -110,8 +109,8 @@ def metaaggregation_histogram(
         res = {}
         df_meta_plot = pd.DataFrame()
         df_meta_plot['unipos'] = df_meta['unipos']
-        df_meta_plot[sum] = df_meta[sum]
-        df_meta_plot[avg] = df_meta[avg]
+        df_meta_plot[sum] = df_meta[sum].replace('-', np.nan).astype(float) ### can we fix the default format 250120
+        df_meta_plot[avg] = df_meta[avg].replace('-', np.nan).astype(float) ### can we fix the default format 250120
 
         U1, p = mannwhitneyu(df_meta_plot[sum], df_meta_plot[avg], method="asymptotic" )
         res['mannwhitneyu U1'], res['mannwhitneyu p'] = U1, p
