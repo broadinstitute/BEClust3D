@@ -15,7 +15,7 @@ import warnings
 def metaaggregation(
     df_LFC_LFC3D, workdir, 
     input_gene, structureid, screen_names, 
-    nRandom=1000, pthr=0.05, score_type='LFC3D', aggr_func=np.sum, aggr_func_name='SUM', 
+    pthr=0.05, score_type='LFC3D', aggr_func=np.sum, aggr_func_name='SUM', 
 ): 
     """
     Description
@@ -137,6 +137,8 @@ def metaaggregation(
     df_LFC3D_pos = df_nodash.loc[df_nodash[header_main] > 0, ].reset_index(drop=True)
     df_neg_stats = df_LFC3D_neg[header_main].describe()
     df_pos_stats = df_LFC3D_pos[header_main].describe()
+    print(df_neg_stats)
+    print(df_pos_stats)
 
     # CALCULATE BINS #
     quantile_values = {}
@@ -155,9 +157,11 @@ def metaaggregation(
 
     # CONVERT SIGNAL TO Z SCORE #
     colnames = [f'{aggr_func_name}_{score_type}_{sign}' for sign in ['neg', 'pos']]
-    params = [{'mu': df_bidir_meta[f'AVG_{score_type}r_{sign}'].mean(), 
-                's': df_bidir_meta[f'AVG_{score_type}r_{sign}'].std()} 
-                for sign in ['neg', 'pos']]
+    params = [{'mu': df_bidir_meta[f'AVG_{score_type}r_neg'].replace('-', np.nan).astype(float).mean(), 
+                's': df_neg_stats['std']}, 
+              {'mu': df_bidir_meta[f'AVG_{score_type}r_pos'].replace('-', np.nan).astype(float).mean(), 
+                's': df_pos_stats['std']}, ]
+                # for sign in ['neg', 'pos']]
     result_data = {f'{aggr_func_name}_{score_type}_{sign}_{suffix}': [] 
                     for sign in ['neg', 'pos'] for suffix in ['z', 'p', 'psig']}
 

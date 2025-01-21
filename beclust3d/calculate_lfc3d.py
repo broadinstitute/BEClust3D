@@ -12,6 +12,8 @@ from pathlib import Path
 import os
 import warnings
 import numpy as np
+import warnings
+warnings.filterwarnings('ignore')
 
 def calculate_lfc3d(
         df_str_cons, 

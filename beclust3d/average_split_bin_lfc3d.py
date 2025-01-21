@@ -15,7 +15,7 @@ from _average_split_bin_helpers_ import *
 def average_split_bin(
         df_LFC_LFC3D_rand, 
         workdir, input_gene, structureid, screen_names, 
-        nRandom=1000, pthr=0.05, score_type='LFC3D', 
+        pthr=0.05, score_type='LFC3D', 
 ): 
     """
     Description
@@ -64,8 +64,6 @@ def average_split_bin(
         df_bidir[header_LFC3D] = df_LFC_LFC3D_rand[header_LFC3D] # LFC or LFC3D per screen
         
         taa_wise_LFC3D_pos, taa_wise_LFC3D_neg = [], []
-        # random_cols = [f'{screen_name}_{score_type}r{str(r+1)}' for r in range(nRandom)]
-        # taa_wise_AVG_LFC3Dr_pos, taa_wise_AVG_LFC3Dr_neg, taa_wise_AVG_LFC3Dr = [], [], []
         
         # CALCULATE THE AVG OF ALL THE RANDOMIZATIONS AND SPLIT POS NEG #
         for aa in range(len(df_LFC_LFC3D_rand)): 
@@ -75,33 +73,13 @@ def average_split_bin(
             taa_LFC3D = float(taa_LFC3D_raw) if taa_LFC3D_raw != '-' else 0.0
             taa_wise_LFC3D_neg.append(taa_LFC3D if taa_LFC3D < 0 else 0.0) # either the value or 0.0
             taa_wise_LFC3D_pos.append(taa_LFC3D if taa_LFC3D > 0 else 0.0) # either the value or 0.0
-            
-            # # For randomized LFC3Dr - find AVG(neg_LFC3Dr) and AVG(pos_LFC3Dr)
-            # taas_LFC3Dr_raw = df_LFC_LFC3D_rand.loc[aa, random_cols] # TAKE A ROW OF ALL RAND #
-            # valid_values = [float(x) for x in taas_LFC3Dr_raw if x != '-']
-
-            # if valid_values: 
-            #     taa_SUM_LFC3Dr = sum(valid_values)
-            #     taa_SUM_LFC3Dr_neg = sum(v for v in valid_values if v < 0)
-            #     taa_SUM_LFC3Dr_pos = sum(v for v in valid_values if v > 0)
-
-            #     taa_wise_AVG_LFC3Dr.append(round(taa_SUM_LFC3Dr / nRandom, 3))
-            #     taa_wise_AVG_LFC3Dr_neg.append(round(taa_SUM_LFC3Dr_neg / nRandom, 3))
-            #     taa_wise_AVG_LFC3Dr_pos.append(round(taa_SUM_LFC3Dr_pos / nRandom, 3))
-            # else: 
-            #     taa_wise_AVG_LFC3Dr.append(0.0)
-            #     taa_wise_AVG_LFC3Dr_neg.append(0.0)
-            #     taa_wise_AVG_LFC3Dr_pos.append(0.0)
 
         df_bidir[f"{screen_name}_{score_type}_neg"]      = taa_wise_LFC3D_neg # LFC3D_neg per SCREEN
         df_bidir[f"{screen_name}_{score_type}_pos"]      = taa_wise_LFC3D_pos # LFC3D_pos per SCREEN
         df_bidir[f"{screen_name}_AVG_{score_type}r"]     = df_LFC_LFC3D_rand[f"{screen_name}_AVG_{score_type}r"] # AVG_LFC3Dr per SCREEN
         df_bidir[f"{screen_name}_AVG_{score_type}r_neg"] = df_LFC_LFC3D_rand[f"{screen_name}_AVG_{score_type}r_neg"] # AVG_LFC3Dr_neg per SCREEN
         df_bidir[f"{screen_name}_AVG_{score_type}r_pos"] = df_LFC_LFC3D_rand[f"{screen_name}_AVG_{score_type}r_pos"] # AVG_LFC3Dr_pos per SCREEN
-        # df_bidir[f"{screen_name}_AVG_{score_type}r"]     = taa_wise_AVG_LFC3Dr # AVG_LFC3Dr per SCREEN
-        # df_bidir[f"{screen_name}_AVG_{score_type}r_neg"] = taa_wise_AVG_LFC3Dr_neg # AVG_LFC3Dr_neg per SCREEN
-        # df_bidir[f"{screen_name}_AVG_{score_type}r_pos"] = taa_wise_AVG_LFC3Dr_pos # AVG_LFC3Dr_pos per SCREEN
-    
+
         # BINNING #
         df_LFC_LFC3D_dis = df_bidir[['unipos', 'unires', header_LFC, header_LFC3D]].copy()
 
@@ -139,18 +117,22 @@ def average_split_bin(
         df_z[f'{screen_name}_AVG_{score_type}r_neg'] = df_bidir[f'{screen_name}_AVG_{score_type}r_neg']
         df_z[f'{screen_name}_AVG_{score_type}r_pos'] = df_bidir[f'{screen_name}_AVG_{score_type}r_pos']
 
+        # print(df_bidir[f'{screen_name}_AVG_{score_type}r_neg'].replace('-', np.nan).astype(float))
+        # print(df_bidir[f'{screen_name}_AVG_{score_type}r_pos'].replace('-', np.nan).astype(float))
         # CALCULATE Z SCORE #
         colnames = [f'{screen_name}_{score_type}_{sign}' for sign in ['neg', 'pos']]
         params = [{'mu': df_bidir[f'{screen_name}_AVG_{score_type}r_{sign}'].replace('-', np.nan).astype(float).mean(), ### can we fix the default format 250120
-                   's':  df_bidir[f'{screen_name}_AVG_{score_type}r_{sign}'].replace('-', np.nan).astype(float).std()}  ### can we fix the default format 250120
+                    's': df_bidir[f'{screen_name}_AVG_{score_type}r_{sign}'].replace('-', np.nan).astype(float).std()}  ### can we fix the default format 250120
                    for sign in ['neg', 'pos']]
         result_data = {f'{screen_name}_{score_type}_{sign}_{suffix}': [] 
                        for sign in ['neg', 'pos'] for suffix in ['z', 'p', 'psig']}
 
+        print(params)
         for i in range(len(df_z)):
             for colname, param, sign in zip(colnames, params, ['neg', 'pos']): 
                 signal = float(df_z.at[i, colname])
                 signal_z, signal_p, signal_plabel = calculate_stats(signal, param, pthr)
+                # print(signal, signal_z, signal_p, signal_plabel)
                 
                 # Append results to the dictionary
                 result_data[f'{screen_name}_{score_type}_{sign}_z'].append(signal_z)

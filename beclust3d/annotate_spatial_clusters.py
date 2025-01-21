@@ -26,6 +26,7 @@ def clustering(
         max_distances=20, pthr_cutoff='p<0.05', score_type='LFC3D', 
 
         clustering_kwargs = {"n_clusters": None, "metric": "euclidean", "linkage": "single", }, 
+        subplots_kwargs={'figsize':(10,7)}, 
 ): 
     """
     Description
@@ -109,18 +110,20 @@ def clustering(
     # PLOT #
     clust_dist_filename = edits_filedir / f"cluster_{score_type}/{structureid}_{screen_name}_Aggr_Hits_List.tsv" 
     yvals = list(hits_dict.values())
-    plot_cluster_distance(arr_d_thr, yvals, names, clust_dist_filename, edits_filedir, input_gene, screen_name, score_type)
+    plot_cluster_distance(arr_d_thr, yvals, names, clust_dist_filename, edits_filedir, input_gene, screen_name, score_type, 
+                          subplots_kwargs)
 
     return arr_d_thr, yvals
 
 def plot_cluster_distance(
         x, ys, names, out_filename, edits_filedir, input_gene, screen_name, score_type, 
+        subplots_kwargs={'figsize':(10,7)}, 
 ): 
     dist_dict = {'clust_dist': x}
     for n, y in zip(names, ys): 
         dist_dict[n] = y
     dist_stat = pd.DataFrame(dist_dict)
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(**subplots_kwargs)
 
     for n in names: 
         sns.lineplot(data=dist_stat, x="clust_dist", y=n)
@@ -142,6 +145,7 @@ def clustering_distance(
         names=['negative', 'positive'], 
         pthr_cutoff='p<0.05', score_type='LFC3D', 
         clustering_kwargs = {"n_clusters": None, "metric": "euclidean", "linkage": "single", }, 
+        subplots_kwargs={'figsize':(20,15)}, 
 ): 
     """
     Description
@@ -207,7 +211,7 @@ def clustering_distance(
         print(f'Number of clusters of {name} hits: {n_c_output}')
 
         dendogram_filename = edits_filedir / f"plots/{input_gene}_{input_uniprot}_{name}_Dendogram_{str(int(thr_distance))}A.png"
-        fig = plot_dendrogram(clustering, df_pvals_temp, dendogram_filename, name, input_gene)
+        fig = plot_dendrogram(clustering, df_pvals_temp, dendogram_filename, name, input_gene, subplots_kwargs)
 
         # CLUSTER INDEX AND LENGTH
         df_pvals_clust = df_pvals_clust.loc[(df_pvals_clust[colname] == pthr_cutoff), ].reset_index(drop=True)
@@ -221,9 +225,10 @@ def clustering_distance(
 
 def plot_dendrogram(
         clustering, df, dendogram_filename, name, input_gene, 
+        subplots_kwargs={'figsize':(20,15)}, 
 ):
     
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(**subplots_kwargs)
     # create the counts of samples under each node
     counts = np.zeros(clustering.children_.shape[0])
     n_samples = len(clustering.labels_)
