@@ -52,6 +52,7 @@ def average_split_bin(
     df_bidir = pd.DataFrame()
     df_bidir['unipos'] = df_LFC_LFC3D_rand['unipos']
     df_bidir['unires'] = df_LFC_LFC3D_rand['unires']
+    df_LFC_LFC3D_dis = df_bidir[['unipos', 'unires']].copy()
     
     for screen_name in screen_names: # FOR EVERY SCREEN INDIVIDUALLY #
         header_LFC = f"{screen_name}_LFC"
@@ -81,7 +82,8 @@ def average_split_bin(
         df_bidir[f"{screen_name}_AVG_{score_type}r_pos"] = df_LFC_LFC3D_rand[f"{screen_name}_AVG_{score_type}r_pos"] # AVG_LFC3Dr_pos per SCREEN
 
         # BINNING #
-        df_LFC_LFC3D_dis = df_bidir[['unipos', 'unires', header_LFC, header_LFC3D]].copy()
+        df_LFC_LFC3D_dis[header_LFC] = df_bidir[header_LFC]
+        df_LFC_LFC3D_dis[header_LFC3D] = df_bidir[header_LFC3D]
 
         # GENERATE THRESHOLDS FOR BINNING #
         df_nodash = df_bidir.loc[df_bidir[header_LFC3D] != '-', ].reset_index(drop=True)
@@ -117,8 +119,6 @@ def average_split_bin(
         df_z[f'{screen_name}_AVG_{score_type}r_neg'] = df_bidir[f'{screen_name}_AVG_{score_type}r_neg']
         df_z[f'{screen_name}_AVG_{score_type}r_pos'] = df_bidir[f'{screen_name}_AVG_{score_type}r_pos']
 
-        # print(df_bidir[f'{screen_name}_AVG_{score_type}r_neg'].replace('-', np.nan).astype(float))
-        # print(df_bidir[f'{screen_name}_AVG_{score_type}r_pos'].replace('-', np.nan).astype(float))
         # CALCULATE Z SCORE #
         colnames = [f'{screen_name}_{score_type}_{sign}' for sign in ['neg', 'pos']]
         params = [{'mu': df_bidir[f'{screen_name}_AVG_{score_type}r_{sign}'].replace('-', np.nan).astype(float).mean(), ### can we fix the default format 250120
@@ -127,12 +127,10 @@ def average_split_bin(
         result_data = {f'{screen_name}_{score_type}_{sign}_{suffix}': [] 
                        for sign in ['neg', 'pos'] for suffix in ['z', 'p', 'psig']}
 
-        print(params)
         for i in range(len(df_z)):
             for colname, param, sign in zip(colnames, params, ['neg', 'pos']): 
                 signal = float(df_z.at[i, colname])
                 signal_z, signal_p, signal_plabel = calculate_stats(signal, param, pthr)
-                # print(signal, signal_z, signal_p, signal_plabel)
                 
                 # Append results to the dictionary
                 result_data[f'{screen_name}_{score_type}_{sign}_z'].append(signal_z)

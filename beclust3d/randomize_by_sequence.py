@@ -13,9 +13,9 @@ import warnings
 
 def randomize_by_sequence(
         workdir, 
-        struc_consrv_filename, missense_filename, 
+        missense_filename, rand_filename, 
         input_gene, screen_name, 
-        nRandom=1000, 
+        nRandom=1000, conservation=False, 
 ): 
     """
     Description
@@ -44,22 +44,22 @@ def randomize_by_sequence(
     if not os.path.exists(edits_filedir / 'randomized_screendata'):
         os.mkdir(edits_filedir / 'randomized_screendata')
     
-    if not os.path.exists(edits_filedir / struc_consrv_filename): 
-        warnings.warn(f"{struc_consrv_filename} does not exist")
-        return None
-    df_protein = pd.read_csv(edits_filedir / struc_consrv_filename, sep = "\t")
-
     if not os.path.exists(edits_filedir / missense_filename): 
         warnings.warn(f"{missense_filename} does not exist")
         return None
-    df_missense = pd.read_csv(edits_filedir / missense_filename, sep = '\t') # DOESNT CONTAIN '-' #
+    df_protein = pd.read_csv(edits_filedir / missense_filename, sep = "\t")
+
+    if not os.path.exists(edits_filedir / rand_filename): 
+        warnings.warn(f"{rand_filename} does not exist")
+        return None
+    df_missense = pd.read_csv(edits_filedir / rand_filename, sep = '\t') # DOESNT CONTAIN '-' #
 
     # COPY VALUES FROM MISSENSE RANDOMIZED DF TO STRUC CONSRV DF #
     human_res_positions = df_protein['human_res_pos'].tolist()
     missense_filter_col = [col for col in df_missense if col.startswith('LFC')]
     
-    new_colnames = ['mean_missense_LFC']+[f'mean_missense_LFCr{j+1}' for j in range(nRandom)]
-    df_mis_positions = pd.DataFrame(columns=new_colnames)
+    rand_colnames = ['mean_missense_LFC']+[f'mean_missense_LFCr{j+1}' for j in range(nRandom)]
+    df_mis_positions = pd.DataFrame(columns=rand_colnames)
     for i in range(len(df_protein)): 
         df_mis_pos = df_missense.loc[df_missense['edit_pos'] == human_res_positions[i]]
         df_mis_pos = df_mis_pos[missense_filter_col]
@@ -70,8 +70,17 @@ def randomize_by_sequence(
             res = df_mis_pos.mean().tolist()
         df_mis_positions.loc[i] = res # ADD ROW FROM MISSENSE RANDOMIZED #
 
+    missense_colnames = ['unipos', 'unires', 'x_coord', 'y_coord', 'z_coord', 
+                         'bfactor_pLDDT', 'Naa_count', 'Naa', 'Naa_pos', 'SS9', 'SS3', 'ACC', 
+                         'RSA', 'exposure', 'PHI', 'normPHI', 'PSI', 'normPSI', 'dBurial', 
+                         'normSumdBurial', 'pLDDT_dis', 'human_res_pos', 'conservation', 
+                         'mean_Missense_LFC','mean_Missense_LFC_stdev','all_Missense_edits',
+                         'mean_Missense_LFC_Z','mean_Missense_LFC_p','mean_Missense_LFC_plab']
+    if conservation: 
+        missense_colnames += ['mouse_res_pos', 'mouse_res']
     df_mis_positions = df_mis_positions.round(3)
-    df_protein = pd.concat([df_protein, df_mis_positions], axis=1)
+    df_protein = pd.concat([df_protein[missense_colnames], df_mis_positions], axis=1)
+    df_protein = df_protein.round(4)
     del df_mis_pos, df_mis_positions, df_missense
 
     out_filename = f"randomized_screendata/{input_gene}_{screen_name}_Missense_proteinedits_rand.tsv"

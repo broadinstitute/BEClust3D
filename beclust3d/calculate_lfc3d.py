@@ -121,6 +121,7 @@ def calculate_lfc3d(
         df_struct_3d = df_struct_3d.round(4)
         df_struct_3d = df_struct_3d.fillna('-')
 
+    df_struct_3d['unires'] = df_str_cons['unires']
     out_filename = edits_filedir / f"LFC3D/{input_gene}_LFC_LFC3D_LFC3Dr.tsv"
     df_struct_3d.to_csv(out_filename, sep = '\t', index=False)
 

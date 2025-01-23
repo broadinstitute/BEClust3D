@@ -12,6 +12,7 @@ import os
 import statistics
 import warnings
 from scipy.stats import norm
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 from _prioritize_by_sequence_plots_ import *
 
@@ -29,7 +30,7 @@ def get_plabel(z_LFC, direction):
 def prioritize_by_sequence(
     df_struc, df_consrv, df_nomutation, 
     workdir, 
-    input_gene, screen_name, structureid, file_dict, 
+    input_gene, screen_name, file_dict, 
     function=statistics.mean, function_name='mean', target_res_pos='human_res_pos', 
 ): 
     """
@@ -78,8 +79,8 @@ def prioritize_by_sequence(
         df_protein['conservation']  = df_consrv['conservation']
     del df_struc, df_consrv
 
-    struc_consrv_filename =  f"screendata/{input_gene}_{structureid}_struc_consrv.tsv"
-    df_protein.to_csv(edits_filedir / struc_consrv_filename, sep = "\t", index=False)
+    # struc_consrv_filename =  f"screendata/{input_gene}_{structureid}_struc_consrv.tsv"
+    # df_protein.to_csv(edits_filedir / struc_consrv_filename, sep = "\t", index=False)
 
     # FOR EACH EDIT TYPE, AGGREGATE LFC AND EDITS WITH CONSERVATION #
     for in_filename, mut in file_dict.items(): 
@@ -117,6 +118,7 @@ def prioritize_by_sequence(
         df_protein[f'all_{mut}_edits'] = arr_all_edits
 
         # CALCULATE Z SCORE #
+        # FOR NEG AND POS SEPARATELY, CALC Z SCORE BASED ON THE MEAN STD PER SCREEN PER GENE PER DIRECTION #
         neg_mask = df_nomutation['LFC'] < 0.0 # NEG #
         pos_mask = df_nomutation['LFC'] > 0.0 # POS #
         mu_neg, sigma_neg = df_nomutation.loc[neg_mask, 'LFC'].mean(), df_nomutation.loc[neg_mask, 'LFC'].std()
@@ -140,7 +142,7 @@ def prioritize_by_sequence(
                     z_LFC = statistics.NormalDist(mu=mu_pos, sigma=sigma_pos).zscore(LFC)
                     p_LFC = norm.sf(abs(z_LFC))
                     plab_LFC = get_plabel(z_LFC, direction='positive')
-                else: plab_LFC = 'p=1.0'
+                else: plab_LFC = 'p=1.0' ### redundant? 250121
 
             list_z_LFC.append(z_LFC)
             list_p_LFC.append(p_LFC)
