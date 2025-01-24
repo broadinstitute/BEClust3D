@@ -15,7 +15,7 @@ import warnings
 def metaaggregation(
     df_LFC_LFC3D, workdir, 
     input_gene, structureid, screen_names, 
-    nRandom=1000, pthr=0.05, score_type='LFC3D', aggr_func=np.sum, aggr_func_name='SUM', 
+    pthr=0.05, score_type='LFC3D', aggr_func=np.sum, aggr_func_name='SUM', 
 ): 
     """
     Description
@@ -74,8 +74,10 @@ def metaaggregation(
             LFC3D = df_LFC_LFC3D.at[i, header_LFC3D]
             if LFC3D != '-': 
                 LFC3D_value = float(LFC3D)
-                if LFC3D_value < 0.0:   values_LFC3D_neg.append(LFC3D_value)
-                elif LFC3D_value > 0.0: values_LFC3D_pos.append(LFC3D_value)
+                if LFC3D_value < 0.0: 
+                    values_LFC3D_neg.append(LFC3D_value)
+                elif LFC3D_value > 0.0: 
+                    values_LFC3D_pos.append(LFC3D_value)
 
         # APPLY AGGR FUNCTION #
         list_LFC3D_neg.append(aggr_func(values_LFC3D_neg) if values_LFC3D_neg else 0.0)
@@ -86,43 +88,15 @@ def metaaggregation(
     df_bidir_meta[header_main] = [sum(x) for x in zip(list_LFC3D_neg, list_LFC3D_pos)]
     del list_LFC3D_neg, list_LFC3D_pos
 
-    # RANDOMIZE #
-    dict_META = {}
-    for r in range(nRandom):
-        list_sum_LFC3D_neg, list_sum_LFC3D_pos = [], []
-        for i in range(len(df_LFC_LFC3D)): 
-            res_sum_LFC3D_neg, res_sum_LFC3D_pos = 0.0, 0.0
-
-            for screen_name in screen_names: # sum across screens
-                header_LFC3D = f"{screen_name}_{score_type}r{str(r+1)}"
-                if header_LFC3D not in df_LFC_LFC3D.columns: 
-                    continue
-
-                LFC3D = df_LFC_LFC3D.at[i, header_LFC3D]
-                if (LFC3D != '-') and (float(LFC3D) < 0.0):
-                    res_sum_LFC3D_neg += float(LFC3D)
-                if (LFC3D != '-') and (float(LFC3D) > 0.0):
-                    res_sum_LFC3D_pos += float(LFC3D)
-
-            list_sum_LFC3D_neg.append(res_sum_LFC3D_neg)
-            list_sum_LFC3D_pos.append(res_sum_LFC3D_pos)
-            
-        dict_META[f'{aggr_func_name}_{score_type}r{str(r+1)}_neg'] = list_sum_LFC3D_neg
-        dict_META[f'{aggr_func_name}_{score_type}r{str(r+1)}_pos'] = list_sum_LFC3D_pos
-        del list_sum_LFC3D_neg, list_sum_LFC3D_pos
-
-    # APPEND RESULTS TO DF #
-    df_rand_temp = pd.DataFrame(dict_META)
-    # COMPUTE AVG #
-    avg_neg = ( df_rand_temp[[f'{aggr_func_name}_{score_type}r{str(r+1)}_neg' for r in range(nRandom)]].mean(axis=1) )
-    avg_pos = ( df_rand_temp[[f'{aggr_func_name}_{score_type}r{str(r+1)}_pos' for r in range(nRandom)]].mean(axis=1) )
-
-    df_bidir_meta[f'AVG_{score_type}r_neg'] = avg_neg
-    df_bidir_meta[f'AVG_{score_type}r_pos'] = avg_pos
-    del df_rand_temp
+    # PULL RANDOMIZED DATA #
+    lfc3dr_colnames_neg = [f"{screen_name}_AVG_{score_type}r_neg" for screen_name in screen_names]
+    df_bidir_meta[f'SUM_{score_type}r_neg'] = df_LFC_LFC3D[lfc3dr_colnames_neg].sum(axis=1)
+    lfc3dr_colnames_pos = [f"{screen_name}_AVG_{score_type}r_pos" for screen_name in screen_names]
+    df_bidir_meta[f'SUM_{score_type}r_pos'] = df_LFC_LFC3D[lfc3dr_colnames_pos].sum(axis=1)
 
     # BINNING #
-    df_LFC_LFC3D_dis = df_bidir_meta[['unipos', 'unires', header_main]].copy()
+    df_LFC_LFC3D_dis = df_bidir_meta[['unipos', 'unires', header_main, 
+                                      f'SUM_{score_type}r_neg', f'SUM_{score_type}r_pos']].copy()
     quantiles = {'NEG_10p_v':0.1, 'POS_90p_v':0.9, 'NEG_05p_v':0.05, 'POS_95p_v':0.95}
 
     # GENERATE THRESHOLDS FOR BINNING #
@@ -130,8 +104,10 @@ def metaaggregation(
     df_nodash[header_main] = df_nodash[header_main].astype(float)
     df_LFC3D_neg = df_nodash.loc[df_nodash[header_main] < 0, ].reset_index(drop=True)
     df_LFC3D_pos = df_nodash.loc[df_nodash[header_main] > 0, ].reset_index(drop=True)
-    df_neg_stats = df_LFC3D_neg[header_main].describe()
-    df_pos_stats = df_LFC3D_pos[header_main].describe()
+    df_neg_stats = df_LFC3D_neg[f'SUM_{score_type}r_neg'].describe()
+    df_pos_stats = df_LFC3D_pos[f'SUM_{score_type}r_pos'].describe()
+    print(df_neg_stats)
+    print(df_pos_stats)
 
     # CALCULATE BINS #
     quantile_values = {}
@@ -150,11 +126,10 @@ def metaaggregation(
 
     # CONVERT SIGNAL TO Z SCORE #
     colnames = [f'{aggr_func_name}_{score_type}_{sign}' for sign in ['neg', 'pos']]
-    params = [{'mu': df_bidir_meta[f'AVG_{score_type}r_{sign}'].mean(), 
-                's': df_bidir_meta[f'AVG_{score_type}r_{sign}'].std()} 
-                for sign in ['neg', 'pos']]
+    params = [{'mu': df_neg_stats['mean'], 's': df_neg_stats['std']}, 
+              {'mu': df_pos_stats['mean'], 's': df_pos_stats['std']}, ]
     result_data = {f'{aggr_func_name}_{score_type}_{sign}_{suffix}': [] 
-                    for sign in ['neg', 'pos'] for suffix in ['z', 'p', 'psig']}
+                   for sign in ['neg', 'pos'] for suffix in ['z', 'p', 'psig']}
 
     for i in range(len(df_bidir_meta)):
         for colname, param, sign in zip(colnames, params, ['neg', 'pos']): 

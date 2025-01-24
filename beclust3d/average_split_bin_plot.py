@@ -31,8 +31,12 @@ def average_split_bin_plots(
         pos = '_'.join([name, func, f'{score_type}_pos'])
 
     # HISTOGRAMS #
-    histogram_params = [(f'{name}_AVG_{score_type}r_neg'.strip('_'), neg, 'Negative'), 
-                        (f'{name}_AVG_{score_type}r_pos'.strip('_'), pos, 'Positive'), ]
+    if name == '': 
+        histogram_params = [(f'{func}_{score_type}r_neg'.strip('_'), neg, 'Negative'), 
+                            (f'{func}_{score_type}r_pos'.strip('_'), pos, 'Positive'), ]
+    else: 
+        histogram_params = [(f'{name}_AVG_{score_type}r_neg'.strip('_'), neg, 'Negative'), 
+                            (f'{name}_AVG_{score_type}r_pos'.strip('_'), pos, 'Positive'), ]
     res_neg, res_pos = metaaggregation_histogram(df_Z, histogram_params, edits_filedir, 
                                                  input_gene, name=name)
     if res_neg is None or res_pos is None: 
