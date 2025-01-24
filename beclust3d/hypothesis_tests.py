@@ -108,7 +108,7 @@ def hypothesis_plot(
     for ax, name in zip(axes_list, category_names):
         plot1 = sns.scatterplot(ax=ax, data=df_MW_input[df_MW_input[cat_colname]==name], 
                                 x=f"U_{partial_col_header}", y=f"p_{partial_col_header}", 
-                                hue=hue_colname, palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=handles is None)
+                                hue=hue_colname, palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=False)
         ax.axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p = 0.05 (-log10 ≈ 1.3)')
         ax.axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p = 0.1 (-log10 ≈ 1.0)')
 
