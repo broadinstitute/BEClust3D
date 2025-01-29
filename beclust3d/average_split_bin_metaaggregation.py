@@ -11,7 +11,7 @@ from pathlib import Path
 import os
 from _average_split_bin_helpers_ import *
 import warnings
-warnings.filterwarnings('ignore')
+# warnings.filterwarnings('ignore')
 
 def metaaggregation(
     df_LFC_LFC3D, workdir, 

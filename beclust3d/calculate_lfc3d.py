@@ -74,10 +74,17 @@ def calculate_lfc3d(
                     taa_wise_norm_LFC.append('-')
                 else: 
                     taa_wise_norm_LFC.append(str(round(function_3Daggr(taa_naa_LFC_vals), 3)))
-            df_struct_3d[f"{screen_name}_LFC3D"] = taa_wise_norm_LFC
+            df_struct_3d = pd.concat([df_struct_3d, pd.DataFrame({f"{screen_name}_LFC3D": taa_wise_norm_LFC})], axis=1)
         
         df_struct_3d[f"{screen_name}_LFC"] = df_struc_edits[f'{function_type}_{mut}_LFC']
         df_struct_3d[f"{screen_name}_LFC_Z"] = df_struc_edits[f'{function_type}_{mut}_LFC_Z']
+
+        df_struct_3d = pd.concat([df_struct_3d, 
+                                  df_struc_edits[[f'{function_type}_{mut}_LFC']].rename(
+                                      columns={f'{function_type}_{mut}_LFC': f"{screen_name}_LFC"}), 
+                                  df_struc_edits[[f'{function_type}_{mut}_LFC_Z']].rename(
+                                      columns={f'{function_type}_{mut}_LFC_Z': f"{screen_name}_LFC_Z"}), 
+                                  ], axis=1)
     
         # GET RANDOMIZED LFC and LFC3D VALUES #
         if not os.path.exists(edits_filedir / rand_filename): 
@@ -104,7 +111,7 @@ def calculate_lfc3d(
                 dict_temp[f"{screen_name}_LFC3Dr{str(r+1)}"] = taa_wise_norm_LFC
 
         df_struct_3d = pd.concat((df_struct_3d, pd.DataFrame(dict_temp)), axis=1)
-        df_struct_3d = df_struct_3d.replace('-', np.nan)
+        df_struct_3d = df_struct_3d.replace('-', np.nan).infer_objects(copy=False) # FutureWarning
         LFC_colnames   = [f"{screen_name}_LFCr{str(r+1)}" for r in range(0, nRandom)]
         LFC3D_colnames = [f"{screen_name}_LFC3Dr{str(r+1)}" for r in range(0, nRandom)]
 
