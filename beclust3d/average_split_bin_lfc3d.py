@@ -121,8 +121,9 @@ def average_split_bin(
 
         # CALCULATE Z SCORE #
         colnames = [f'{screen_name}_{score_type}_{sign}' for sign in ['neg', 'pos']]
-        params = [{'mu': df_bidir[f'{screen_name}_AVG_{score_type}r_{sign}'].replace('-', np.nan).astype(float).mean(), ### can we fix the default format 250120
-                    's': df_bidir[f'{screen_name}_AVG_{score_type}r_{sign}'].replace('-', np.nan).astype(float).std()}  ### can we fix the default format 250120
+        params = [{'mu': df_bidir[f'{screen_name}_AVG_{score_type}r_{sign}'].replace('-', np.nan).astype(float).mean(), 
+                    's': df_bidir[f'{screen_name}_AVG_{score_type}r_{sign}'].replace('-', np.nan).astype(float).std()}  
+                    ### can we fix the default format 250120
                    for sign in ['neg', 'pos']]
         result_data = {f'{screen_name}_{score_type}_{sign}_{suffix}': [] 
                        for sign in ['neg', 'pos'] for suffix in ['z', 'p', 'psig']}
