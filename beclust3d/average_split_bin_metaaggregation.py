@@ -11,11 +11,12 @@ from pathlib import Path
 import os
 from _average_split_bin_helpers_ import *
 import warnings
+# warnings.filterwarnings('ignore')
 
 def metaaggregation(
     df_LFC_LFC3D, workdir, 
     input_gene, structureid, screen_names, 
-    pthr=0.05, score_type='LFC3D', aggr_func=np.sum, aggr_func_name='SUM', 
+    pthr=0.05, score_type='LFC3D', aggr_func=np.sum, aggr_func_name='SUM', nRandom=1000, 
 ): 
     """
     Description
@@ -89,10 +90,28 @@ def metaaggregation(
     del list_LFC3D_neg, list_LFC3D_pos
 
     # PULL RANDOMIZED DATA #
-    lfc3dr_colnames_neg = [f"{screen_name}_AVG_{score_type}r_neg" for screen_name in screen_names]
-    df_bidir_meta[f'SUM_{score_type}r_neg'] = df_LFC_LFC3D[lfc3dr_colnames_neg].sum(axis=1)
-    lfc3dr_colnames_pos = [f"{screen_name}_AVG_{score_type}r_pos" for screen_name in screen_names]
-    df_bidir_meta[f'SUM_{score_type}r_pos'] = df_LFC_LFC3D[lfc3dr_colnames_pos].sum(axis=1)
+    for n in range(1, nRandom+1): 
+        for sn in screen_names: # SPLIT INTO POS NEG #
+            pref = f"{sn}_{score_type}r{str(n)}"
+            df_LFC_LFC3D[f"{pref}_neg"] = df_LFC_LFC3D[f"{pref}"].apply(lambda x: float(x) if x != '-' and float(x) < 0 else np.nan)
+            df_LFC_LFC3D[f"{pref}_pos"] = df_LFC_LFC3D[f"{pref}"].apply(lambda x: float(x) if x != '-' and float(x) > 0 else np.nan)
+        
+        # SUM ACROSS ALL SCREENS #
+        headers_neg = [f"{sn}_{score_type}r{str(n)}_neg" for sn in screen_names]
+        headers_pos = [f"{sn}_{score_type}r{str(n)}_pos" for sn in screen_names]
+        df_bidir_meta[f"SUM_{score_type}r{str(n)}_neg"] = df_LFC_LFC3D[headers_neg].sum(axis=1)
+        df_bidir_meta[f"SUM_{score_type}r{str(n)}_pos"] = df_LFC_LFC3D[headers_pos].sum(axis=1)
+
+    # AVG ACROSS ALL RANDOMIZATIONS #
+    headers_neg = [f"SUM_{score_type}r{str(n)}_neg" for n in range(1, nRandom+1)]
+    headers_pos = [f"SUM_{score_type}r{str(n)}_pos" for n in range(1, nRandom+1)]
+    df_bidir_meta[f"SUM_{score_type}r_neg"] = df_bidir_meta[headers_neg].mean(axis=1)
+    df_bidir_meta[f"SUM_{score_type}r_pos"] = df_bidir_meta[headers_pos].mean(axis=1)
+
+    # lfc3dr_colnames_neg = [f"{screen_name}_AVG_{score_type}r_neg" for screen_name in screen_names]
+    # df_bidir_meta[f'SUM_{score_type}r_neg'] = df_LFC_LFC3D[lfc3dr_colnames_neg].sum(axis=1)
+    # lfc3dr_colnames_pos = [f"{screen_name}_AVG_{score_type}r_pos" for screen_name in screen_names]
+    # df_bidir_meta[f'SUM_{score_type}r_pos'] = df_LFC_LFC3D[lfc3dr_colnames_pos].sum(axis=1)
 
     # BINNING #
     df_LFC_LFC3D_dis = df_bidir_meta[['unipos', 'unires', header_main, 
@@ -100,19 +119,19 @@ def metaaggregation(
     quantiles = {'NEG_10p_v':0.1, 'POS_90p_v':0.9, 'NEG_05p_v':0.05, 'POS_95p_v':0.95}
 
     # GENERATE THRESHOLDS FOR BINNING #
-    df_nodash = df_bidir_meta.loc[df_bidir_meta[header_main] != 0.0, ].reset_index(drop=True)
-    df_nodash[header_main] = df_nodash[header_main].astype(float)
-    df_LFC3D_neg = df_nodash.loc[df_nodash[header_main] < 0, ].reset_index(drop=True)
-    df_LFC3D_pos = df_nodash.loc[df_nodash[header_main] > 0, ].reset_index(drop=True)
-    df_neg_stats = df_LFC3D_neg[f'SUM_{score_type}r_neg'].describe()
-    df_pos_stats = df_LFC3D_pos[f'SUM_{score_type}r_pos'].describe()
+    # df_nodash = df_bidir_meta.loc[df_bidir_meta[header_main] != 0.0, ].reset_index(drop=True)
+    # df_nodash[header_main] = df_nodash[header_main].astype(float)
+    # df_LFC3D_neg = df_nodash.loc[df_nodash[header_main] < 0, ].reset_index(drop=True)
+    # df_LFC3D_pos = df_nodash.loc[df_nodash[header_main] > 0, ].reset_index(drop=True)
+    df_neg_stats = df_bidir_meta[f'SUM_{score_type}r_neg'].describe()
+    df_pos_stats = df_bidir_meta[f'SUM_{score_type}r_pos'].describe()
     print(df_neg_stats)
     print(df_pos_stats)
 
     # CALCULATE BINS #
     quantile_values = {}
     for name, q in quantiles.items(): 
-        quantile_values[name] = round(df_LFC3D_neg[header_main].quantile(q), 4)
+        quantile_values[name] = round(df_bidir_meta[header_main].quantile(q), 4)
 
     arr_disc, arr_weight = binning_neg_pos(df_bidir_meta, df_neg_stats, df_pos_stats, 
                                            quantile_values.values(), header_main)
