@@ -76,6 +76,7 @@ def parse_base_editing_results(
     mut_dfs = {}
     # OUTPUT TSV BY INDIVIDUAL SCREENS #
     for df, screen_name in zip(input_dfs, screen_names): 
+        print(screen_name)
         # NARROW DOWN TO INPUT_GENE #
         df_gene = df.loc[df[gene_col] == input_gene, ]
         mut_dfs[screen_name] = {}
