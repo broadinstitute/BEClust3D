@@ -102,15 +102,9 @@ def parse_base_editing_results(
             df_mut[edits_col] = df_mut[edits_col].str.strip(split_char) # CLEAN
             df_mut[edits_col] = df_mut[edits_col].str.split(split_char) # STR to LIST
             df_mut[val_col] = df_mut[val_col].round(3)
-            if screen_name == 'Mouse_InVitro_B16_TadA_D14+IFNg_D14-IFNg': 
-                df_mut.to_csv(f'{mut}_tempbeforeexpl.csv')
             df_mut[edits_col] = df_mut[edits_col].apply(lambda xs: identify_mutations(xs)) # FILTER FOR MUTATIONS #
-            if screen_name == 'Mouse_InVitro_B16_TadA_D14+IFNg_D14-IFNg': 
-                df_mut.to_csv(f'{mut}_tempbeforeexpl2.csv')
 
             df_exploded = df_mut.explode(edits_col) # EACH ROW IS A MUTATION #
-            if screen_name == 'Mouse_InVitro_B16_TadA_D14+IFNg_D14-IFNg': 
-                df_mut.to_csv(f'{mut}_tempafterexpl.csv')
             df_exploded['edit_pos'] = df_exploded[edits_col].str.extract('(\d+)')
             df_exploded['refAA'] = df_exploded[edits_col].str.extract('([A-Za-z*]+)')
             df_exploded['altAA'] = df_exploded[edits_col].str.extract('[A-Za-z]+\d+([A-Za-z*]+)$')
