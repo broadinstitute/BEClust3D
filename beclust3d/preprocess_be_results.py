@@ -82,6 +82,12 @@ def parse_base_editing_results(
         for mut_cat in mut_categories: 
             if not mut_cat in df_gene[mut_col].unique(): 
                 warnings.warn(f'{mut_cat} not in Dataframe')
+        # df_gene[edits_col] = df_gene[edits_col].str.strip(split_char) # CLEAN MUTATIONS #
+        # df_gene[edits_col] = df_gene[edits_col].str.split(split_char) # TURN MUTATIONS INTO LIST #
+        # df_gene[val_col] = df_gene[val_col].round(3)
+        # df_gene_exploded = df_gene.explode(edits_col)
+        # df_gene_exploded[mut_col] = df_gene_exploded[edits_col].apply(lambda mut: assign_mutation(mut))
+        # df_gene_exploded.to_csv('temp_afterexpl.csv')
 
         # NARROW DOWN TO EACH MUTATION TYPE #
         for mut in mut_categories: 
@@ -92,7 +98,7 @@ def parse_base_editing_results(
             print(f"Count of {mut} rows: " + str(len(df_mut)))
 
             # ASSIGN position refAA altAA #
-            df_mut[edits_col] = df_mut[edits_col].str.strip(',').str.strip(';') # CLEAN
+            df_mut[edits_col] = df_mut[edits_col].str.strip(split_char) # CLEAN
             df_mut[edits_col] = df_mut[edits_col].str.split(split_char) # STR to LIST
             df_mut[val_col] = df_mut[val_col].round(3)
             df_mut[edits_col] = df_mut[edits_col].apply(lambda xs: identify_mutations(xs)) # FILTER FOR MUTATIONS #
@@ -105,7 +111,6 @@ def parse_base_editing_results(
             df_exploded['refAA'] = df_exploded['refAA'].str.upper().apply(lambda x: aa_map.get(x, x))
             df_exploded['altAA'] = df_exploded['altAA'].str.upper().apply(lambda x: aa_map.get(x, x))
             df_subset = df_exploded[[edits_col, 'edit_pos', 'refAA', 'altAA', val_col]].rename(columns={edits_col: 'this_edit', val_col: 'LFC'})
-                
 
             if mut == 'Missense': 
                 df_subset = df_subset[(df_subset['refAA'] != df_subset['altAA']) & (df_subset['altAA'] != '*')]
