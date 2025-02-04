@@ -107,6 +107,7 @@ def metaaggregation(
     headers_pos = [f"SUM_{score_type}r{str(n)}_pos" for n in range(1, nRandom+1)]
     df_bidir_meta[f"SUM_{score_type}r_neg"] = df_bidir_meta[headers_neg].mean(axis=1)
     df_bidir_meta[f"SUM_{score_type}r_pos"] = df_bidir_meta[headers_pos].mean(axis=1)
+    df_bidir_meta = df_bidir_meta.round(4)
 
     # lfc3dr_colnames_neg = [f"{screen_name}_AVG_{score_type}r_neg" for screen_name in screen_names]
     # df_bidir_meta[f'SUM_{score_type}r_neg'] = df_LFC_LFC3D[lfc3dr_colnames_neg].sum(axis=1)
@@ -123,8 +124,10 @@ def metaaggregation(
     # df_nodash[header_main] = df_nodash[header_main].astype(float)
     # df_LFC3D_neg = df_nodash.loc[df_nodash[header_main] < 0, ].reset_index(drop=True)
     # df_LFC3D_pos = df_nodash.loc[df_nodash[header_main] > 0, ].reset_index(drop=True)
-    df_neg_stats = df_bidir_meta[f'SUM_{score_type}r_neg'].describe()
-    df_pos_stats = df_bidir_meta[f'SUM_{score_type}r_pos'].describe()
+    mask_neg = df_bidir_meta[f'SUM_{score_type}r_neg'] != 0.0
+    mask_pos = df_bidir_meta[f'SUM_{score_type}r_neg'] != 0.0
+    df_neg_stats = df_bidir_meta[f'SUM_{score_type}r_neg'][mask_neg].describe()
+    df_pos_stats = df_bidir_meta[f'SUM_{score_type}r_pos'][mask_pos].describe()
     print(df_neg_stats)
     print(df_pos_stats)
 
