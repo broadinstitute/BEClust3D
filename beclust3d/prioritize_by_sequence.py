@@ -11,6 +11,7 @@ from pathlib import Path
 import os
 import statistics
 import warnings
+import numpy as np
 from scipy.stats import norm
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
@@ -95,17 +96,20 @@ def prioritize_by_sequence(
             human_res_pos = df_protein.at[i, target_res_pos]
             df_pos_edits = df_edit.loc[df_edit['edit_pos'] == int(human_res_pos), ].reset_index() ###
 
-            if len(df_pos_edits) > 1: 
-                score_list = df_pos_edits['LFC'].tolist()
-                unique_LFC_res = round(function(score_list), 3)
-                stdev_res = np.std(score_list)
+            if df_protein.at[i, 'mouse_res'] != '-': 
+                if len(df_pos_edits) > 1: 
+                    score_list = df_pos_edits['LFC'].tolist()
+                    unique_LFC_res = round(function(score_list), 3)
+                    stdev_res = np.std(score_list)
 
-                pos_edits_list = df_pos_edits['this_edit'].tolist()
-                all_edits_res = ';'.join(list(set(pos_edits_list)))
-            elif len(df_pos_edits) == 1: 
-                unique_LFC_res = round(df_pos_edits.at[0, 'LFC'], 3)
-                stdev_res = 0
-                all_edits_res = df_pos_edits.at[0, 'this_edit']
+                    pos_edits_list = df_pos_edits['this_edit'].tolist()
+                    all_edits_res = ';'.join(list(set(pos_edits_list)))
+                elif len(df_pos_edits) == 1: 
+                    unique_LFC_res = round(df_pos_edits.at[0, 'LFC'], 3)
+                    stdev_res = 0
+                    all_edits_res = df_pos_edits.at[0, 'this_edit']
+                else:
+                    unique_LFC_res, all_edits_res, stdev_res = '-', '-', '-'
             else:
                 unique_LFC_res, all_edits_res, stdev_res = '-', '-', '-'
 
