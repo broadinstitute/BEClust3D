@@ -96,9 +96,6 @@ def prioritize_by_sequence(
             human_res_pos = df_protein.at[i, target_res_pos]
             df_pos_edits = df_edit.loc[df_edit['edit_pos'] == int(human_res_pos), ].reset_index() ###
 
-            if mut == 'Missense' and 1060 < i < 1070: 
-                print(i)
-                print(df_protein.at[i, 'mouse_res'])
             if df_protein.at[i, 'mouse_res'] != '-': 
                 if len(df_pos_edits) > 1: 
                     score_list = df_pos_edits['LFC'].tolist()
