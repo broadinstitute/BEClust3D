@@ -122,14 +122,14 @@ def metaaggregation(
     # GENERATE THRESHOLDS FOR BINNING #
     # df_nodash = df_bidir_meta.loc[df_bidir_meta[header_main] != 0.0, ].reset_index(drop=True)
     # df_nodash[header_main] = df_nodash[header_main].astype(float)
-    # df_LFC3D_neg = df_bidir_meta.loc[df_bidir_meta[header_main] < 0.0, ].reset_index(drop=True)
-    # df_LFC3D_pos = df_bidir_meta.loc[df_bidir_meta[header_main] > 0.0, ].reset_index(drop=True)
-    # df_neg_stats = df_LFC3D_neg[header_main].describe()
-    # df_pos_stats = df_LFC3D_pos[header_main].describe()
-    mask_neg = df_bidir_meta[f'SUM_{score_type}r_neg'] < 0.0
-    mask_pos = df_bidir_meta[f'SUM_{score_type}r_pos'] > 0.0
-    df_neg_stats = df_bidir_meta[f'SUM_{score_type}r_neg'][mask_neg].describe()
-    df_pos_stats = df_bidir_meta[f'SUM_{score_type}r_pos'][mask_pos].describe()
+    df_LFC3D_neg = df_bidir_meta.loc[df_bidir_meta[header_main] < 0.0, ].reset_index(drop=True)
+    df_LFC3D_pos = df_bidir_meta.loc[df_bidir_meta[header_main] > 0.0, ].reset_index(drop=True)
+    df_neg_stats = df_LFC3D_neg[header_main].describe()
+    df_pos_stats = df_LFC3D_pos[header_main].describe()
+    # mask_neg = df_bidir_meta[f'SUM_{score_type}r_neg'] < 0.0
+    # mask_pos = df_bidir_meta[f'SUM_{score_type}r_pos'] > 0.0
+    # df_neg_stats = df_bidir_meta[f'SUM_{score_type}r_neg'][mask_neg].describe()
+    # df_pos_stats = df_bidir_meta[f'SUM_{score_type}r_pos'][mask_pos].describe()
     print(df_neg_stats)
     print(df_pos_stats)
 
