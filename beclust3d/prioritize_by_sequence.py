@@ -97,7 +97,7 @@ def prioritize_by_sequence(
             df_pos_edits = df_edit.loc[df_edit['edit_pos'] == int(human_res_pos), ].reset_index() ###
 
             ### should try to rework logic here 250205
-            if not ('mouse_res' in df_protein.columns) or ('mouse_res' in df_protein.columns and df_protein.at[i, 'mouse_res'] != '-'): 
+            if (df_consrv is None) or (df_protein.at[i, 'mouse_res'] != '-'): 
                 if len(df_pos_edits) > 1: 
                     score_list = df_pos_edits['LFC'].tolist()
                     unique_LFC_res = round(function(score_list), 3)
