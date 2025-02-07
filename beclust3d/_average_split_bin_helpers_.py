@@ -49,13 +49,14 @@ def binning_neg_pos(
             elif df_neg_stats['25%'] < LFC3Df <= df_neg_stats['50%']: LFC3D_disc, LFC3D_weight = 'NEG_50p', -0.5
             elif df_neg_stats['50%'] < LFC3Df <= df_neg_stats['75%']: LFC3D_disc, LFC3D_weight = 'NEG_75p', -0.25
             elif df_neg_stats['75%'] < LFC3Df <= df_neg_stats['max']: LFC3D_disc, LFC3D_weight = 'NEG_100p', -0.05
+            
             elif df_pos_stats['25%'] > LFC3Df >= df_pos_stats['min']: LFC3D_disc, LFC3D_weight = 'POS_0p', 0.05
             elif df_pos_stats['50%'] > LFC3Df >= df_pos_stats['25%']: LFC3D_disc, LFC3D_weight = 'POS_25p', 0.25
             elif df_pos_stats['75%'] > LFC3Df >= df_pos_stats['50%']: LFC3D_disc, LFC3D_weight = 'POS_50p', 0.50
             elif           POS_90p_v > LFC3Df >= df_pos_stats['75%']: LFC3D_disc, LFC3D_weight = 'POS_75p', 0.75
             elif           POS_95p_v > LFC3Df >= POS_90p_v:           LFC3D_disc, LFC3D_weight = 'POS_90p', 0.90
             elif                       LFC3Df >= POS_95p_v:           LFC3D_disc, LFC3D_weight = 'POS_95p', 0.95
-            else: print(LFC3Df, 'Error')
+            # else: print(LFC3Df, 'Binning Error')
 
         arr_LFC3D_disc.append(LFC3D_disc)
         arr_LFC3D_weight.append(LFC3D_weight)

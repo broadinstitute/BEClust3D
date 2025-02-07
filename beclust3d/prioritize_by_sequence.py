@@ -78,7 +78,6 @@ def prioritize_by_sequence(
         df_protein['mouse_res_pos'] = df_consrv['mouse_res_pos']
         df_protein['mouse_res']     = df_consrv['mouse_res']
         df_protein['conservation']  = df_consrv['conservation']
-    del df_struc, df_consrv
 
     # struc_consrv_filename =  f"screendata/{input_gene}_{structureid}_struc_consrv.tsv"
     # df_protein.to_csv(edits_filedir / struc_consrv_filename, sep = "\t", index=False)
@@ -96,7 +95,8 @@ def prioritize_by_sequence(
             human_res_pos = df_protein.at[i, target_res_pos]
             df_pos_edits = df_edit.loc[df_edit['edit_pos'] == int(human_res_pos), ].reset_index() ###
 
-            if df_protein.at[i, 'mouse_res'] != '-': 
+            ### should try to rework logic here 250205
+            if (df_consrv is None) or (df_protein.at[i, 'mouse_res'] != '-'): 
                 if len(df_pos_edits) > 1: 
                     score_list = df_pos_edits['LFC'].tolist()
                     unique_LFC_res = round(function(score_list), 3)
