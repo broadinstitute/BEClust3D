@@ -10,12 +10,14 @@ import pandas as pd
 from pathlib import Path
 import os
 import warnings
+warnings.filterwarnings('ignore')
 
 def randomize_by_sequence(
         workdir, 
-        missense_filename, rand_filename, 
+        df_missense, df_rand, 
         input_gene, screen_name, 
         nRandom=1000, conservation=False, 
+        target_pos='human_res_pos', 
 ): 
     """
     Description
@@ -34,7 +36,7 @@ def randomize_by_sequence(
             the number of randomize iterations
 
     Returns
-        df_protein: pandas dataframe
+        df_missense: pandas dataframe
             a dataframe listing randomized structural sequence and conservation data
     """
 
@@ -43,25 +45,15 @@ def randomize_by_sequence(
         os.mkdir(edits_filedir)
     if not os.path.exists(edits_filedir / 'randomized_screendata'):
         os.mkdir(edits_filedir / 'randomized_screendata')
-    
-    if not os.path.exists(edits_filedir / missense_filename): 
-        warnings.warn(f"{missense_filename} does not exist")
-        return None
-    df_protein = pd.read_csv(edits_filedir / missense_filename, sep = "\t")
-
-    if not os.path.exists(edits_filedir / rand_filename): 
-        warnings.warn(f"{rand_filename} does not exist")
-        return None
-    df_missense = pd.read_csv(edits_filedir / rand_filename, sep = '\t') # DOESNT CONTAIN '-' #
 
     # COPY VALUES FROM MISSENSE RANDOMIZED DF TO STRUC CONSRV DF #
-    human_res_positions = df_protein['human_res_pos'].tolist()
-    missense_filter_col = [col for col in df_missense if col.startswith('LFC')]
+    human_res_positions = df_missense['human_res_pos'].tolist()
+    missense_filter_col = [col for col in df_rand.columns if col.startswith('LFC')]
     
     rand_colnames = ['mean_missense_LFC']+[f'mean_missense_LFCr{j+1}' for j in range(nRandom)]
     df_mis_positions = pd.DataFrame(columns=rand_colnames)
-    for i in range(len(df_protein)): 
-        df_mis_pos = df_missense.loc[df_missense['edit_pos'] == human_res_positions[i]]
+    for i in range(len(df_missense)): 
+        df_mis_pos = df_rand.loc[df_rand['edit_pos'] == human_res_positions[i]]
         df_mis_pos = df_mis_pos[missense_filter_col]
 
         if df_mis_pos.shape[0] == 0: # FILL WITH '-' #
@@ -79,11 +71,11 @@ def randomize_by_sequence(
     if conservation: 
         missense_colnames += ['mouse_res_pos', 'mouse_res']
     df_mis_positions = df_mis_positions.round(3)
-    df_protein = pd.concat([df_protein[missense_colnames], df_mis_positions], axis=1)
-    df_protein = df_protein.round(4)
-    del df_mis_pos, df_mis_positions, df_missense
+    df_missense = pd.concat([df_missense[missense_colnames], df_mis_positions], axis=1)
+    df_missense = df_missense.round(4)
+    del df_mis_positions, df_rand
 
     out_filename = f"randomized_screendata/{input_gene}_{screen_name}_Missense_proteinedits_rand.tsv"
-    df_protein.to_csv(edits_filedir / out_filename, sep = '\t', index=False)
+    df_missense.to_csv(edits_filedir / out_filename, sep = '\t', index=False)
 
-    return df_protein
+    return df_missense

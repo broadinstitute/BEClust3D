@@ -166,6 +166,8 @@ def violin_by_gene(
                              figsize=(19,17), gridspec_kw={'hspace':0.3, 'wspace':0.1})
     axes = axes.flatten()
 
+    legend_handles, legend_labels = None, None
+
     for idx, current_gene in enumerate(unique_genes): 
         df_gene = pd.DataFrame()
         # AGGREGATE OVER EVERY SCREEN #
@@ -187,8 +189,16 @@ def violin_by_gene(
         # PLOT VIOLIN #
         df_gene.loc[:, mut_col] = pd.Categorical(df_gene[mut_col], categories=mut_categories_spaced_sort)
         df_gene = df_gene.sort_values(by=[mut_col]).reset_index(drop=True)
-        sns.violinplot(ax=axes[idx], data=df_gene, x=val_col, y=mut_col, 
-                       inner=None, hue=mut_col).set(title=current_gene) # VIOLIN PLOTS #
+        violin = sns.violinplot(ax=axes[idx], data=df_gene, x=val_col, y=mut_col, 
+                                inner=None, hue=mut_col)
+        axes[idx].set_title(current_gene)
+
+        # Extract legend from the first plot (only once)
+        if legend_handles is None and legend_labels is None:
+            legend_handles, legend_labels = axes[idx].get_legend_handles_labels()
+
+        # Remove legend from the individual plot
+        axes[idx].get_legend().remove()
         axes[idx].axvline(df_gene[val_col].mean(), c="gray", linestyle="dashed")
         axes[idx].scatter(y=range(len(Means)), x=Means, c="violet", alpha=.9) # MEANS #
         del df_gene
@@ -203,3 +213,13 @@ def violin_by_gene(
     # SAVE VIOLIN #
     plotname = f"plots/{title}_violinplot_LFC_by_muttype.pdf"
     plt.savefig(edits_filedir / plotname, dpi=300)
+
+    # CREATE SEPARATE LEGEND #
+    if legend_handles and legend_labels:
+        legend_fig = plt.figure(figsize=(4, 2))  # Adjust size as needed
+        legend_ax = legend_fig.add_subplot(111)
+        legend_ax.axis('off')  # Hide axes
+        legend_ax.legend(legend_handles, legend_labels, loc='center')
+        
+        legend_path = f"plots/{title}_legend.pdf"
+        legend_fig.savefig(edits_filedir / legend_path, dpi=300)

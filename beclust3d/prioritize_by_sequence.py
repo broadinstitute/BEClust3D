@@ -83,28 +83,57 @@ def prioritize_by_sequence(
     # df_protein.to_csv(edits_filedir / struc_consrv_filename, sep = "\t", index=False)
 
     # FOR EACH EDIT TYPE, AGGREGATE LFC AND EDITS WITH CONSERVATION #
-    for in_filename, mut in file_dict.items(): 
-        df_edit = pd.read_csv(edits_filedir / in_filename, sep='\t')
+    for mut, df_edit in file_dict.items(): 
         
         arr_unique_LFC = []
         arr_unique_LFC_stdev = []
         arr_all_edits = []
 
+        # # FOR EACH RESIDUE #
+        # human_res_pos_dict = df_protein[target_res_pos].to_dict()
+        # for i in range(len(df_protein)): 
+        #     human_res_pos = human_res_pos_dict[i]
+        #     df_pos_edits = df_edit.loc[df_edit['edit_pos'] == int(human_res_pos), ].reset_index() ###
+
+        #     if (df_consrv is None) or (df_protein.at[i, 'mouse_res'] != '-'): 
+        #         if len(df_pos_edits) > 1: 
+        #             score_list = df_pos_edits['LFC'].tolist()
+        #             unique_LFC_res = round(function(score_list), 3)
+        #             stdev_res = np.std(score_list)
+
+        #             pos_edits_list = df_pos_edits['this_edit'].tolist()
+        #             all_edits_res = ';'.join(list(set(pos_edits_list)))
+        #         elif len(df_pos_edits) == 1: 
+        #             unique_LFC_res = round(df_pos_edits.at[0, 'LFC'], 3)
+        #             stdev_res = 0
+        #             all_edits_res = df_pos_edits.at[0, 'this_edit']
+        #         else:
+        #             unique_LFC_res, all_edits_res, stdev_res = '-', '-', '-'
+        #     else:
+        #         unique_LFC_res, all_edits_res, stdev_res = '-', '-', '-'
+
+        df_edit_grouped = {k: v.reset_index(drop=True) for k, v in df_edit.groupby('edit_pos')}
+
+        # Precompute the mapping of index to human_res_pos
+        human_res_pos_dict = df_protein[target_res_pos].to_dict()
+        df_consrv_res_dict = df_protein['mouse_res'].to_dict()
+
         # FOR EACH RESIDUE #
         for i in range(len(df_protein)): 
-            human_res_pos = df_protein.at[i, target_res_pos]
-            df_pos_edits = df_edit.loc[df_edit['edit_pos'] == int(human_res_pos), ].reset_index() ###
+            human_res_pos = human_res_pos_dict[i]
 
-            ### should try to rework logic here 250205
-            if (df_consrv is None) or (df_protein.at[i, 'mouse_res'] != '-'): 
-                if len(df_pos_edits) > 1: 
+            # Instead of using .get() with a default dict, retrieve a DataFrame slice
+            df_pos_edits = df_edit_grouped.get(int(human_res_pos), pd.DataFrame(columns=['LFC', 'this_edit']))
+
+            if (df_consrv is None) or (df_consrv_res_dict[i] != '-'):
+                if len(df_pos_edits) > 1:
                     score_list = df_pos_edits['LFC'].tolist()
                     unique_LFC_res = round(function(score_list), 3)
                     stdev_res = np.std(score_list)
 
                     pos_edits_list = df_pos_edits['this_edit'].tolist()
-                    all_edits_res = ';'.join(list(set(pos_edits_list)))
-                elif len(df_pos_edits) == 1: 
+                    all_edits_res = ';'.join(set(pos_edits_list))
+                elif len(df_pos_edits) == 1:
                     unique_LFC_res = round(df_pos_edits.at[0, 'LFC'], 3)
                     stdev_res = 0
                     all_edits_res = df_pos_edits.at[0, 'this_edit']
@@ -125,19 +154,21 @@ def prioritize_by_sequence(
         # FOR NEG AND POS SEPARATELY, CALC Z SCORE BASED ON THE MEAN STD PER SCREEN PER GENE PER DIRECTION #
         neg_mask = df_nomutation['LFC'] < 0.0 # NEG #
         pos_mask = df_nomutation['LFC'] > 0.0 # POS #
-        mu_neg, sigma_neg = df_nomutation.loc[neg_mask, 'LFC'].mean(), df_nomutation.loc[neg_mask, 'LFC'].std()
-        mu_pos, sigma_pos = df_nomutation.loc[pos_mask, 'LFC'].mean(), df_nomutation.loc[pos_mask, 'LFC'].std()
+        df_nomut_neg = df_nomutation.loc[neg_mask, 'LFC'] # NEG #
+        df_nomut_pos = df_nomutation.loc[pos_mask, 'LFC'] # POS #
+        mu_neg, sigma_neg = df_nomut_neg.mean(), df_nomut_neg.std()
+        mu_pos, sigma_pos = df_nomut_pos.mean(), df_nomut_pos.std()
 
         list_z_LFC, list_p_LFC, list_plab_LFC = [], [], []
+        LFC_raws_dict = df_protein[f'{function_name}_{mut}_LFC'].to_dict()
 
         for i in range(len(df_protein)):
-            LFC_raw = df_protein.at[i, f'{function_name}_{mut}_LFC']
+            LFC_raw = LFC_raws_dict[i]
 
             if LFC_raw == '-': 
                 LFC, z_LFC, p_LFC, plab_LFC = 0.0, '-', 1.0, 'p=1.0'
             else: 
-                LFC = float(df_protein.at[i, f'{function_name}_{mut}_LFC'])
-
+                LFC = float(LFC_raw)
                 if (LFC < 0.0):
                     z_LFC = statistics.NormalDist(mu=mu_neg, sigma=sigma_neg).zscore(LFC)
                     p_LFC = norm.sf(abs(z_LFC))
