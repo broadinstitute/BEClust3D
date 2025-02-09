@@ -17,7 +17,7 @@ warnings.filterwarnings('ignore')
 
 def calculate_lfc3d(
         df_str_cons, 
-        workdir, input_gene, screen_names, str_cons_filenames, str_cons_rand_filenames, 
+        workdir, input_gene, screen_names, str_cons_dfs, str_cons_rand_dfs, 
         nRandom=1000, function_type='mean', mut='Missense', function_3Daggr=np.mean, 
         LFC_only=False, conserved_only=False, 
 ): 
@@ -55,18 +55,14 @@ def calculate_lfc3d(
     df_struct_3d['unires'] = df_str_cons['unires']
 
     # FOR EVERY SCREEN #
-    for screen_name, filename, rand_filename in zip(screen_names, str_cons_filenames, str_cons_rand_filenames):
+    for screen_name, df_struc_edits, df_struc_edits_rand in zip(screen_names, str_cons_dfs, str_cons_rand_dfs):
         print(screen_name)
-        
-        # GET LFC and LFC3D VALUES #
-        if not os.path.exists(edits_filedir / filename): 
-            warnings.warn(f"{filename} does not exist")
-        df_struc_edits = pd.read_csv(edits_filedir / filename, sep = "\t")
 
         if not LFC_only: # CALCULATE LFC3D #
             taa_wise_norm_LFC = []
+            df_struc_edits_dict = df_struc_edits['conservation'].to_dict()
             for aa in range(len(df_struc_edits)): # FOR EVERY RESIDUE #
-                if conserved_only and df_struc_edits.at[aa, 'conservation'] != 'conserved': 
+                if conserved_only and df_struc_edits_dict[aa] != 'conserved': 
                     taa_wise_norm_LFC.append('-')
                     continue
                 taa_naa_LFC_vals = helper(df_struc_edits, aa, f'{function_type}_{mut}_LFC', conserved_only)
@@ -85,11 +81,6 @@ def calculate_lfc3d(
                                   df_struc_edits[[f'{function_type}_{mut}_LFC_Z']].rename(
                                       columns={f'{function_type}_{mut}_LFC_Z': f"{screen_name}_LFC_Z"}), 
                                   ], axis=1)
-    
-        # GET RANDOMIZED LFC and LFC3D VALUES #
-        if not os.path.exists(edits_filedir / rand_filename): 
-            warnings.warn(f"{rand_filename} does not exist")
-        df_struc_edits_rand = pd.read_csv(edits_filedir / rand_filename, sep = "\t")
 
         dict_temp = {}
         for r in range(0, nRandom):
@@ -98,8 +89,9 @@ def calculate_lfc3d(
 
             if not LFC_only: 
                 taa_wise_norm_LFC = []
+                df_struc_edits_rand_dict = df_struc_edits_rand['conservation'].to_dict()
                 for aa in range(len(df_struc_edits_rand)):
-                    if conserved_only and df_struc_edits_rand.at[aa, 'conservation'] != 'conserved': 
+                    if conserved_only and df_struc_edits_rand_dict[aa] != 'conserved': 
                         taa_wise_norm_LFC.append('-')
                         continue
                     taa_naa_LFC_vals = helper(df_struc_edits_rand, aa, f'{function_type}_missense_LFCr{str(r+1)}', conserved_only) 

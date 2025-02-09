@@ -29,6 +29,7 @@ def average_split_bin_plots(
     else: 
         neg = '_'.join([name, func, f'{score_type}_neg'])
         pos = '_'.join([name, func, f'{score_type}_pos'])
+    pthr_str = str(pthr).split('.')[1]
 
     # HISTOGRAMS #
     if name == '': 
@@ -44,22 +45,22 @@ def average_split_bin_plots(
     df_Z = binning_lfc3d(df_Z, col=[neg, pos])
 
     # HISPLOTS #
-    hisplots_params = [(f'{neg}_dis', neg, f'{neg}_psig', 'Negative P-Value'), 
+    hisplots_params = [(f'{neg}_dis', neg, f'{neg}_{pthr_str}_psig', 'Negative P-Value'), 
                        (f'{neg}_dis', neg, f'{neg}_dis', 'Negative P-Value'), 
-                       (f'{pos}_dis', pos, f'{pos}_psig', 'Positive P-Value'), 
+                       (f'{pos}_dis', pos, f'{pos}_{pthr_str}_psig', 'Positive P-Value'), 
                        (f'{pos}_dis', pos, f'{pos}_dis', 'Positive P-Value'), ]
     metaaggregation_hisplot(df_Z, hisplots_params, edits_filedir, input_gene, 
                             name, score_type)
 
     # SCATTERPLOT #
-    scatterplot_params = [(f'{neg}_dis', f'{neg}_psig', neg, 'Negative'), 
-                          (f'{pos}_dis', f'{pos}_psig', pos, 'Positive')]
+    scatterplot_params = [(f'{neg}_dis', f'{neg}_{pthr_str}_psig', neg, 'Negative'), 
+                          (f'{pos}_dis', f'{pos}_{pthr_str}_psig', pos, 'Positive')]
     metaaggregation_scatterplot(df_Z, scatterplot_params, edits_filedir, input_gene, 
                                 pthr, name, score_type)
     
     # Z SCORE SCATTERPLOT #
-    scatterplot_params = [(f'{neg}_dis', f'{neg}_dis', f'{neg}_z', 'Negative'), 
-                          (f'{pos}_dis', f'{pos}_dis', f'{pos}_z', 'Positive')]
+    scatterplot_params = [(f'{neg}_dis', f'{neg}_dis', f'{neg}_{pthr_str}_z', 'Negative'), 
+                          (f'{pos}_dis', f'{pos}_dis', f'{pos}_{pthr_str}_z', 'Positive')]
     metaaggregation_scatterplot(df_Z, scatterplot_params, edits_filedir, input_gene, 
                                 pthr, name, score_type, colors=True)
     
