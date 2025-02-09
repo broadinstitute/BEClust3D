@@ -57,6 +57,7 @@ def binning_neg_pos(
             elif           POS_95p_v > LFC3Df >= POS_90p_v:           LFC3D_disc, LFC3D_weight = 'POS_90p', 0.90
             elif                       LFC3Df >= POS_95p_v:           LFC3D_disc, LFC3D_weight = 'POS_95p', 0.95
             # else: print(LFC3Df, 'Binning Error')
+            else: LFC3D_disc, LFC3D_weight = 'NA', 0.0
 
         arr_LFC3D_disc.append(LFC3D_disc)
         arr_LFC3D_weight.append(LFC3D_weight)
