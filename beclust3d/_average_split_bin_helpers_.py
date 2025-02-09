@@ -204,11 +204,11 @@ def metaaggregation_scatterplot(
                 ax[i].axhline(y = -2.58, color = 'r', linestyle = '--')
             sns.scatterplot(data=df_combined_clean, x="unipos", y=y, hue=pval, palette='tab10', ax=ax[i])
         else: # 2 COLORS #
-            df_combined_psig = df_meta.loc[df_meta[pval] == 'p<'+str(pthr), ]
+            df_combined_psig = df_meta.loc[df_meta[pval] == 'p>='+str(pthr), ]
             if 'pos' in dis: 
-                v_combined_psig_SUM_LFC3D = min(df_combined_psig[y])
-            if 'neg' in dis: 
                 v_combined_psig_SUM_LFC3D = max(df_combined_psig[y])
+            if 'neg' in dis: 
+                v_combined_psig_SUM_LFC3D = min(df_combined_psig[y])
             ax[i].axhline(y = v_combined_psig_SUM_LFC3D, color = 'r', linestyle = '--')
             sns.scatterplot(data=df_combined_clean, x="unipos", y=y, hue=pval, palette='tab10', ax=ax[i])
 
