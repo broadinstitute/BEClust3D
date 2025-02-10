@@ -212,7 +212,7 @@ def average_split_meta(
 
     # AGGR LFC3D VALUES ACROSS SCREENS FOR EACH RESIDUE #
     list_LFC3D_neg, list_LFC3D_pos = [], []
-    screen_name_dicts = [df_LFC_LFC3D[sn].to_dict() for sn in screen_names]
+    screen_name_dicts = [df_LFC_LFC3D[f"{sn}_{score_type}"].to_dict() for sn in screen_names]
     for i in range(len(df_LFC_LFC3D)): 
         values_LFC3D_neg, values_LFC3D_pos = [], []
 
