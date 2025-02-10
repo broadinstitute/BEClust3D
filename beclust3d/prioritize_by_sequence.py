@@ -116,7 +116,8 @@ def prioritize_by_sequence(
 
         # Precompute the mapping of index to human_res_pos
         human_res_pos_dict = df_protein[target_res_pos].to_dict()
-        df_consrv_res_dict = df_protein['mouse_res'].to_dict()
+        if not (df_consrv is None): 
+            df_consrv_res_dict = df_protein['mouse_res'].to_dict()
 
         # FOR EACH RESIDUE #
         for i in range(len(df_protein)): 
