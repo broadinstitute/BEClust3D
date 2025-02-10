@@ -164,7 +164,6 @@ def metaaggregation(
     return df_bidir_meta, df_LFC_LFC3D_dis, df_meta_Z
 
 
-
 def average_split_meta(
     df_LFC_LFC3D, 
     workdir, input_gene, screen_names, 
@@ -213,16 +212,17 @@ def average_split_meta(
 
     # AGGR LFC3D VALUES ACROSS SCREENS FOR EACH RESIDUE #
     list_LFC3D_neg, list_LFC3D_pos = [], []
+    screen_name_dicts = [df_LFC_LFC3D[sn].to_dict() for sn in screen_names]
     for i in range(len(df_LFC_LFC3D)): 
         values_LFC3D_neg, values_LFC3D_pos = [], []
 
-        for screen_name in screen_names: 
+        for screen_name, header_dict in zip(screen_names, screen_name_dicts): 
             header_LFC3D = f"{screen_name}_{score_type}"
             if header_LFC3D not in df_LFC_LFC3D.columns: 
                 warnings.warn(f'{header_LFC3D} not in input df_LFC_LFC3D')
                 continue
 
-            LFC3D = df_LFC_LFC3D.at[i, header_LFC3D]
+            LFC3D = header_dict[i]
             if LFC3D != '-': 
                 LFC3D_value = float(LFC3D)
                 if LFC3D_value < 0.0: 
@@ -231,8 +231,8 @@ def average_split_meta(
                     values_LFC3D_pos.append(LFC3D_value)
 
         # APPLY AGGR FUNCTION #
-        list_LFC3D_neg.append(aggr_func(values_LFC3D_neg) if values_LFC3D_neg else 0.0)
-        list_LFC3D_pos.append(aggr_func(values_LFC3D_pos) if values_LFC3D_pos else 0.0)
+        list_LFC3D_neg.append(aggr_func(values_LFC3D_neg) if values_LFC3D_neg else '-')
+        list_LFC3D_pos.append(aggr_func(values_LFC3D_pos) if values_LFC3D_pos else '-')
 
     df_bidir_meta[f'{aggr_func_name}_{score_type}_neg'] = list_LFC3D_neg
     df_bidir_meta[f'{aggr_func_name}_{score_type}_pos'] = list_LFC3D_pos
@@ -253,19 +253,20 @@ def average_split_meta(
         # SUM ACROSS ALL SCREENS #
         headers_neg = [f"{sn}_{score_type}r{str(n)}_neg" for sn in screen_names]
         headers_pos = [f"{sn}_{score_type}r{str(n)}_pos" for sn in screen_names]
-        aggr_col_neg = df_LFC_LFC3D[headers_neg].sum(axis=1).rename(f"SUM_{score_type}r{str(n)}_neg")
-        aggr_col_pos = df_LFC_LFC3D[headers_pos].sum(axis=1).rename(f"SUM_{score_type}r{str(n)}_pos")
+        aggr_col_neg = df_LFC_LFC3D[headers_neg].replace('-', np.nan).sum(axis=1).rename(f"SUM_{score_type}r{str(n)}_neg")
+        aggr_col_pos = df_LFC_LFC3D[headers_pos].replace('-', np.nan).sum(axis=1).rename(f"SUM_{score_type}r{str(n)}_pos")
         df_bidir_meta = pd.concat([df_bidir_meta, aggr_col_neg, aggr_col_pos], axis=1)
 
     # AVG ACROSS ALL RANDOMIZATIONS #
     headers_neg = [f"SUM_{score_type}r{str(n)}_neg" for n in range(1, nRandom+1)]
     headers_pos = [f"SUM_{score_type}r{str(n)}_pos" for n in range(1, nRandom+1)]
-    new_col_neg = df_bidir_meta[headers_neg].mean(axis=1).rename(f"SUM_{score_type}r_neg")
-    new_col_pos = df_bidir_meta[headers_pos].mean(axis=1).rename(f"SUM_{score_type}r_pos")
+    new_col_neg = df_bidir_meta[headers_neg].replace('-', np.nan).mean(axis=1).rename(f"SUM_{score_type}r_neg")
+    new_col_pos = df_bidir_meta[headers_pos].replace('-', np.nan).mean(axis=1).rename(f"SUM_{score_type}r_pos")
     df_bidir_meta = pd.concat([df_bidir_meta, new_col_neg, new_col_pos], axis=1)
     # df_bidir_meta[f"SUM_{score_type}r_neg"] = df_bidir_meta[headers_neg].mean(axis=1)
     # df_bidir_meta[f"SUM_{score_type}r_pos"] = df_bidir_meta[headers_pos].mean(axis=1)
     df_bidir_meta = df_bidir_meta.round(4)
+    df_bidir_meta = df_bidir_meta.replace(np.nan, '-')
 
     out_filename_bidir = edits_filedir / f"metaaggregation/{input_gene}_{score_type}_bidirectional.tsv"
     df_bidir_meta.to_csv(out_filename_bidir, sep='\t', index=False)
