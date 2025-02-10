@@ -164,7 +164,8 @@ def violin_by_gene(
     plt.rcParams.update({'font.size': 10})
     fig, axes = plt.subplots(nrows=plot_dim, ncols=plot_dim, sharex=False, sharey=True, 
                              figsize=(19,17), gridspec_kw={'hspace':0.3, 'wspace':0.1})
-    axes = axes.flatten()
+    if plot_dim == 1: axes = [axes]
+    else: axes = axes.flatten()
 
     legend_handles, legend_labels = None, None
 
