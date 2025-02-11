@@ -11,6 +11,8 @@ from pathlib import Path
 import warnings
 import os
 from _average_split_bin_helpers_ import *
+import warnings
+warnings.filterwarnings('ignore')
 
 def average_split_bin(
         df_LFC_LFC3D_rand, 
@@ -96,7 +98,8 @@ def average_split_bin(
         # CALCULATE BINS #
         quantile_values = {}
         for name, q in quantiles.items(): 
-            quantile_values[name] = round(df_LFC3D_neg[header_LFC3D].quantile(q), 4)
+            print(df_LFC3D_neg[header_LFC3D])
+            quantile_values[name] = round(df_LFC3D_neg[header_LFC3D].replace('_', np.nan).astype(float).quantile(q), 4)
 
         arr_disc, arr_weight = binning_neg_pos(df_bidir, df_neg_stats, df_pos_stats, 
                                                quantile_values.values(), header_LFC3D)
@@ -185,12 +188,8 @@ def average_split_score(
     
     for screen_name in screen_names: # FOR EVERY SCREEN INDIVIDUALLY #
         header_LFC = f"{screen_name}_LFC"
-        df_bidir[f"{screen_name}_LFC"] = df_LFC_LFC3D_rand[header_LFC] # LFC per screen
-
         header_LFC3D = f"{screen_name}_{score_type}"
-        if header_LFC3D not in df_LFC_LFC3D_rand.columns: # make sure screen gene combo exists
-            warnings.warn(f'{screen_name} screen not found for {input_gene}')
-            continue
+        df_bidir[header_LFC] = df_LFC_LFC3D_rand[header_LFC] # LFC per screen
         df_bidir[header_LFC3D] = df_LFC_LFC3D_rand[header_LFC3D] # LFC or LFC3D per screen
         
         taa_wise_LFC3D_pos, taa_wise_LFC3D_neg = [], []
@@ -252,28 +251,36 @@ def bin_score(
         os.mkdir(edits_filedir / score_type)
 
     quantiles = {'NEG_10p_v':0.1, 'POS_90p_v':0.9, 'NEG_05p_v':0.05, 'POS_95p_v':0.95}
-    df_LFC_LFC3D_dis = df_bidir[['unipos', 'unires']].copy()
+
+    headers_LFC3D = [f"{sn}_{score_type}" for sn in screen_names]
+    df_LFC_LFC3D_dis = df_bidir[['unipos', 'unires'] + headers_LFC3D].copy()
     
+    df_neg_stats_list, df_pos_stats_list = [], []
     for screen_name in screen_names: # FOR EVERY SCREEN INDIVIDUALLY #
-        header_LFC = f"{screen_name}_LFC"
         header_LFC3D = f"{screen_name}_{score_type}"
 
         # BINNING #
-        df_LFC_LFC3D_dis[header_LFC] = df_bidir[header_LFC]
         df_LFC_LFC3D_dis[header_LFC3D] = df_bidir[header_LFC3D]
 
         # GENERATE THRESHOLDS FOR BINNING #
-        df_nodash = df_bidir.loc[df_bidir[header_LFC3D] != '-', ].reset_index(drop=True)
-        df_nodash[header_LFC3D] = df_nodash[header_LFC3D].astype(float)
-        df_LFC3D_neg = df_nodash.loc[df_nodash[header_LFC3D] < 0, ].reset_index(drop=True)
-        df_LFC3D_pos = df_nodash.loc[df_nodash[header_LFC3D] > 0, ].reset_index(drop=True)
-        df_neg_stats = df_LFC3D_neg[header_LFC3D].describe()
-        df_pos_stats = df_LFC3D_pos[header_LFC3D].describe()
+        # df_nodash = df_bidir.loc[df_bidir[header_LFC3D] != '-', ].reset_index(drop=True)
+        # df_nodash[header_LFC3D] = df_nodash[header_LFC3D].astype(float)
+        # df_LFC3D_neg = df_nodash.loc[df_nodash[header_LFC3D] < 0, ].reset_index(drop=True)
+        # df_LFC3D_pos = df_nodash.loc[df_nodash[header_LFC3D] > 0, ].reset_index(drop=True)
+        # df_neg_stats = df_LFC3D_neg[header_LFC3D].describe()
+        # df_pos_stats = df_LFC3D_pos[header_LFC3D].describe()
+        df_temp = df_LFC_LFC3D_dis[header_LFC3D].replace('-', np.nan).astype(float)
+        mask_neg = df_temp < 0.0
+        mask_pos = df_temp > 0.0
+        df_neg_stats = df_temp[mask_neg].describe()
+        df_pos_stats = df_temp[mask_pos].describe()
+        df_neg_stats_list.append(df_neg_stats)
+        df_pos_stats_list.append(df_pos_stats)
 
         # CALCULATE BINS #
         quantile_values = {}
         for name, q in quantiles.items(): 
-            quantile_values[name] = round(df_LFC3D_neg[header_LFC3D].quantile(q), 4)
+            quantile_values[name] = round(df_LFC_LFC3D_dis[header_LFC3D].replace('-', np.nan).astype(float).quantile(q), 4)
 
         arr_disc, arr_weight = binning_neg_pos(df_bidir, df_neg_stats, df_pos_stats, 
                                                quantile_values.values(), header_LFC3D)
@@ -283,11 +290,11 @@ def bin_score(
     out_filename_dis = edits_filedir / f"{score_type}/{input_gene}_{score_type}_dis_wght.tsv"
     df_LFC_LFC3D_dis.to_csv(out_filename_dis, sep = '\t', index=False)
 
-    return df_LFC_LFC3D_dis
+    return df_LFC_LFC3D_dis, df_neg_stats_list, df_pos_stats_list
 
 
 def znorm_score(
-        df_bidir, 
+        df_bidir, df_neg_stats_list, df_pos_stats_list, 
         workdir, input_gene, screen_names, 
         pthrs=[0.05, 0.01, 0.001], score_type='LFC3D', 
 ): 
@@ -325,34 +332,38 @@ def znorm_score(
     df_z['unipos'] = df_bidir['unipos']
     df_z['unires'] = df_bidir['unires']
 
-    for screen_name in screen_names: # FOR EVERY SCREEN INDIVIDUALLY #
+    for sn, df_neg, df_pos in zip(screen_names, df_neg_stats_list, df_pos_stats_list): # FOR EVERY SCREEN INDIVIDUALLY #
 
-        df_z[f'{screen_name}_{score_type}_neg'] = df_bidir[f'{screen_name}_{score_type}_neg']
-        df_z[f'{screen_name}_{score_type}_pos'] = df_bidir[f'{screen_name}_{score_type}_pos']
-        df_z[f'{screen_name}_AVG_{score_type}r_neg'] = df_bidir[f'{screen_name}_AVG_{score_type}r_neg']
-        df_z[f'{screen_name}_AVG_{score_type}r_pos'] = df_bidir[f'{screen_name}_AVG_{score_type}r_pos']
+        df_z[f'{sn}_{score_type}_neg'] = df_bidir[f'{sn}_{score_type}_neg']
+        df_z[f'{sn}_{score_type}_pos'] = df_bidir[f'{sn}_{score_type}_pos']
+        df_z[f'{sn}_AVG_{score_type}r_neg'] = df_bidir[f'{sn}_AVG_{score_type}r_neg']
+        df_z[f'{sn}_AVG_{score_type}r_pos'] = df_bidir[f'{sn}_AVG_{score_type}r_pos']
 
-        # CALCULATE Z SCORE #
-        colnames = [f'{screen_name}_{score_type}_{sign}' for sign in ['neg', 'pos']]
-        params = [{'mu': df_bidir[f'{screen_name}_AVG_{score_type}r_{sign}'].replace('-', np.nan).astype(float).mean(), 
-                    's': df_bidir[f'{screen_name}_AVG_{score_type}r_{sign}'].replace('-', np.nan).astype(float).std()}  
-                    ### can we fix the default format 250120
-                   for sign in ['neg', 'pos']]
+        header_main = f'{sn}_{score_type}'
         pthrs_str = [str(pthr).split('.')[1] for pthr in pthrs]
-        result_data = {f'{screen_name}_{score_type}_{sign}_{pthr_str}_{suffix}': [] 
+        # CALCULATE Z SCORE #
+        colnames = [f'{sn}_{score_type}_{sign}' for sign in ['neg', 'pos']]
+        params = [{'mu': df_neg['mean'], 's': df_neg['std']}, 
+                  {'mu': df_pos['mean'], 's': df_pos['std']}, ]
+        # params = [{'mu': df_bidir[f'{sn}_AVG_{score_type}r_{sign}'].replace('-', np.nan).astype(float).mean(), 
+        #             's': df_bidir[f'{sn}_AVG_{score_type}r_{sign}'].replace('-', np.nan).astype(float).std()}  
+        #            for sign in ['neg', 'pos']]
+
+        result_data = {f'{header_main}_{sign}_{pthr_str}_{suffix}': [] 
                        for sign in ['neg', 'pos'] for suffix in ['z', 'p', 'psig'] for pthr_str in pthrs_str}
 
         for colname, param, sign in zip(colnames, params, ['neg', 'pos']): 
-            signals_dict = df_z[colname].to_dict()
+            signals_dict = df_z[colname].replace('-', np.nan).to_dict()
+
             for pthr, pthr_str in zip(pthrs, pthrs_str): 
                 for i in range(len(df_z)):
                     signal = float(signals_dict[i])
                     signal_z, signal_p, signal_plabel = calculate_stats(signal, param, pthr)
                     
                     # Append results to the dictionary
-                    result_data[f'{screen_name}_{score_type}_{sign}_{pthr_str}_z'].append(signal_z)
-                    result_data[f'{screen_name}_{score_type}_{sign}_{pthr_str}_p'].append(signal_p)
-                    result_data[f'{screen_name}_{score_type}_{sign}_{pthr_str}_psig'].append(signal_plabel)
+                    result_data[f'{sn}_{score_type}_{sign}_{pthr_str}_z'].append(signal_z)
+                    result_data[f'{sn}_{score_type}_{sign}_{pthr_str}_p'].append(signal_p)
+                    result_data[f'{sn}_{score_type}_{sign}_{pthr_str}_psig'].append(signal_plabel)
 
         df_z = pd.concat([df_z, pd.DataFrame(result_data)], axis=1).round(4)
 

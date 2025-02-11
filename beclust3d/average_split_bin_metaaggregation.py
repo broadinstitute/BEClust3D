@@ -335,7 +335,7 @@ def bin_meta(
     # CALCULATE BINS #
     quantile_values = {}
     for name, q in quantiles.items(): 
-        quantile_values[name] = round(df_LFC_LFC3D_dis[header_main].replace('-', np.nan).quantile(q), 4)
+        quantile_values[name] = round(df_LFC_LFC3D_dis[header_main].replace('-', np.nan).astype(float).quantile(q), 4)
 
     arr_disc, arr_weight = binning_neg_pos(df_bidir_meta, df_neg_stats, df_pos_stats, 
                                            quantile_values.values(), header_main)
