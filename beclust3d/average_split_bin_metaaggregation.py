@@ -266,6 +266,11 @@ def average_split_meta(
     new_col_neg = new_col_neg.rename(f"SUM_{score_type}r_neg").replace(0.0, '-')
     new_col_pos = new_col_pos.rename(f"SUM_{score_type}r_pos").replace(0.0, '-')
     df_bidir_meta = pd.concat([df_bidir_meta, new_col_neg, new_col_pos], axis=1)
+    # new_col_neg = df_bidir_meta[headers_neg].replace('-', np.nan).std(axis=1) ###
+    # new_col_pos = df_bidir_meta[headers_pos].replace('-', np.nan).std(axis=1) ###
+    # new_col_neg = new_col_neg.rename(f"SUM_{score_type}r_neg_stdev").replace(0.0, '-') ###
+    # new_col_pos = new_col_pos.rename(f"SUM_{score_type}r_pos_stdev").replace(0.0, '-') ###
+    # df_bidir_meta = pd.concat([df_bidir_meta, new_col_neg, new_col_pos], axis=1)
     
     df_bidir_meta = df_bidir_meta.round(4)
 
@@ -390,6 +395,8 @@ def znorm_meta(
     colnames = [f'{header_main}_{sign}' for sign in ['neg', 'pos']]
     params = [{'mu': df_neg_stats['mean'], 's': df_neg_stats['std']}, 
               {'mu': df_pos_stats['mean'], 's': df_pos_stats['std']}, ]
+    # params = [[{'mu': df_bidir_meta[f"SUM_{score_type}r_neg"].iloc[i], 's': df_bidir_meta[f"SUM_{score_type}r_neg_stdev"].iloc[i]} for i in range(len(df_bidir_meta))], 
+    #           [{'mu': df_bidir_meta[f"SUM_{score_type}r_pos"].iloc[i], 's': df_bidir_meta[f"SUM_{score_type}r_pos_stdev"].iloc[i]} for i in range(len(df_bidir_meta))], ]
     result_data = {f'{header_main}_{sign}_{pthr_str}_{suffix}': [] 
                    for sign in ['neg', 'pos'] for suffix in ['z', 'p', 'psig'] for pthr_str in pthrs_str}
 
@@ -400,6 +407,7 @@ def znorm_meta(
             for i in range(len(df_bidir_meta)):
                 signal = float(signals_dict[i])
                 signal_z, signal_p, signal_plabel = calculate_stats(signal, param, pthr)
+                # signal_z, signal_p, signal_plabel = calculate_stats(signal, param[i], pthr)
                 
                 # Append results to the dictionary
                 result_data[f'{header_main}_{sign}_{pthr_str}_z'].append(signal_z)
