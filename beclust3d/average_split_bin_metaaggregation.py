@@ -399,7 +399,8 @@ def znorm_meta(
         for pthr, pthr_str in zip(pthrs, pthrs_str): 
             for i in range(len(df_bidir_meta)):
                 signal = float(signals_dict[i])
-                signal_z, signal_p, signal_plabel = calculate_stats(signal, param, pthr)
+                if np.isnan(signal): signal_z, signal_p, signal_plabel = 0.0, 0.0, 0.0
+                else: signal_z, signal_p, signal_plabel = calculate_stats(signal, param, pthr)
                 
                 # Append results to the dictionary
                 result_data[f'{header_main}_{sign}_{pthr_str}_z'].append(signal_z)
