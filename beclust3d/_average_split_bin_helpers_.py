@@ -25,8 +25,7 @@ def calculate_stats(signal, param, pthr):
         return 0, 0, ''
     signal_z = statistics.NormalDist(mu=param['mu'], sigma=param['s']).zscore(signal)
     signal_p = stats.norm.sf(abs(signal_z))
-    print(abs(signal_z), abs(param['mu']))
-    signal_plabel = f'p<{str(pthr)}' if signal_p < pthr and abs(signal_z) > abs(param['mu']) else f'p>={str(pthr)}'
+    signal_plabel = f'p<{str(pthr)}' if signal_p < pthr and abs(signal) > abs(param['mu']) else f'p>={str(pthr)}'
     return signal_z, signal_p, signal_plabel
 
 def binning_neg_pos(
