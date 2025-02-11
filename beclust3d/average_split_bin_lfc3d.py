@@ -146,8 +146,6 @@ def average_split_bin(
     return df_bidir, df_LFC_LFC3D_dis, df_z
 
 
-
-
 def average_split_score(
         df_LFC_LFC3D_rand, 
         workdir, input_gene, screen_names, 
@@ -204,8 +202,8 @@ def average_split_score(
             
             # SEPARATE INTO POS AND NEG #
             taa_LFC3D = float(taa_LFC3D_raw) if taa_LFC3D_raw != '-' else 0.0
-            taa_wise_LFC3D_neg.append(taa_LFC3D if taa_LFC3D < 0 else 0.0) # either the value or 0.0
-            taa_wise_LFC3D_pos.append(taa_LFC3D if taa_LFC3D > 0 else 0.0) # either the value or 0.0
+            taa_wise_LFC3D_neg.append(taa_LFC3D if taa_LFC3D < 0 else '-') # either the value or 0.0
+            taa_wise_LFC3D_pos.append(taa_LFC3D if taa_LFC3D > 0 else '-') # either the value or 0.0
 
         df_bidir[f"{screen_name}_{score_type}_neg"]      = taa_wise_LFC3D_neg # LFC3D_neg per SCREEN
         df_bidir[f"{screen_name}_{score_type}_pos"]      = taa_wise_LFC3D_pos # LFC3D_pos per SCREEN

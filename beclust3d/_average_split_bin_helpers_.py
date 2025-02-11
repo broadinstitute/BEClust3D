@@ -79,8 +79,8 @@ def binning_lfc3d(
     for colname, df in zip(col, df_3d_list): 
         res = {}
         df_3d_clean = df_meta.loc[df_meta[colname] != 0.0, ].reset_index(drop=True)
-        df_3d_clean[colname] = df_3d_clean[colname].astype(float)
-        df = df_3d_clean.loc[df_3d_clean[colname] != 0.0, ].reset_index(drop=True)
+        df[colname] = df_3d_clean[colname].replace('-', np.nan).astype(float)
+        # df = df_3d_clean.loc[df_3d_clean[colname] != 0.0, ].reset_index(drop=True)
 
         res['dfstats'] = df[colname].describe()
         res['p1'] = round(df[colname].quantile(quantile_numbers[colname][0]), 4) # (bottom 10th percentile)
@@ -97,7 +97,7 @@ def binning_lfc3d(
     return df_meta
 
 def metaaggregation_histogram(
-        df_meta, params, filedir, input_gene, name, 
+        df_meta, params, out_filename, 
 ): 
     """
     Description
@@ -151,12 +151,11 @@ def metaaggregation_histogram(
         results_list.append(res)
     
     plt.subplots_adjust(wspace=0.3)
-    out_filename = filedir / f"plots/{input_gene}_{name}_signal_vs_background.png"
     plt.savefig(out_filename, dpi=300)
     return results_list[0], results_list[1]
 
 def metaaggregation_hisplot(
-        df_meta, params, filedir, input_gene, name, score, 
+        df_meta, params, out_name
 ): 
     """
     Description
@@ -164,9 +163,9 @@ def metaaggregation_hisplot(
     """
     fig, ax = plt.subplots(1, 4, figsize=(36, 6), dpi=300)
 
-    for i, (filter, x, hue, name) in enumerate(params): 
+    for i, (dis, x, hue, name) in enumerate(params): 
     
-        df_combined_clean = df_meta.loc[df_meta[filter] != '-', ].reset_index(drop=True)
+        df_combined_clean = df_meta.loc[df_meta[dis] != '-', ].reset_index(drop=True)
         df_combined_clean[x] = df_combined_clean[x].astype(float)
         sns.histplot(df_combined_clean, x=x, hue=hue, bins=50, palette='tab10', ax=ax[i])
         ax[i].set_title(name)
@@ -178,11 +177,11 @@ def metaaggregation_hisplot(
         ax[i].set_axisbelow(True)
 
     plt.subplots_adjust(wspace=0.3)
-    out_name = filedir / f"plots/{input_gene}_{name}_{score}_histogram.png"
     plt.savefig(out_name, dpi=300) 
 
 def metaaggregation_scatterplot(
-        df_meta, params, filedir, input_gene, pthr, name, score, colors=False, 
+        df_meta, params, input_gene, pthr, 
+        outname, colors=False, 
 ): 
     """
     Description
@@ -203,13 +202,14 @@ def metaaggregation_scatterplot(
                 ax[i].axhline(y = -1.96, color = 'r', linestyle = '--')
                 ax[i].axhline(y = -2.58, color = 'r', linestyle = '--')
             sns.scatterplot(data=df_combined_clean, x="unipos", y=y, hue=pval, palette='tab10', ax=ax[i])
+
         else: # 2 COLORS #
             df_combined_psig = df_meta.loc[df_meta[pval] == 'p>='+str(pthr), ]
             if 'pos' in dis: 
-                v_combined_psig_SUM_LFC3D = max(df_combined_psig[y])
+                line_val = df_combined_psig[y][df_combined_psig[y] != '-'].astype(float).max()
             if 'neg' in dis: 
-                v_combined_psig_SUM_LFC3D = min(df_combined_psig[y])
-            ax[i].axhline(y = v_combined_psig_SUM_LFC3D, color = 'r', linestyle = '--')
+                line_val = df_combined_psig[y][df_combined_psig[y] != '-'].astype(float).min()
+            ax[i].axhline(y = line_val, color = 'r', linestyle = '--')
             sns.scatterplot(data=df_combined_clean, x="unipos", y=y, hue=pval, palette='tab10', ax=ax[i])
 
         ax[i].legend(bbox_to_anchor=(1.005, 1), loc='upper left', borderaxespad=0)
@@ -223,6 +223,4 @@ def metaaggregation_scatterplot(
         ax[i].set_axisbelow(True)
 
     plt.subplots_adjust(wspace=0.3)
-    if colors: outname = filedir / f"plots/{input_gene}_{name}_{score}_scatter_colored.png"
-    else: outname = filedir / f"plots/{input_gene}_{name}_{score}_scatter.png"
     plt.savefig(outname, dpi=300)
