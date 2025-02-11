@@ -150,7 +150,7 @@ def metaaggregation_histogram(
         ax[i].grid(which='major', color='white', linewidth=0.5)
         ax[i].set_axisbelow(True)
 
-        del temp, df_meta_plot
+        del df_meta_plot
         results_list.append(res)
     
     plt.subplots_adjust(wspace=0.3)
