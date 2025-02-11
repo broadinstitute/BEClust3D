@@ -22,9 +22,10 @@ def calculate_stats(signal, param, pthr):
     """
 
     if np.isnan(signal) or param['s'] == 0: ### does this mean we should nromalize across row?
-        return 0, 0, 0
+        return 0, 0, ''
     signal_z = statistics.NormalDist(mu=param['mu'], sigma=param['s']).zscore(signal)
     signal_p = stats.norm.sf(abs(signal_z))
+    print(abs(signal_z), abs(param['mu']))
     signal_plabel = f'p<{str(pthr)}' if signal_p < pthr and abs(signal_z) > abs(param['mu']) else f'p>={str(pthr)}'
     return signal_z, signal_p, signal_plabel
 
