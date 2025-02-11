@@ -111,12 +111,14 @@ def metaaggregation_histogram(
         res = {}
         df_meta_plot = pd.DataFrame()
         df_meta_plot['unipos'] = df_meta['unipos']
-        df_meta_plot[sum] = df_meta[sum].astype(float) ### can we fix the default format 250120
-        df_meta_plot[avg] = df_meta[avg].astype(float) ### can we fix the default format 250120
+        df_meta_plot[sum] = df_meta[sum].replace('-', np.nan).astype(float) ### can we fix the default format 250120
+        df_meta_plot[avg] = df_meta[avg].replace('-', np.nan).astype(float) ### can we fix the default format 250120
+        df_meta_plot_sum = df_meta_plot[sum].dropna().tolist()
+        df_meta_plot_avg = df_meta_plot[avg].dropna().tolist()
 
         U1, p = mannwhitneyu(df_meta_plot[sum], df_meta_plot[avg], method="asymptotic" )
         res['mannwhitneyu U1'], res['mannwhitneyu p'] = U1, p
-        r, p = stats.pearsonr(df_meta_plot[sum], df_meta_plot[avg] )
+        r, p = stats.pearsonr(df_meta_plot_sum, df_meta_plot_avg )
         res['pearsonr r'], res['pearsonr p'] = r, p
         # SUM #
         res['sum min'], res['sum mean'] = df_meta_plot[sum].min(), df_meta_plot[sum].mean()
