@@ -111,26 +111,24 @@ def metaaggregation_histogram(
         res = {}
         df_meta_plot = pd.DataFrame()
         df_meta_plot['unipos'] = df_meta['unipos']
-        df_meta_plot[sum] = df_meta[sum].replace('-', np.nan).astype(float) ### can we fix the default format 250120
-        df_meta_plot[avg] = df_meta[avg].replace('-', np.nan).astype(float) ### can we fix the default format 250120
+        df_meta_plot[sum] = df_meta[sum].astype(float) ### can we fix the default format 250120
+        df_meta_plot[avg] = df_meta[avg].astype(float) ### can we fix the default format 250120
 
         U1, p = mannwhitneyu(df_meta_plot[sum], df_meta_plot[avg], method="asymptotic" )
         res['mannwhitneyu U1'], res['mannwhitneyu p'] = U1, p
         r, p = stats.pearsonr(df_meta_plot[sum], df_meta_plot[avg] )
         res['pearsonr r'], res['pearsonr p'] = r, p
         # SUM #
-        temp = df_meta_plot[sum]
-        res['sum min'], res['sum mean'] = temp.min(), temp.mean()
-        res['sum med'], res['sum std'] = temp.median(), temp.std()
+        res['sum min'], res['sum mean'] = df_meta_plot[sum].min(), df_meta_plot[sum].mean()
+        res['sum med'], res['sum std'] = df_meta_plot[sum].median(), df_meta_plot[sum].std()
 
         if res['sum std'] == 0: 
             return None
         z = statistics.NormalDist(mu=res['sum mean'], sigma=res['sum std']).zscore(-4.6)
         res['z'], res['p cdf'], res['p sf'] = z, stats.norm.cdf(z), stats.norm.sf(abs(z))
         # AVG #
-        temp = df_meta_plot[avg]
-        res['avg min'], res['avg mean'] = temp.min(), temp.mean()
-        res['avg med'], res['avg std'] = temp.median(), temp.std()
+        res['avg min'], res['avg mean'] = df_meta_plot[avg].min(), df_meta_plot[avg].mean()
+        res['avg med'], res['avg std'] = df_meta_plot[avg].median(), df_meta_plot[avg].std()
 
         # PLOT #
         df_meta_plot.plot.area(x='unipos', alpha=0.55, stacked = False, ax=ax[i])
