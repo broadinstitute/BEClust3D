@@ -21,7 +21,7 @@ def calculate_stats(signal, param, pthr):
     Helper function to calculate stats: z, p, plabel
     """
 
-    if param['s'] == 0:
+    if np.isnan(signal) or param['s'] == 0: ### does this mean we should nromalize across row?
         return 0, 0, 0
     signal_z = statistics.NormalDist(mu=param['mu'], sigma=param['s']).zscore(signal)
     signal_p = stats.norm.sf(abs(signal_z))
