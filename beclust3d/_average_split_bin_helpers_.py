@@ -22,7 +22,7 @@ def calculate_stats(signal, param, pthr):
     """
 
     if np.isnan(signal) or param['s'] == 0: ### does this mean we should nromalize across row?
-        return 0, 0, ''
+        return 0, 0, 0
     signal_z = statistics.NormalDist(mu=param['mu'], sigma=param['s']).zscore(signal)
     signal_p = stats.norm.sf(abs(signal_z))
     signal_plabel = f'p<{str(pthr)}' if signal_p < pthr and abs(signal) > abs(param['mu']) else f'p>={str(pthr)}'
@@ -115,7 +115,7 @@ def metaaggregation_histogram(
         df_meta_plot[avg] = df_meta[avg].replace('-', np.nan).astype(float) ### can we fix the default format 250120
         # df_meta_plot_sum = df_meta_plot[sum].dropna().tolist()
         # df_meta_plot_avg = df_meta_plot[avg].dropna().tolist()
-        df_meta_filtered = df_meta_plot.dropna(subset=[sum])
+        df_meta_filtered = df_meta_plot.dropna(subset=[sum, avg])
         df_meta_plot_sum = df_meta_filtered[sum].tolist()
         df_meta_plot_avg = df_meta_filtered[avg].tolist()
 
