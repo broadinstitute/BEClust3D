@@ -14,7 +14,7 @@ import os
 def randomize_be_results(df_missense, 
                          workdir, input_gene, screen_name, 
                          nRandom=1000, val_colname = 'LFC', 
-                        #  seed=None, 
+                         seed=False, 
                          ): 
     """
     Description
@@ -56,7 +56,11 @@ def randomize_be_results(df_missense,
     LFC_list = df_missense[val_colname].tolist()
     dict_temp = {} # use a dictionary which is more efficient
     for i in range(nRandom): 
-        dict_temp[f"{val_colname}r{str(i+1)}"] = np.random.permutation(LFC_list)
+        if seed: 
+            rng = np.random.default_rng(i)
+            dict_temp[f"{val_colname}r{str(i+1)}"] = rng.permutation(LFC_list)
+        else: 
+            dict_temp[f"{val_colname}r{str(i+1)}"] = np.random.permutation(LFC_list)
     df_missense = pd.concat((df_missense, pd.DataFrame(dict_temp)), axis=1)
 
     # SAVE RESULTS #
