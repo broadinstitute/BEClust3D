@@ -142,7 +142,9 @@ def prioritize_by_sequence(
         for i in range(len(df_protein)):
             LFC_raw = LFC_raws_dict[i]
 
-            if LFC_raw == '-': 
+            if LFC_raw == '-' or float(LFC) == 0.0: 
+                # IF LFC = 0 WE CANNOT SPLIT INTO POS OR NEG SETS #
+                # MU AND S CALCULATED ON NEG AND POS SETS #
                 LFC, z_LFC, p_LFC, plab_LFC = 0.0, '-', 1.0, 'p=1.0'
             else: 
                 LFC = float(LFC_raw)
@@ -154,11 +156,6 @@ def prioritize_by_sequence(
                     z_LFC = statistics.NormalDist(mu=mu_pos, sigma=sigma_pos).zscore(LFC)
                     p_LFC = norm.sf(abs(z_LFC))
                     plab_LFC = get_plabel(z_LFC, direction='positive')
-                else: 
-                    # for edge cases where LFC = 0.0, there is no direction, but still a Z score and p-value
-                    z_LFC = statistics.NormalDist(mu=mu_pos, sigma=sigma_pos).zscore(LFC)
-                    p_LFC = norm.sf(abs(z_LFC))
-                    plab_LFC = 'p=1.0'
 
             list_z_LFC.append(z_LFC)
             list_p_LFC.append(p_LFC)
