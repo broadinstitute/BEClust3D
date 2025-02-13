@@ -142,7 +142,7 @@ def prioritize_by_sequence(
         for i in range(len(df_protein)):
             LFC_raw = LFC_raws_dict[i]
 
-            if LFC_raw == '-' or float(LFC) == 0.0: 
+            if LFC_raw == '-' or float(LFC_raw) == 0.0: 
                 # IF LFC = 0 WE CANNOT SPLIT INTO POS OR NEG SETS #
                 # MU AND S CALCULATED ON NEG AND POS SETS #
                 LFC, z_LFC, p_LFC, plab_LFC = 0.0, '-', 1.0, 'p=1.0'
