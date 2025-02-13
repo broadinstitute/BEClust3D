@@ -108,7 +108,7 @@ def prioritize_by_sequence(
                     pos_edits_list = df_pos_edits['this_edit'].tolist()
                     all_edits_res = ';'.join(set(pos_edits_list))
                 elif len(df_pos_edits) == 1:
-                    unique_LFC_res = round(df_pos_edits.at[0, 'LFC'], 3)
+                    unique_LFC_res = df_pos_edits.at[0, 'LFC']
                     stdev_res = 0
                     all_edits_res = df_pos_edits.at[0, 'this_edit']
                 else:

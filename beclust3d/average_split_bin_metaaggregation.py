@@ -272,8 +272,6 @@ def average_split_meta(
     # new_col_pos = new_col_pos.rename(f"SUM_{score_type}r_pos_stdev").replace(0.0, '-') ###
     # df_bidir_meta = pd.concat([df_bidir_meta, new_col_neg, new_col_pos], axis=1)
     
-    df_bidir_meta = df_bidir_meta.round(4)
-
     out_filename_bidir = edits_filedir / f"metaaggregation/{input_gene}_{score_type}_bidirectional.tsv"
     df_bidir_meta.to_csv(out_filename_bidir, sep='\t', index=False)
 
