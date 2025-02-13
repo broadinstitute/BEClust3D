@@ -79,39 +79,12 @@ def prioritize_by_sequence(
         df_protein['mouse_res']     = df_consrv['mouse_res']
         df_protein['conservation']  = df_consrv['conservation']
 
-    # struc_consrv_filename =  f"screendata/{input_gene}_{structureid}_struc_consrv.tsv"
-    # df_protein.to_csv(edits_filedir / struc_consrv_filename, sep = "\t", index=False)
-
     # FOR EACH EDIT TYPE, AGGREGATE LFC AND EDITS WITH CONSERVATION #
     for mut, df_edit in file_dict.items(): 
         
         arr_unique_LFC = []
         arr_unique_LFC_stdev = []
         arr_all_edits = []
-
-        # # FOR EACH RESIDUE #
-        # human_res_pos_dict = df_protein[target_res_pos].to_dict()
-        # for i in range(len(df_protein)): 
-        #     human_res_pos = human_res_pos_dict[i]
-        #     df_pos_edits = df_edit.loc[df_edit['edit_pos'] == int(human_res_pos), ].reset_index() ###
-
-        #     if (df_consrv is None) or (df_protein.at[i, 'mouse_res'] != '-'): 
-        #         if len(df_pos_edits) > 1: 
-        #             score_list = df_pos_edits['LFC'].tolist()
-        #             unique_LFC_res = round(function(score_list), 3)
-        #             stdev_res = np.std(score_list)
-
-        #             pos_edits_list = df_pos_edits['this_edit'].tolist()
-        #             all_edits_res = ';'.join(list(set(pos_edits_list)))
-        #         elif len(df_pos_edits) == 1: 
-        #             unique_LFC_res = round(df_pos_edits.at[0, 'LFC'], 3)
-        #             stdev_res = 0
-        #             all_edits_res = df_pos_edits.at[0, 'this_edit']
-        #         else:
-        #             unique_LFC_res, all_edits_res, stdev_res = '-', '-', '-'
-        #     else:
-        #         unique_LFC_res, all_edits_res, stdev_res = '-', '-', '-'
-
         df_edit_grouped = {k: v.reset_index(drop=True) for k, v in df_edit.groupby('edit_pos')}
 
         # Precompute the mapping of index to human_res_pos
@@ -129,7 +102,7 @@ def prioritize_by_sequence(
             if (df_consrv is None) or (df_consrv_res_dict[i] != '-'):
                 if len(df_pos_edits) > 1:
                     score_list = df_pos_edits['LFC'].tolist()
-                    unique_LFC_res = round(function(score_list), 3)
+                    unique_LFC_res = function(score_list)
                     stdev_res = np.std(score_list)
 
                     pos_edits_list = df_pos_edits['this_edit'].tolist()
@@ -146,10 +119,12 @@ def prioritize_by_sequence(
             arr_unique_LFC.append(unique_LFC_res)
             arr_unique_LFC_stdev.append(stdev_res)
             arr_all_edits.append(all_edits_res)
+            del df_pos_edits
 
         df_protein[f'{function_name}_{mut}_LFC'] = arr_unique_LFC
         df_protein[f'{function_name}_{mut}_LFC_stdev'] = arr_unique_LFC_stdev
         df_protein[f'all_{mut}_edits'] = arr_all_edits
+        del arr_unique_LFC, arr_unique_LFC_stdev, arr_all_edits
 
         # CALCULATE Z SCORE #
         # FOR NEG AND POS SEPARATELY, CALC Z SCORE BASED ON THE MEAN STD PER SCREEN PER GENE PER DIRECTION #
@@ -159,6 +134,7 @@ def prioritize_by_sequence(
         df_nomut_pos = df_nomutation.loc[pos_mask, 'LFC'] # POS #
         mu_neg, sigma_neg = df_nomut_neg.mean(), df_nomut_neg.std()
         mu_pos, sigma_pos = df_nomut_pos.mean(), df_nomut_pos.std()
+        del df_nomut_neg, df_nomut_pos
 
         list_z_LFC, list_p_LFC, list_plab_LFC = [], [], []
         LFC_raws_dict = df_protein[f'{function_name}_{mut}_LFC'].to_dict()
@@ -187,7 +163,8 @@ def prioritize_by_sequence(
         df_protein[f'{function_name}_{mut}_LFC_Z'] = list_z_LFC
         df_protein[f'{function_name}_{mut}_LFC_p'] = list_p_LFC
         df_protein[f'{function_name}_{mut}_LFC_plab'] = list_plab_LFC
-        df_protein.round(4)
+        del list_z_LFC, list_p_LFC, list_plab_LFC
+    df_protein
 
     strcons_edits_filename = f"screendata/{input_gene}_{screen_name}_proteinedits.tsv"
     df_protein.to_csv(edits_filedir / strcons_edits_filename, sep = '\t', index=False)

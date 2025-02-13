@@ -101,7 +101,7 @@ def parse_base_editing_results(
             # ASSIGN position refAA altAA #
             df_mut[edits_col] = df_mut[edits_col].str.strip(split_char) # CLEAN
             df_mut[edits_col] = df_mut[edits_col].str.split(split_char) # STR to LIST
-            df_mut[val_col] = df_mut[val_col].round(3)
+            df_mut[val_col] = df_mut[val_col]
             df_mut[edits_col] = df_mut[edits_col].apply(lambda xs: identify_mutations(xs)) # FILTER FOR MUTATIONS #
 
             df_exploded = df_mut.explode(edits_col) # EACH ROW IS A MUTATION #

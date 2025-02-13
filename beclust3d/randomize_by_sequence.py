@@ -70,9 +70,9 @@ def randomize_by_sequence(
                          'mean_Missense_LFC_Z','mean_Missense_LFC_p','mean_Missense_LFC_plab']
     if conservation: 
         missense_colnames += ['mouse_res_pos', 'mouse_res']
-    df_mis_positions = df_mis_positions.round(3)
+    df_mis_positions = df_mis_positions
     df_missense = pd.concat([df_missense[missense_colnames], df_mis_positions], axis=1)
-    df_missense = df_missense.round(4)
+    df_missense = df_missense
     del df_mis_positions, df_rand
 
     out_filename = f"randomized_screendata/{input_gene}_{screen_name}_Missense_proteinedits_rand.tsv"

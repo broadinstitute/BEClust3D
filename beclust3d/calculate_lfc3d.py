@@ -69,8 +69,9 @@ def calculate_lfc3d(
                 if len(taa_naa_LFC_vals) == 0:
                     taa_wise_norm_LFC.append('-')
                 else: 
-                    taa_wise_norm_LFC.append(str(round(function_3Daggr(taa_naa_LFC_vals), 3)))
+                    taa_wise_norm_LFC.append(str(function_3Daggr(taa_naa_LFC_vals)))
             df_struct_3d = pd.concat([df_struct_3d, pd.DataFrame({f"{screen_name}_LFC3D": taa_wise_norm_LFC})], axis=1)
+            del df_struc_edits_dict, taa_wise_norm_LFC
         
         df_struct_3d[f"{screen_name}_LFC"] = df_struc_edits[f'{function_type}_{mut}_LFC']
         df_struct_3d[f"{screen_name}_LFC_Z"] = df_struc_edits[f'{function_type}_{mut}_LFC_Z']
@@ -95,17 +96,18 @@ def calculate_lfc3d(
                         taa_wise_norm_LFC.append('-')
                         continue
                     taa_naa_LFC_vals = helper(df_struc_edits_rand, aa, f'{function_type}_missense_LFCr{str(r+1)}', conserved_only) 
-                    ### issue this isn't randomized, is that ok?
                     if len(taa_naa_LFC_vals) == 0:
                         taa_wise_norm_LFC.append('-')
                     else:
-                        taa_wise_norm_LFC.append(round(function_3Daggr(taa_naa_LFC_vals), 3))
+                        taa_wise_norm_LFC.append(function_3Daggr(taa_naa_LFC_vals))
                 dict_temp[f"{screen_name}_LFC3Dr{str(r+1)}"] = taa_wise_norm_LFC
+                del df_struc_edits_rand_dict, taa_wise_norm_LFC
 
         df_struct_3d = pd.concat((df_struct_3d, pd.DataFrame(dict_temp)), axis=1)
         df_struct_3d = df_struct_3d.replace('-', np.nan).infer_objects(copy=False) # FutureWarning
         LFC_colnames   = [f"{screen_name}_LFCr{str(r+1)}" for r in range(0, nRandom)]
         LFC3D_colnames = [f"{screen_name}_LFC3Dr{str(r+1)}" for r in range(0, nRandom)]
+        del dict_temp
 
         df_struct_3d = df_struct_3d.apply(lambda col: pd.to_numeric(col, errors='coerce'))
         df_struct_3d[f"{screen_name}_AVG_LFCr"]     = df_struct_3d[LFC_colnames].mean(axis=1) # AVG ALL
@@ -125,7 +127,7 @@ def calculate_lfc3d(
                                                         .sum(axis=1) / nRandom) # AVG POS
         # df_struct_3d = df_struct_3d.drop(LFC3D_colnames, axis=1)
         
-        df_struct_3d = df_struct_3d.round(4)
+        df_struct_3d = df_struct_3d
         df_struct_3d = df_struct_3d.fillna('-')
 
     df_struct_3d['unires'] = df_str_cons['unires']

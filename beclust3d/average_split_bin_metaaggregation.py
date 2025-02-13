@@ -109,7 +109,7 @@ def metaaggregation(
     headers_pos = [f"SUM_{score_type}r{str(n)}_pos" for n in range(1, nRandom+1)]
     df_bidir_meta[f"SUM_{score_type}r_neg"] = df_bidir_meta[headers_neg].mean(axis=1)
     df_bidir_meta[f"SUM_{score_type}r_pos"] = df_bidir_meta[headers_pos].mean(axis=1)
-    df_bidir_meta = df_bidir_meta.round(4)
+    df_bidir_meta = df_bidir_meta
 
     # BINNING #
     df_LFC_LFC3D_dis = df_bidir_meta[['unipos', 'unires', header_main, 
@@ -127,7 +127,7 @@ def metaaggregation(
     # CALCULATE BINS #
     quantile_values = {}
     for name, q in quantiles.items(): 
-        quantile_values[name] = round(df_bidir_meta[header_main].quantile(q), 4)
+        quantile_values[name] = df_bidir_meta[header_main].quantile(q)
 
     arr_disc, arr_weight = binning_neg_pos(df_bidir_meta, df_neg_stats, df_pos_stats, 
                                            quantile_values.values(), header_main)
@@ -156,7 +156,7 @@ def metaaggregation(
             result_data[f'{aggr_func_name}_{score_type}_{sign}_p'].append(signal_p)
             result_data[f'{aggr_func_name}_{score_type}_{sign}_psig'].append(signal_plabel)
 
-    df_meta_Z = pd.concat([df_bidir_meta, pd.DataFrame(result_data)], axis=1).round(4)
+    df_meta_Z = pd.concat([df_bidir_meta, pd.DataFrame(result_data)], axis=1)
 
     filename = edits_filedir / f"metaaggregation/{structureid}_MetaAggr_{score_type}.tsv"
     df_meta_Z.to_csv(filename, "\t", index=False)
@@ -335,7 +335,7 @@ def bin_meta(
     # CALCULATE BINS #
     quantile_values = {}
     for name, q in quantiles.items(): 
-        quantile_values[name] = round(df_LFC_LFC3D_dis[header_main].replace('-', np.nan).astype(float).quantile(q), 4)
+        quantile_values[name] = df_LFC_LFC3D_dis[header_main].replace('-', np.nan).astype(float).quantile(q)
 
     arr_disc, arr_weight = binning_neg_pos(df_bidir_meta, df_neg_stats, df_pos_stats, 
                                            quantile_values.values(), header_main)
@@ -414,7 +414,8 @@ def znorm_meta(
                 result_data[f'{header_main}_{sign}_{pthr_str}_p'].append(signal_p)
                 result_data[f'{header_main}_{sign}_{pthr_str}_psig'].append(signal_plabel)
 
-    df_meta_Z = pd.concat([df_bidir_meta, pd.DataFrame(result_data)], axis=1).round(4)
+    df_meta_Z = pd.concat([df_bidir_meta, pd.DataFrame(result_data).replace(0,'-')], axis=1)
+    df_meta_Z = df_meta_Z
 
     filename = edits_filedir / f"metaaggregation/{input_gene}_MetaAggr_{score_type}.tsv"
     df_meta_Z.to_csv(filename, "\t", index=False)

@@ -99,7 +99,7 @@ def average_split_bin(
         quantile_values = {}
         for name, q in quantiles.items(): 
             print(df_LFC3D_neg[header_LFC3D])
-            quantile_values[name] = round(df_LFC3D_neg[header_LFC3D].replace('_', np.nan).astype(float).quantile(q), 4)
+            quantile_values[name] = df_LFC3D_neg[header_LFC3D].replace('_', np.nan).astype(float).quantile(q)
 
         arr_disc, arr_weight = binning_neg_pos(df_bidir, df_neg_stats, df_pos_stats, 
                                                quantile_values.values(), header_LFC3D)
@@ -141,7 +141,7 @@ def average_split_bin(
                 result_data[f'{screen_name}_{score_type}_{sign}_p'].append(signal_p)
                 result_data[f'{screen_name}_{score_type}_{sign}_psig'].append(signal_plabel)
 
-        df_z = pd.concat([df_z, pd.DataFrame(result_data)], axis=1).round(4)
+        df_z = pd.concat([df_z, pd.DataFrame(result_data)], axis=1)
 
     filename = edits_filedir / f"{score_type}/{structureid}_NonAggr_{score_type}.tsv"
     df_z.to_csv(filename, "\t", index=False)
@@ -280,7 +280,7 @@ def bin_score(
         # CALCULATE BINS #
         quantile_values = {}
         for name, q in quantiles.items(): 
-            quantile_values[name] = round(df_LFC_LFC3D_dis[header_LFC3D].replace('-', np.nan).astype(float).quantile(q), 4)
+            quantile_values[name] = df_LFC_LFC3D_dis[header_LFC3D].replace('-', np.nan).astype(float).quantile(q)
 
         arr_disc, arr_weight = binning_neg_pos(df_bidir, df_neg_stats, df_pos_stats, 
                                                quantile_values.values(), header_LFC3D)
@@ -365,7 +365,7 @@ def znorm_score(
                     result_data[f'{sn}_{score_type}_{sign}_{pthr_str}_p'].append(signal_p)
                     result_data[f'{sn}_{score_type}_{sign}_{pthr_str}_psig'].append(signal_plabel)
 
-        df_z = pd.concat([df_z, pd.DataFrame(result_data)], axis=1).round(4)
+        df_z = pd.concat([df_z, pd.DataFrame(result_data)], axis=1)
 
     filename = edits_filedir / f"{score_type}/{input_gene}_NonAggr_{score_type}.tsv"
     df_z.to_csv(filename, "\t", index=False)
