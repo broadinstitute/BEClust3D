@@ -55,6 +55,7 @@ def randomize_be_results(df_missense,
     # SHUFFLE AND ADD TO DATAFRAME #
     LFC_list = df_missense[val_colname].tolist()
     dict_temp = {} # use a dictionary which is more efficient
+
     for i in range(nRandom): 
         if seed: 
             rng = np.random.default_rng(i)

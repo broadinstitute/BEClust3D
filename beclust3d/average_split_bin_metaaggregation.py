@@ -261,11 +261,24 @@ def average_split_meta(
     # AVG ACROSS ALL RANDOMIZATIONS #
     headers_neg = [f"SUM_{score_type}r{str(n)}_neg" for n in range(1, nRandom+1)]
     headers_pos = [f"SUM_{score_type}r{str(n)}_pos" for n in range(1, nRandom+1)]
-    new_col_neg = df_bidir_meta[headers_neg].replace('-', np.nan).mean(axis=1)
-    new_col_pos = df_bidir_meta[headers_pos].replace('-', np.nan).mean(axis=1)
+    new_col_neg = df_bidir_meta[headers_neg].replace({'-':np.nan, 0.0:np.nan}).mean(axis=1)
+    new_col_pos = df_bidir_meta[headers_pos].replace({'-':np.nan, 0.0:np.nan}).mean(axis=1)
     new_col_neg = new_col_neg.rename(f"SUM_{score_type}r_neg").replace(0.0, '-')
     new_col_pos = new_col_pos.rename(f"SUM_{score_type}r_pos").replace(0.0, '-')
     df_bidir_meta = pd.concat([df_bidir_meta, new_col_neg, new_col_pos], axis=1)
+
+    # headers_neg = [f"SUM_{score_type}r{str(n)}_neg" for n in range(1, nRandom+1)]
+    # headers_pos = [f"SUM_{score_type}r{str(n)}_pos" for n in range(1, nRandom+1)]
+    # df_bidir_meta[headers_neg] = df_bidir_meta[headers_neg].replace({'-':np.nan, 0.0:np.nan}).apply(pd.to_numeric, errors='coerce')
+    # df_bidir_meta[headers_pos] = df_bidir_meta[headers_pos].replace({'-':np.nan, 0.0:np.nan}).apply(pd.to_numeric, errors='coerce')
+    # sum_pos = df_bidir_meta[headers_pos].where(df_bidir_meta[headers_pos] > 0).sum(axis=1, skipna=True)
+    # count_pos = df_bidir_meta[headers_pos].where(df_bidir_meta[headers_pos] > 0).count(axis=1)
+    # sum_neg = df_bidir_meta[headers_neg].where(df_bidir_meta[headers_neg] < 0).sum(axis=1, skipna=True)
+    # count_neg = df_bidir_meta[headers_neg].where(df_bidir_meta[headers_neg] < 0).count(axis=1)
+    # new_col_pos = (sum_pos / count_pos).fillna(0).rename(f"SUM_{score_type}r_pos").replace({0.0: '-'})
+    # new_col_neg = (sum_neg / count_neg).fillna(0).rename(f"SUM_{score_type}r_neg").replace({0.0: '-'})
+    # df_bidir_meta = pd.concat([df_bidir_meta, new_col_pos, new_col_neg], axis=1)
+
     # new_col_neg = df_bidir_meta[headers_neg].replace('-', np.nan).std(axis=1) ###
     # new_col_pos = df_bidir_meta[headers_pos].replace('-', np.nan).std(axis=1) ###
     # new_col_neg = new_col_neg.rename(f"SUM_{score_type}r_neg_stdev").replace(0.0, '-') ###

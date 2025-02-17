@@ -47,7 +47,7 @@ def randomize_by_sequence(
         os.mkdir(edits_filedir / 'randomized_screendata')
 
     # COPY VALUES FROM MISSENSE RANDOMIZED DF TO STRUC CONSRV DF #
-    human_res_positions = df_missense['human_res_pos'].tolist()
+    human_res_positions = df_missense[target_pos].tolist()
     missense_filter_col = [col for col in df_rand.columns if col.startswith('LFC')]
     
     rand_colnames = ['mean_missense_LFC']+[f'mean_missense_LFCr{j+1}' for j in range(nRandom)]

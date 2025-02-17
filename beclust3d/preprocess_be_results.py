@@ -32,6 +32,7 @@ def parse_base_editing_results(
     mut_col='Mutation category', val_col='logFC', 
     gene_col='Target Gene Symbol', edits_col='Amino Acid Edits', 
     split_char = ',', 
+    conservation_map_dfs=[], df_conservation_col='mouse_res_pos', 
 ): 
     """
     Description
@@ -73,10 +74,17 @@ def parse_base_editing_results(
     if not os.path.exists(edits_filedir / 'qc_validation'):
         os.mkdir(edits_filedir / 'qc_validation')
 
+    if len(conservation_map_dfs) == 0: 
+        conservation_map_dfs = [None]*len(input_dfs)
+    assert len(conservation_map_dfs) == len(input_dfs), 'Make sure there are the same number of items in your conservation_map_dfs'
+
     mut_dfs = {}
     # OUTPUT TSV BY INDIVIDUAL SCREENS #
-    for df, screen_name in zip(input_dfs, screen_names): 
+    for df, screen_name, df_conserv in zip(input_dfs, screen_names, conservation_map_dfs): 
         print(screen_name)
+        # IF WE LOOK AT CONSERVATION #
+        if df_conserv is not None: conserv_list = [str(x) for x in df_conserv[df_conservation_col].tolist()]
+
         # NARROW DOWN TO INPUT_GENE #
         df_gene = df.loc[df[gene_col] == input_gene, ]
         mut_dfs[screen_name] = {}
@@ -111,6 +119,12 @@ def parse_base_editing_results(
             # IF 3 LETTER CODES ARE USED, TRANSLATE TO 1 LETTER CODE #
             df_exploded['refAA'] = df_exploded['refAA'].str.upper().apply(lambda x: aa_map.get(x, x))
             df_exploded['altAA'] = df_exploded['altAA'].str.upper().apply(lambda x: aa_map.get(x, x))
+
+            # REMOVE NOT PRESENT RESIDUES #
+            ### exceptions for splice and no mut without a position column
+            if df_conserv is not None and mut not in ["Splice Site", "No Mutation"]: 
+                df_exploded = df_exploded[df_exploded['edit_pos'].isin(conserv_list)]
+
             df_subset = df_exploded[[edits_col, 'edit_pos', 'refAA', 'altAA', val_col]].rename(columns={edits_col: 'this_edit', val_col: 'LFC'})
 
             if mut == 'Missense': 
@@ -120,8 +134,10 @@ def parse_base_editing_results(
             elif mut == 'Nonsense': 
                 df_subset = df_subset[df_subset['altAA'] == '*']
             else: 
+                if mut == 'No Mutation': print('No Mutation', len(df_subset))
                 df_subset = df_subset[df_subset['LFC'] != df_subset['LFC'].shift()]
                 df_subset = df_subset['LFC']
+                if mut == 'No Mutation': print('No Mutation', len(df_subset))
 
             # WRITE LIST OF MUT AND THEIR LFC VALUES #
             edits_filename = f"screendata/{input_gene}_{screen_name.replace(' ','_')}_{mut.replace(' ','_')}.tsv"

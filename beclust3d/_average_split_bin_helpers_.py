@@ -41,7 +41,7 @@ def binning_neg_pos(
         if LFC3D == '-' or LFC3D == 0.0:
             LFC3D_disc, LFC3D_weight = '-', 0.0
         else: 
-            LFC3Df = round(float(LFC3D), 3)
+            LFC3Df = float(LFC3D)
             # ALIGNED FOR BETTER READABILITY #
             if                         LFC3Df <= NEG_05p_v:           LFC3D_disc, LFC3D_weight = 'NEG_05p', -0.95
             elif           NEG_05p_v < LFC3Df <= NEG_10p_v:           LFC3D_disc, LFC3D_weight = 'NEG_10p', -0.9
@@ -83,8 +83,8 @@ def binning_lfc3d(
         # df = df_3d_clean.loc[df_3d_clean[colname] != 0.0, ].reset_index(drop=True)
 
         res['dfstats'] = df[colname].describe()
-        res['p1'] = round(df[colname].quantile(quantile_numbers[colname][0]), 4) # (bottom 10th percentile)
-        res['p2'] = round(df[colname].quantile(quantile_numbers[colname][1]), 4) # (bottom 5th percentile)
+        res['p1'] = df[colname].quantile(quantile_numbers[colname][0]) # (bottom 10th percentile)
+        res['p2'] = df[colname].quantile(quantile_numbers[colname][1]) # (bottom 5th percentile)
         result[colname] = res
 
     df_neg_stats, df_pos_stats = result[col[0]]['dfstats'], result[col[1]]['dfstats']

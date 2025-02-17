@@ -164,7 +164,6 @@ def prioritize_by_sequence(
         df_protein[f'{function_name}_{mut}_LFC_p'] = list_p_LFC
         df_protein[f'{function_name}_{mut}_LFC_plab'] = list_plab_LFC
         del list_z_LFC, list_p_LFC, list_plab_LFC
-    df_protein
 
     strcons_edits_filename = f"screendata/{input_gene}_{screen_name}_proteinedits.tsv"
     df_protein.to_csv(edits_filedir / strcons_edits_filename, sep = '\t', index=False)

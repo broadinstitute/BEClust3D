@@ -61,11 +61,15 @@ def calculate_lfc3d(
         if not LFC_only: # CALCULATE LFC3D #
             taa_wise_norm_LFC = []
             df_struc_edits_dict = df_struc_edits['conservation'].to_dict()
+            taa_LFC_dict = df_struc_edits[f'{function_type}_{mut}_LFC'].to_dict()
+            naa_pos_str_dict = df_struc_edits['Naa_pos'].to_dict()
+
             for aa in range(len(df_struc_edits)): # FOR EVERY RESIDUE #
                 if conserved_only and df_struc_edits_dict[aa] != 'conserved': 
                     taa_wise_norm_LFC.append('-')
                     continue
-                taa_naa_LFC_vals = helper(df_struc_edits, aa, f'{function_type}_{mut}_LFC', conserved_only)
+                taa_naa_LFC_vals = helper(taa_LFC_dict, df_struc_edits_dict, aa, 
+                                          naa_pos_str_dict[aa], conserved_only)
                 if len(taa_naa_LFC_vals) == 0:
                     taa_wise_norm_LFC.append('-')
                 else: 
@@ -91,11 +95,16 @@ def calculate_lfc3d(
             if not LFC_only: 
                 taa_wise_norm_LFC = []
                 df_struc_edits_rand_dict = df_struc_edits_rand['conservation'].to_dict()
+                taa_LFC_dict = df_struc_edits_rand[f'{function_type}_missense_LFCr{str(r+1)}'].to_dict()
+                naa_pos_str_dict = df_struc_edits_rand['Naa_pos'].to_dict()
+
                 for aa in range(len(df_struc_edits_rand)):
                     if conserved_only and df_struc_edits_rand_dict[aa] != 'conserved': 
                         taa_wise_norm_LFC.append('-')
                         continue
-                    taa_naa_LFC_vals = helper(df_struc_edits_rand, aa, f'{function_type}_missense_LFCr{str(r+1)}', conserved_only) 
+                    # taa_naa_LFC_vals = helper(df_struc_edits_rand, aa, f'{function_type}_missense_LFCr{str(r+1)}', conserved_only) 
+                    taa_naa_LFC_vals = helper(taa_LFC_dict, df_struc_edits_rand_dict, aa, 
+                                              naa_pos_str_dict[aa], conserved_only)
                     if len(taa_naa_LFC_vals) == 0:
                         taa_wise_norm_LFC.append('-')
                     else:
@@ -137,23 +146,23 @@ def calculate_lfc3d(
     return df_struct_3d
 
 def helper(
-    df_struc_edits, aa, lookup, conserved_only
+    taa_LFC_dict, df_struc_edits_dict, aa, 
+    naa_pos_str, conserved_only
 ): 
     # naa IS NEIGHBORING AMINO ACIDS #
     # taa IS THIS AMINO ACID #
     taa_naa_LFC_vals = []
-    taa_LFC = df_struc_edits.at[aa, lookup] # target LFC
-    naa_pos_str = df_struc_edits.at[aa, 'Naa_pos']
+    taa_LFC = taa_LFC_dict[aa]
 
     if taa_LFC != '-': # VALUE FOR THIS RESIDUE #
-        if not conserved_only or df_struc_edits.at[aa, 'conservation'] == 'conserved': 
+        if not conserved_only or df_struc_edits_dict[aa] == 'conserved': 
             taa_naa_LFC_vals.append(float(taa_LFC))
 
     if isinstance(naa_pos_str, str): # CHECK NEIGHBORING RESIDUES #
         naa_pos_list = naa_pos_str.split(';') # neighboring residue positions
         for naa_pos in naa_pos_list: 
-            if not conserved_only or df_struc_edits.at[int(naa_pos)-1, 'conservation'] == 'conserved': 
-                naa_LFC = df_struc_edits.at[int(naa_pos)-1, lookup]
+            if not conserved_only or df_struc_edits_dict[int(naa_pos)-1] == 'conserved': 
+                naa_LFC = taa_LFC_dict[int(naa_pos)-1]
                 if naa_LFC != '-': 
                     taa_naa_LFC_vals.append(float(naa_LFC))
 
