@@ -134,10 +134,8 @@ def parse_base_editing_results(
             elif mut == 'Nonsense': 
                 df_subset = df_subset[df_subset['altAA'] == '*']
             else: 
-                if mut == 'No Mutation': print('No Mutation', len(df_subset))
                 df_subset = df_subset[df_subset['LFC'] != df_subset['LFC'].shift()]
                 df_subset = df_subset['LFC']
-                if mut == 'No Mutation': print('No Mutation', len(df_subset))
 
             # WRITE LIST OF MUT AND THEIR LFC VALUES #
             edits_filename = f"screendata/{input_gene}_{screen_name.replace(' ','_')}_{mut.replace(' ','_')}.tsv"
