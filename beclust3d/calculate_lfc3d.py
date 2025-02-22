@@ -20,6 +20,7 @@ def calculate_lfc3d(
         workdir, input_gene, screen_names, str_cons_dfs, str_cons_rand_dfs, 
         nRandom=1000, function_type='mean', mut='Missense', function_3Daggr=np.mean, 
         LFC_only=False, conserved_only=False, 
+        # THERE ARE 2 MEAN FUNCTIONS, MEAN FOR CALCULATING LFC3D WHICH IS TUNABLE, AND MEAN FOR AVG RANDOMIZATIONS WHICH IS NOT TUNABLE #
 ): 
     """
     Description
