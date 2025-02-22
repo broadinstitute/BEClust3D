@@ -139,11 +139,10 @@ def plot_cluster_distance(
 def clustering_distance(
         df_struc, df_pvals, 
         thr_distance, 
-        workdir, input_gene, input_uniprot, structureid, hits_clust_filename, 
-        screen_name='', 
+        workdir, input_gene, input_uniprot, df_pvals_clust, 
         columns=[f'SUM_LFC3D_neg_psig', f'SUM_LFC3D_pos_psig'], 
         names=['negative', 'positive'], 
-        pthr_cutoff='p<0.05', score_type='LFC3D', 
+        pthr_cutoff='p<0.05', 
         clustering_kwargs = {"n_clusters": None, "metric": "euclidean", "linkage": "single", }, 
         subplots_kwargs={'figsize':(20,15)}, 
 ): 
@@ -193,7 +192,6 @@ def clustering_distance(
 
     colnames = dict(zip(names, columns))
     # OPEN CLUSTERING FILE #
-    df_pvals_clust = pd.read_csv(edits_filedir / hits_clust_filename, sep = '\t')
 
     for name, colname in colnames.items(): 
         df_pvals_temp = df_hits_clust.loc[(df_pvals[colname] == pthr_cutoff), ].reset_index(drop=True)
