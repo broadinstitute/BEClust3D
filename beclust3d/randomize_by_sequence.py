@@ -17,7 +17,8 @@ def randomize_by_sequence(
         df_missense, df_rand, 
         input_gene, screen_name, 
         nRandom=1000, conservation=False, 
-        target_pos='human_res_pos', 
+        function_name='mean', target_pos='human_res_pos', 
+        # THERE ARE 2 MEAN FUNCTIONS, MEAN FOR CALCULATING LFC3D WHICH IS TUNABLE, AND MEAN FOR AVG RANDOMIZATIONS WHICH IS NOT TUNABLE #
 ): 
     """
     Description
@@ -50,7 +51,7 @@ def randomize_by_sequence(
     human_res_positions = df_missense[target_pos].tolist()
     missense_filter_col = [col for col in df_rand.columns if col.startswith('LFC')]
     
-    rand_colnames = ['mean_missense_LFC']+[f'mean_missense_LFCr{j+1}' for j in range(nRandom)]
+    rand_colnames = [f'{function_name}_missense_LFC']+[f'{function_name}_missense_LFCr{j+1}' for j in range(nRandom)]
     df_mis_positions = pd.DataFrame(columns=rand_colnames)
     for i in range(len(df_missense)): 
         df_mis_pos = df_rand.loc[df_rand['edit_pos'] == human_res_positions[i]]
@@ -66,8 +67,8 @@ def randomize_by_sequence(
                          'bfactor_pLDDT', 'Naa_count', 'Naa', 'Naa_pos', 'SS9', 'SS3', 'ACC', 
                          'RSA', 'exposure', 'PHI', 'normPHI', 'PSI', 'normPSI', 'dBurial', 
                          'normSumdBurial', 'pLDDT_dis', 'human_res_pos', 'conservation', 
-                         'mean_Missense_LFC','mean_Missense_LFC_stdev','all_Missense_edits',
-                         'mean_Missense_LFC_Z','mean_Missense_LFC_p','mean_Missense_LFC_plab']
+                         f'{function_name}_Missense_LFC',f'{function_name}_Missense_LFC_stdev','all_Missense_edits',
+                         f'{function_name}_Missense_LFC_Z',f'{function_name}_Missense_LFC_p',f'{function_name}_Missense_LFC_plab']
     if conservation: 
         missense_colnames += ['mouse_res_pos', 'mouse_res']
     df_mis_positions = df_mis_positions
