@@ -60,7 +60,7 @@ def randomize_by_sequence(
         df_mis_pos = df_rand.loc[df_rand['edit_pos'] == res_position_list[i]]
         df_mis_pos = df_mis_pos[missense_filter_col]
 
-        if df_mis_pos.shape[0] == 0 and (res_list is not None and res_list[i] != '-'): # FILL WITH '-' #
+        if df_mis_pos.shape[0] == 0 or (res_list is not None and res_list[i] == '-'): # FILL WITH '-' #
             res = ['-' for _ in range(df_mis_pos.shape[1])]
         else: # AVERAGE ACROSS COLUMNS FOR ONE OR MORE ROWS #
             res = df_mis_pos.mean().tolist()
