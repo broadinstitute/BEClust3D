@@ -17,7 +17,7 @@ def randomize_by_sequence(
         df_missense, df_rand, 
         input_gene, screen_name, 
         nRandom=1000, conservation=False, 
-        function_name='mean', target_pos='human_res_pos', 
+        function_name='mean', target_pos='human_res_pos', target_res='', 
         # THERE ARE 2 MEAN FUNCTIONS, MEAN FOR CALCULATING LFC3D WHICH IS TUNABLE, AND MEAN FOR AVG RANDOMIZATIONS WHICH IS NOT TUNABLE #
 ): 
     """
@@ -48,16 +48,19 @@ def randomize_by_sequence(
         os.mkdir(edits_filedir / 'randomized_screendata')
 
     # COPY VALUES FROM MISSENSE RANDOMIZED DF TO STRUC CONSRV DF #
-    human_res_positions = df_missense[target_pos].tolist()
+    res_position_list = df_missense[target_pos].tolist()
+    if len(target_res) > 0 and target_res in df_missense.columns: # GET RID OF NON CONSERVED FOR MOUSE RES ONLY #
+        res_list = df_missense[target_res].tolist()
+    else: res_list = None
     missense_filter_col = [col for col in df_rand.columns if col.startswith('LFC')]
     
     rand_colnames = [f'{function_name}_missense_LFC']+[f'{function_name}_missense_LFCr{j+1}' for j in range(nRandom)]
     df_mis_positions = pd.DataFrame(columns=rand_colnames)
     for i in range(len(df_missense)): 
-        df_mis_pos = df_rand.loc[df_rand['edit_pos'] == human_res_positions[i]]
+        df_mis_pos = df_rand.loc[df_rand['edit_pos'] == res_position_list[i]]
         df_mis_pos = df_mis_pos[missense_filter_col]
 
-        if df_mis_pos.shape[0] == 0: # FILL WITH '-' #
+        if df_mis_pos.shape[0] == 0 and (res_list is not None and res_list[i] != '-'): # FILL WITH '-' #
             res = ['-' for _ in range(df_mis_pos.shape[1])]
         else: # AVERAGE ACROSS COLUMNS FOR ONE OR MORE ROWS #
             res = df_mis_pos.mean().tolist()
