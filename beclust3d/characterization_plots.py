@@ -13,9 +13,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
-
 def lfc_vs_lfc3d_scatterplot(
-        df_lfc3d_dis, df_nonaggr_lfc3d, workdir, input_gene, screen_name, structureid, lfc3d_hit_threshold
+        df_lfc3d_dis, df_nonaggr_lfc3d, workdir, input_gene, screen_name, lfc3d_hit_threshold, plot_name
 ):
 
     edits_filedir = Path(workdir)
@@ -81,6 +80,7 @@ def lfc_vs_lfc3d_scatterplot(
     plt.xlabel(f"{screen_name} (LFC)")
     plt.ylabel(f"{screen_name} (LFC3D)")
     plt.grid(True, linestyle="--", alpha=0.5)
+    plt.savefig(plot_name, dpi=300)
 
 def characterization_barplot(df_filtered, xcolumn, xname, gene_name, plot_name):
     plt.figure(figsize=(10, 6))
@@ -91,7 +91,6 @@ def characterization_barplot(df_filtered, xcolumn, xname, gene_name, plot_name):
     plt.title(f"{gene_name} {xname} Hit Count Barplot")
     plt.legend(title='dir')
     plt.savefig(plot_name)
-    plt.show()
 
 def RSA_pLDDT(df_filtered, gene_name, plot_name):
     color_map = {'NEG': 'darkred', 'POS': 'darkblue'}
