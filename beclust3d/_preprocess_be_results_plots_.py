@@ -199,9 +199,10 @@ def violin_by_gene(
             legend_handles, legend_labels = axes[idx].get_legend_handles_labels()
 
         # Remove legend from the individual plot
-        axes[idx].get_legend().remove()
-        axes[idx].axvline(df_gene[val_col].mean(), c="gray", linestyle="dashed")
-        axes[idx].scatter(y=range(len(Means)), x=Means, c="violet", alpha=.9) # MEANS #
+        if axes[idx].get_legend() is not None: 
+            axes[idx].get_legend().remove()
+            axes[idx].axvline(df_gene[val_col].mean(), c="gray", linestyle="dashed")
+            axes[idx].scatter(y=range(len(Means)), x=Means, c="violet", alpha=.9) # MEANS #
         del df_gene
     
     # REMOVE UNUSSED AXES

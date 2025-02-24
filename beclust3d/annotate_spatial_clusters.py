@@ -87,7 +87,7 @@ def clustering(
         np_META_hits_coord = np.array(df_pvals_temp[['x_coord', 'y_coord', 'z_coord']].copy())
         if np_META_hits_coord.shape[0] < 2: 
             warnings.warn(f"Not enough data to perform agglomerative clustering")
-            return None, None
+            return None, None, None
 
         # FOR RANGE OF RADIUS, RUN CLUSTERING #
         for thr_distance in arr_d_thr: 
@@ -113,7 +113,7 @@ def clustering(
     plot_cluster_distance(arr_d_thr, yvals, names, clust_dist_filename, edits_filedir, input_gene, screen_name, score_type, 
                           subplots_kwargs)
 
-    return arr_d_thr, yvals
+    return df_hits_clust, arr_d_thr, yvals
 
 def plot_cluster_distance(
         x, ys, names, out_filename, edits_filedir, input_gene, screen_name, score_type, 

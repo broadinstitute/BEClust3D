@@ -103,6 +103,9 @@ def parse_base_editing_results(
 
             # IF USER WANTS TO CATEGORIZE BY ONE SINGLE MUTATION PER GUIDE OR MULTIPLE MUTATIONS PER GUIDE #
             df_mut = df_gene.loc[df_gene[mut_col] == mut, ]
+            if len(df_mut) == 0: 
+                print(f'No {mut} in {input_gene} {screen_name} data')
+                continue
             df_mut = df_mut.reset_index(drop=True)
             print(f"Count of {mut} rows: " + str(len(df_mut)))
 
