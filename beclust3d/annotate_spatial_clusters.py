@@ -113,7 +113,7 @@ def clustering(
     plot_cluster_distance(arr_d_thr, yvals, names, clust_dist_filename, edits_filedir, input_gene, screen_name, score_type, 
                           subplots_kwargs)
 
-    return arr_d_thr, yvals
+    return df_hits_clust, arr_d_thr, yvals
 
 def plot_cluster_distance(
         x, ys, names, out_filename, edits_filedir, input_gene, screen_name, score_type, 
