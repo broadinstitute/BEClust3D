@@ -32,7 +32,7 @@ def lfc_vs_lfc3d_scatterplot(
         screen_name: str
             Screen name
         plot_name: str
-            Plot name to be saved in 'plots' folder
+            Plot name to be saved in plots folder
         lfc3d_hit_threshold: float
             LFC3D hit threshold
     """
@@ -113,7 +113,7 @@ def RSA_vs_pLDDT_barplot(df_filtered, gene_name, plot_name):
         gene_name: str
             Gene name
         plot_name: str
-            Plot name to be saved in 'plots' folder
+            Plot name to be saved in plots folder
     """
 
     color_map = {'NEG': 'darkred', 'POS': 'darkblue'}
@@ -160,7 +160,7 @@ def hits_vs_feature_barplot(df_filtered, xcolumn, xname, gene_name, plot_name):
         gene_name: str
             Gene name
         plot_name: str
-            Plot name to be saved in 'plots' folder
+            Plot name to be saved in plots folder
     """
     plt.figure(figsize=(10, 6))
     sns.countplot(data=df_filtered, x=xcolumn, hue='dir', palette={'NEG': 'darkred', 'POS': 'darkblue'})
