@@ -116,7 +116,6 @@ def calculate_lfc3d(
         df_struct_3d = pd.concat((df_struct_3d, pd.DataFrame(dict_temp)), axis=1)
         df_struct_3d = df_struct_3d.replace('-', np.nan).infer_objects(copy=False) # FutureWarning
         LFC_colnames   = [f"{screen_name}_LFCr{str(r+1)}" for r in range(0, nRandom)]
-        LFC3D_colnames = [f"{screen_name}_LFC3Dr{str(r+1)}" for r in range(0, nRandom)]
         del dict_temp
 
         df_struct_3d = df_struct_3d.apply(lambda col: pd.to_numeric(col, errors='coerce'))
@@ -128,14 +127,16 @@ def calculate_lfc3d(
                                                         .apply(lambda col: col.map(lambda x: x if x > 0 else np.nan))
                                                         .sum(axis=1) / nRandom) # AVG POS
         # df_struct_3d = df_struct_3d.drop(LFC_colnames, axis=1)
-        df_struct_3d[f"{screen_name}_AVG_LFC3Dr"]     = df_struct_3d[LFC3D_colnames].mean(axis=1) # AVG ALL
-        df_struct_3d[f"{screen_name}_AVG_LFC3Dr_neg"] = (df_struct_3d[LFC3D_colnames]
-                                                        .apply(lambda col: col.map(lambda x: x if x < 0 else np.nan))
-                                                        .sum(axis=1) / nRandom) # AVG NEG
-        df_struct_3d[f"{screen_name}_AVG_LFC3Dr_pos"] = (df_struct_3d[LFC3D_colnames]
-                                                        .apply(lambda col: col.map(lambda x: x if x > 0 else np.nan))
-                                                        .sum(axis=1) / nRandom) # AVG POS
-        # df_struct_3d = df_struct_3d.drop(LFC3D_colnames, axis=1)
+        if not LFC_only: 
+            LFC3D_colnames = [f"{screen_name}_LFC3Dr{str(r+1)}" for r in range(0, nRandom)]
+            df_struct_3d[f"{screen_name}_AVG_LFC3Dr"]     = df_struct_3d[LFC3D_colnames].mean(axis=1) # AVG ALL
+            df_struct_3d[f"{screen_name}_AVG_LFC3Dr_neg"] = (df_struct_3d[LFC3D_colnames]
+                                                            .apply(lambda col: col.map(lambda x: x if x < 0 else np.nan))
+                                                            .sum(axis=1) / nRandom) # AVG NEG
+            df_struct_3d[f"{screen_name}_AVG_LFC3Dr_pos"] = (df_struct_3d[LFC3D_colnames]
+                                                            .apply(lambda col: col.map(lambda x: x if x > 0 else np.nan))
+                                                            .sum(axis=1) / nRandom) # AVG POS
+            # df_struct_3d = df_struct_3d.drop(LFC3D_colnames, axis=1)
         
         df_struct_3d = df_struct_3d
         df_struct_3d = df_struct_3d.fillna('-')
