@@ -14,8 +14,28 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
 def lfc_vs_lfc3d_scatterplot(
-        df_lfc3d_dis, df_nonaggr_lfc3d, workdir, input_gene, screen_name, lfc3d_hit_threshold, plot_name
+        df_lfc3d_dis, df_nonaggr_lfc3d, workdir, input_gene, screen_name, plot_name, lfc3d_hit_threshold=0.05
 ):
+    """
+    Description
+        Generate LFC vs LFC3D scatter plot
+
+    Params
+        df_lfc3d_dis: DataFrame
+            LFC3D distribution DataFrame
+        df_nonaggr_lfc3d: DataFrame
+            Non-aggregated LFC3D DataFrame
+        workdir: str
+            Working directory
+        input_gene: str
+            Input gene name
+        screen_name: str
+            Screen name
+        plot_name: str
+            Plot name to be saved in 'plots' folder
+        lfc3d_hit_threshold: float
+            LFC3D hit threshold
+    """
 
     edits_filedir = Path(workdir)
     if not os.path.exists(edits_filedir):
@@ -37,7 +57,7 @@ def lfc_vs_lfc3d_scatterplot(
         f'{screen_name}_SUM_LFC3D_neg_psig': "LFC3D_neg_psig",
         f'{screen_name}_SUM_LFC3D_pos_psig': "LFC3D_pos_psig"
     })
-    df_lfc_lfc3d = pd.merge(df_lfc_lfc3d, df_lfc3d_psig, on='unipos', how='left')
+    df_lfc_lfc3d = pd.merge(df_lfc3d_dis, df_lfc3d_psig, on='unipos', how='left')
 
     # Assign p-significance label for hue coloring
     psig_dict = {'above': f'p>={lfc3d_hit_threshold}', 'below': f'p<{lfc3d_hit_threshold}'}
@@ -82,17 +102,20 @@ def lfc_vs_lfc3d_scatterplot(
     plt.grid(True, linestyle="--", alpha=0.5)
     plt.savefig(plot_name, dpi=300)
 
-def characterization_barplot(df_filtered, xcolumn, xname, gene_name, plot_name):
-    plt.figure(figsize=(10, 6))
-    sns.countplot(data=df_filtered, x=xcolumn, hue='dir', palette={'NEG': 'darkred', 'POS': 'darkblue'})
+def RSA_vs_pLDDT_barplot(df_filtered, gene_name, plot_name):
+    """
+    Description
+        Generate RSA vs pLDDT barplot
+    
+    Params
+        df_filtered: DataFrame
+            Filtered DataFrame with relevant colummns (bfactor_pLDDT, RSA, LFC3D_wght, dir)
+        gene_name: str
+            Gene name
+        plot_name: str
+            Plot name to be saved in 'plots' folder
+    """
 
-    plt.xlabel(xname)
-    plt.ylabel('Count of Hits')
-    plt.title(f"{gene_name} {xname} Hit Count Barplot")
-    plt.legend(title='dir')
-    plt.savefig(plot_name)
-
-def RSA_pLDDT(df_filtered, gene_name, plot_name):
     color_map = {'NEG': 'darkred', 'POS': 'darkblue'}
     colors = df_filtered['dir'].map(color_map)
 
@@ -121,3 +144,29 @@ def RSA_pLDDT(df_filtered, gene_name, plot_name):
     plt.ylabel('RSA')
     plt.title(f"{gene_name} RSA vs. pLDDT Scatterplot")
     plt.savefig(plot_name, dpi=300)
+
+def hits_vs_feature_barplot(df_filtered, xcolumn, xname, gene_name, plot_name):
+    """
+    Description
+        Generate hit count barplot for specified feature (ex. RSA, pLDDT, Domain, etc.)
+    
+    Params
+        df_filtered: DataFrame
+            Filtered DataFrame with relevant colummns (domain, pLDDT_dis, exposure, SS3, etc...)
+        xcolumn: str
+            Column name for the feature
+        xname: str
+            Feature name
+        gene_name: str
+            Gene name
+        plot_name: str
+            Plot name to be saved in 'plots' folder
+    """
+    plt.figure(figsize=(10, 6))
+    sns.countplot(data=df_filtered, x=xcolumn, hue='dir', palette={'NEG': 'darkred', 'POS': 'darkblue'})
+
+    plt.xlabel(xname)
+    plt.ylabel('Count of Hits')
+    plt.title(f"{gene_name} {xname} Hit Count Barplot")
+    plt.legend(title='dir')
+    plt.savefig(plot_name)
