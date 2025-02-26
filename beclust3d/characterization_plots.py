@@ -6,11 +6,11 @@ Description: Plotting functions for hit characterization
 
 """
 
-from pathlib import Path
 import os
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
+from pathlib import Path
 from matplotlib.lines import Line2D
 
 def lfc_vs_lfc3d_scatterplot(
@@ -49,14 +49,14 @@ def lfc_vs_lfc3d_scatterplot(
         f"{screen_name}_LFC": "LFC",
         f"{screen_name}_LFC3D": "LFC3D",
         f"{screen_name}_LFC3D_dis": "LFC3D_dis"
-    })
+    }, inplace=True)
 
     # Get LFC3D significance labels
-    df_lfc3d_psig = df_nonaggr_lfc3d[['unipos', f'{screen_name}_SUM_LFC3D_neg_psig', f'{screen_name}_SUM_LFC3D_pos_psig']]
-    df_lfc3d_psig.rename(columns={
-        f'{screen_name}_SUM_LFC3D_neg_psig': "LFC3D_neg_psig",
-        f'{screen_name}_SUM_LFC3D_pos_psig': "LFC3D_pos_psig"
-    })
+    df_nonaggr_lfc3d.rename(columns={
+        f'{screen_name}_LFC3D_neg_psig': "LFC3D_neg_psig",
+        f'{screen_name}_LFC3D_pos_psig': "LFC3D_pos_psig"
+    }, inplace=True)
+    df_lfc3d_psig = df_nonaggr_lfc3d[['unipos', 'LFC3D_neg_psig', 'LFC3D_pos_psig']]
     df_lfc_lfc3d = pd.merge(df_lfc3d_dis, df_lfc3d_psig, on='unipos', how='left')
 
     # Assign p-significance label for hue coloring
