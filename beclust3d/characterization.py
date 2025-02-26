@@ -18,6 +18,27 @@ from scipy.stats import fisher_exact
 from pathlib import Path
 
 def add_annotation(df_coord_struc, workdir, input_gene, input_uniprot, structureid):
+    """
+    Description
+        Adds annotations to the structural data
+    
+    Params
+        df_coord_struc: pandas DataFrame
+            DataFrame containing structural data
+        workdir: str
+            Working directory
+        input_gene: str
+            Input gene name
+        input_uniprot: str
+            Input UniProt ID
+        structureid: str
+            Structure ID
+
+    Returns
+        df_merged: pandas DataFrame
+            Structural data DataFrame merged with new added annotations
+    """
+
     # Download UniProt data
     ffile = f"{input_uniprot}.txt"
     target_path = os.path.join("drive/MyDrive/BEPipeline", input_gene)
@@ -89,7 +110,6 @@ def add_annotation(df_coord_struc, workdir, input_gene, input_uniprot, structure
                     print("feature positions can't be more than two!")
                     break;
         arr_domain.append(domain)
-
     df_META['domain'] = arr_domain
 
     df_META.to_csv(f"{workdir}/{input_gene}_{input_uniprot}_Uniprotf.tsv", sep = '\t', index=False)
@@ -100,6 +120,27 @@ def add_annotation(df_coord_struc, workdir, input_gene, input_uniprot, structure
 
 # Test 1: High pLDDT vs. Low pLDDT
 def high_vs_low_pLDDT(data, pthr, domain_labels):
+    """
+    Description
+        Perform enrichment test using Fisher's exact test for high vs. low pLDDT values
+    
+    Params
+        data: pandas DataFrame
+            DataFrame containing structural data
+        pthr: float
+            p-value threshold
+        domain_labels: dict
+            Dictionary containing domain labels
+    
+    Returns
+        ftest: tuple
+            Fisher's exact test result
+        odds_ratio: float
+            Odds ratio
+        ci: tuple
+            Confidence interval
+    """
+    
     below = data[data['mean_Missense_LFC_Z'] < pthr]
     above = data[data['mean_Missense_LFC_Z'] >= pthr]
     table = np.array([
@@ -115,6 +156,25 @@ def high_vs_low_pLDDT(data, pthr, domain_labels):
 
 # Test 2: In-Domain vs. Outside-Domain
 def inside_vs_outside_domain(data, pthr):
+    """
+    Description
+        Perform enrichment test using Fisher's exact test for in-domain vs. outside-domain values
+    
+    Params
+        data: pandas DataFrame
+            DataFrame containing structural data
+        pthr: float
+            p-value threshold
+    
+    Returns
+        ftest: tuple
+            Fisher's exact test result
+        odds_ratio: float
+            Odds ratio
+        ci: tuple
+            Confidence interval
+    """
+
     below = data[data['mean_Missense_LFC_Z'] < pthr].reset_index(drop=True)
     above = data[data['mean_Missense_LFC_Z'] >= pthr].reset_index(drop=True)
     below_in_domain = below[below['domain'] != '-']
@@ -131,6 +191,19 @@ def inside_vs_outside_domain(data, pthr):
     return ftest, odds_ratio, ci
 
 def plot_enrichment_tests(results, pthr, input_gene):
+    """
+    Description
+        Plot enrichment test results
+    
+    Params
+        results: list
+            List of results from enrichment tests
+        pthr: float
+            p-value threshold
+        input_gene: str
+            Input gene name
+    """
+
     fig, ax = plt.subplots(figsize=(10, 6))
     y_positions = [1, 2, 3, 4]  # Fixed y-axis positions for the four lines
 
@@ -175,6 +248,23 @@ def plot_enrichment_tests(results, pthr, input_gene):
     plt.show()
 
 def enrichment_tests(df_proteinedits, df_coord_struc, input_gene, pthr, domain_labels):
+    """
+    Description
+        Perform enrichment tests for structural data and plots the results
+    
+    Params
+        df_proteinedits: pandas DataFrame
+            DataFrame containing protein edits data
+        df_coord_struc: pandas DataFrame
+            DataFrame containing structural data
+        input_gene: str
+            Input gene name
+        pthr: float
+            p-value threshold
+        domain_labels: dict
+            Dictionary containing domain labels
+    """
+    
     # Add the domain column from Uniprot
     df_proteinedits['domain'] = df_coord_struc['domain']
     df_filtered = df_proteinedits[df_proteinedits['mean_Missense_LFC'] != '-'].copy()
@@ -227,5 +317,4 @@ def enrichment_tests(df_proteinedits, df_coord_struc, input_gene, pthr, domain_l
                 'ci': None,
                 'p_value': np.nan
             })
-    
     plot_enrichment_tests(results=results, pthr=pthr, input_gene=input_gene)
