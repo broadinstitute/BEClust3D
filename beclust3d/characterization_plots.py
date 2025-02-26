@@ -9,6 +9,7 @@ Description: Plotting functions for hit characterization
 import os
 import seaborn as sns
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 from matplotlib.lines import Line2D
