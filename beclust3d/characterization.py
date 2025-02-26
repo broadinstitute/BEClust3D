@@ -7,15 +7,15 @@ Description: Characterization of hits and enrichment tests
 """
 
 import pandas as pd
-from pathlib import Path
 import os
 import subprocess
 import shutil
-import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 import scipy.stats as stats
 from scipy.stats import fisher_exact
+from pathlib import Path
 
 def add_annotation(df_coord_struc, workdir, input_gene, input_uniprot, structureid):
     # Download UniProt data
@@ -113,8 +113,8 @@ def high_vs_low_pLDDT(data, pthr, domain_labels):
     ci = odds_ratio.confidence_interval(confidence_level=0.95)
     return ftest, odds_ratio, ci
 
- # Test 2: In-Domain vs. Outside-Domain
-def inside_vs_outside_domain(data, pthr, domain_labels):
+# Test 2: In-Domain vs. Outside-Domain
+def inside_vs_outside_domain(data, pthr):
     below = data[data['mean_Missense_LFC_Z'] < pthr].reset_index(drop=True)
     above = data[data['mean_Missense_LFC_Z'] >= pthr].reset_index(drop=True)
     below_in_domain = below[below['domain'] != '-']
@@ -138,7 +138,6 @@ def plot_enrichment_tests(results, pthr, input_gene):
         odds_ratio = result['odds_ratio']
         ci = result['ci']
         y = y_positions[i]
-        # color = 'blue' if result['lfc_type'] == 'Positive LFC' else 'red'
         color = 'red' if i % 2 == 0 else 'blue'
         if np.isnan(odds_ratio) or np.isinf(odds_ratio):
             # Placeholder for NaN or infinite odds ratio
@@ -163,7 +162,6 @@ def plot_enrichment_tests(results, pthr, input_gene):
         )
 
     # Customize plot
-    # ax.axvline(x=1, color='gray', linestyle='--', linewidth=1)
     ax.set_yticks(y_positions)
     ax.set_yticklabels([
         '-LFC (In-Domain vs. Outside-Domain)',
@@ -176,7 +174,7 @@ def plot_enrichment_tests(results, pthr, input_gene):
     plt.tight_layout()
     plt.show()
 
-def enrichment_tests(df_proteinedits, df_coord_struc, workdir, input_gene, pthr, domain_labels):
+def enrichment_tests(df_proteinedits, df_coord_struc, input_gene, pthr, domain_labels):
     # Add the domain column from Uniprot
     df_proteinedits['domain'] = df_coord_struc['domain']
     df_filtered = df_proteinedits[df_proteinedits['mean_Missense_LFC'] != '-'].copy()
