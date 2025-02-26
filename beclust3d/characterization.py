@@ -12,6 +12,7 @@ import subprocess
 import shutil
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 import scipy.stats as stats
 from scipy.stats import fisher_exact
 from pathlib import Path

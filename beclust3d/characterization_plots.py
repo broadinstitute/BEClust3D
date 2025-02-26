@@ -35,7 +35,7 @@ def lfc_vs_lfc3d_scatterplot(
         plot_name: str
             Plot name to be saved in plots folder
         lfc3d_hit_threshold: float
-            LFC3D hit threshold
+            LFC3D hit threshold for determining significance
     """
 
     edits_filedir = Path(workdir)
