@@ -98,8 +98,6 @@ def average_split_bin(
         # CALCULATE BINS #
         quantile_values = {}
         for name, q in quantiles.items():
-            if print_statements:
-                print(df_LFC3D_neg[header_LFC3D])
             quantile_values[name] = df_LFC3D_neg[header_LFC3D].replace('_', np.nan).astype(float).quantile(q)
 
         arr_disc, arr_weight = binning_neg_pos(df_bidir, df_neg_stats, df_pos_stats, 
