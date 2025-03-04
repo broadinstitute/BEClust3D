@@ -12,6 +12,8 @@ import requests
 import sys, os
 import time
 import warnings
+import subprocess
+from Bio import AlignIO
 
 cons_dict = {
     '*': ('conserved', 3),
@@ -24,7 +26,6 @@ def conservation(
         workdir, 
         input_human_gene, input_mouse_gene, 
         input_human_uniid, input_mouse_uniid, 
-        email, title, 
         alignment_filename = '', 
         wait_time=30, 
 ): 
@@ -75,9 +76,11 @@ def conservation(
             text_file.write(mouse_seq)
 
         # MUSCLE ALIGNMENT #
+        muscle_output_filename = f"Human{input_human_gene}_Mouse{input_mouse_gene}.afa"
         align_filename = f"Human{input_human_gene}_Mouse{input_mouse_gene}.align"
-        muscle_id = alignment_muscle(edits_filedir, seqs_filename, align_filename, 
-                                     email, title, wait_time )
+        run_muscle(edits_filedir, seqs_filename, muscle_output_filename, align_filename)
+        # muscle_id = alignment_muscle(edits_filedir, seqs_filename, align_filename, 
+        #                              email, title, wait_time )
     else: 
         align_filename = alignment_filename
     
@@ -141,22 +144,48 @@ def alignment_muscle(
         f.write(response.content)
     return job_url_code
 
+def run_muscle(
+    edits_filedir, 
+    seqs_filename,afa_filename ,align_filename
+): 
+    """
+    Description
+        Run local MUSCLE for sequence alignment
+    """
+    # Run MUSCLE alignment
+    subprocess.run(["muscle", "-align", str(edits_filedir / seqs_filename), "-output", str(edits_filedir / afa_filename), "-threads", "1"], check=True)
+
+    # Run Clustal Omega for formatting
+    subprocess.run([
+        "clustalo",
+        "--in", edits_filedir / afa_filename,
+        "--infmt=sta",
+        "--outfmt=clustal",
+        "-o", edits_filedir / align_filename,
+        "--force"
+    ], check=True)
+    
 def parse_alignment(
     edits_filedir, 
     align_filename, alignconserv_filename, residuemap_filename, 
 ): 
     # PARSE .align FILE #
     iAlign = open(edits_filedir / align_filename, "r")
-    i_lines = iAlign.readlines()[3:]
-    iAlign.close()
-    ind = i_lines[0].rfind(' ')
+    # i_lines = iAlign.readlines()[3:]
+    # iAlign.close()
+    # ind = i_lines[0].rfind(' ')
 
-    # EXTRACT ALIGNMENT RESIDUES, ASSIGNS CONSERVATION SCORES, ADD TO DATAFRAME #
-    # takes into account diff start positions and diff spacing
-    cleaned_ilines = [s for s in [s[ind+1:].strip('\n') for s in i_lines] if len(s) > 0]
-    human_align_res = list(''.join([s for i, s in enumerate(cleaned_ilines) if     i%3 == 0]))
-    mouse_align_res = list(''.join([s for i, s in enumerate(cleaned_ilines) if (i-1)%3 == 0]))
-    score           = list(''.join([s for i, s in enumerate(cleaned_ilines) if (i-2)%3 == 0]))
+    # # EXTRACT ALIGNMENT RESIDUES, ASSIGNS CONSERVATION SCORES, ADD TO DATAFRAME #
+    # # takes into account diff start positions and diff spacing
+    # cleaned_ilines = [s for s in [s[ind+1:].strip('\n') for s in i_lines] if len(s) > 0]
+    # human_align_res = list(''.join([s for i, s in enumerate(cleaned_ilines) if     i%3 == 0]))
+    # mouse_align_res = list(''.join([s for i, s in enumerate(cleaned_ilines) if (i-1)%3 == 0]))
+    # score           = list(''.join([s for i, s in enumerate(cleaned_ilines) if (i-2)%3 == 0]))
+
+    align = AlignIO.read(edits_filedir / align_filename, "clustal")
+    human_align_res = align[0].seq
+    mouse_align_res = align[1].seq
+    score = align.column_annotations['clustal_consensus']
 
     index  = [i+1 for i in range(len(human_align_res))]
     dis, v = [cons_dict[s][0] for s in score], [cons_dict[s][1] for s in score]
@@ -188,6 +217,6 @@ def parse_alignment(
     df_residuemap = df_residuemap[df_residuemap['human_res'] != '-']
     df_residuemap.to_csv(edits_filedir / residuemap_filename, sep='\t', index=False)
 
-    del cleaned_ilines, index, human_align_res, mouse_align_res, score, dis, v, human_res_pos, mouse_res_pos, colnames, colvals
+    del index, human_align_res, mouse_align_res, score, dis, v, human_res_pos, mouse_res_pos, colnames, colvals
 
     return df_alignconserv, df_residuemap
