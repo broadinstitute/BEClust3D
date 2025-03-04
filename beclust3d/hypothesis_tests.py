@@ -4,7 +4,6 @@ import seaborn as sns
 import numpy as np
 from pathlib import Path
 import os
-from matplotlib.widgets import Slider
 
 from scipy.stats import mannwhitneyu
 from scipy.stats import ks_2samp

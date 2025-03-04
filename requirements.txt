@@ -86,3 +86,5 @@ xxhash==3.4.1
 yarl==1.9.4
 muscle=5.3
 clustalo=1.2.4
+dssp=2.2.1
+dsspparser==0.1.3

@@ -19,11 +19,10 @@ import warnings
 
 def clustering(
         df_struc, df_pvals, 
-        workdir, input_gene, structureid, 
-        screen_name = '', 
+        workdir, input_gene, screen_name = 'Meta', 
         columns=[f'SUM_LFC3D_neg_psig', f'SUM_LFC3D_pos_psig'], 
         names=['negative', 'positive'], 
-        max_distances=20, pthr_cutoff='p<0.05', score_type='LFC3D', 
+        max_distances=20, pthr_cutoff=['p<0.05'], score_type='LFC3D', 
 
         clustering_kwargs = {"n_clusters": None, "metric": "euclidean", "linkage": "single", }, 
         subplots_kwargs={'figsize':(10,7)}, 
@@ -73,79 +72,76 @@ def clustering(
     df_hits_clust[["x_coord", "y_coord", "z_coord"]] = df_struc
 
     # CLUSTERING #
-    arr_d_thr = [float(i+1) for i in range(max_distances)]
+    arr_d_thr = [float(i+1) for i in range(max_distances)] # CLUSTERING DISTANCE HYPERPARAM
     column_lists = [[] for _ in columns]
-    hits_dict = dict(zip(columns, column_lists))
+    columns_dict = dict(zip(columns, column_lists)) # FOR EVERY DATA COLUMN TO CLUSTER
     
-    for name, arr in hits_dict.items(): 
+    for name, arr in columns_dict.items(): 
         # EXTRACT ROWS ABOVE CUTOFF #
         dict_hits = {}
-        df_pvals_temp = df_hits_clust.loc[(df_hits_clust[name] == pthr_cutoff), ].reset_index(drop=True)
+        df_pvals_temp = df_hits_clust.loc[(df_hits_clust[name].isin(pthr_cutoff)), ].reset_index(drop=True)
         dict_hits['unipos'] = list(df_pvals_temp['unipos'])
 
         # EXTRACT X Y Z OF HITS ABOVE CUTOFF #
         np_META_hits_coord = np.array(df_pvals_temp[['x_coord', 'y_coord', 'z_coord']].copy())
-        if np_META_hits_coord.shape[0] < 2: 
+        if np_META_hits_coord.shape[0] < 2: # NO DATA TO CLUSTER ON #
             warnings.warn(f"Not enough data to perform agglomerative clustering")
-            return None, None
+            return None, None, None
 
         # FOR RANGE OF RADIUS, RUN CLUSTERING #
-        for thr_distance in arr_d_thr: 
-            func_clustering = AgglomerativeClustering(**clustering_kwargs, distance_threshold=thr_distance)
+        for dist in arr_d_thr: 
+            func_clustering = AgglomerativeClustering(**clustering_kwargs, distance_threshold=dist)
             clus_lbl = func_clustering.fit(np_META_hits_coord).labels_
 
             n_c_output = int(max(clus_lbl)+1)
-            print(f'Number of clusters of {name} hits: @ d = {thr_distance} {n_c_output}')
+            print(f'Number of clusters of {name} hits: @ d = {dist} {n_c_output}')
             arr.append(n_c_output)
 
-            colname_hits = f"{name}_hit_clust_{str(int(thr_distance))}"
-            # df_pvals_temp[colname_hits] = clus_lbl
-            dict_hits[colname_hits] = clus_lbl
+            dict_hits[f"{name}_Clust_{str(int(dist))}A"] = clus_lbl
         df_hits_clust = df_hits_clust.merge(pd.DataFrame(dict_hits), how='left', on=['unipos'])
 
     df_hits_clust.fillna('-')
-    hits_clust_filename = edits_filedir / f"cluster_{score_type}/{structureid}_{screen_name}_Aggr_Hits.tsv"
-    df_hits_clust.to_csv(hits_clust_filename, sep='\t', index=False)
+    hits_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits.tsv"
+    df_hits_clust.to_csv(hits_filename, sep='\t', index=False)
 
     # PLOT #
-    clust_dist_filename = edits_filedir / f"cluster_{score_type}/{structureid}_{screen_name}_Aggr_Hits_List.tsv" 
-    yvals = list(hits_dict.values())
-    plot_cluster_distance(arr_d_thr, yvals, names, clust_dist_filename, edits_filedir, input_gene, screen_name, score_type, 
-                          subplots_kwargs)
+    yvals = list(columns_dict.values())
+    plot_cluster_distance(arr_d_thr, yvals, names, edits_filedir, 
+                          input_gene, screen_name, score_type, subplots_kwargs)
 
-    return arr_d_thr, yvals
+    return df_hits_clust, arr_d_thr, yvals
 
 def plot_cluster_distance(
-        x, ys, names, out_filename, edits_filedir, input_gene, screen_name, score_type, 
+        x, ys, names, edits_filedir, input_gene, screen_name, score_type, 
         subplots_kwargs={'figsize':(10,7)}, 
 ): 
     dist_dict = {'clust_dist': x}
     for n, y in zip(names, ys): 
         dist_dict[n] = y
     dist_stat = pd.DataFrame(dist_dict)
-    fig, ax = plt.subplots(**subplots_kwargs)
+    clust_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits_List.tsv" 
+    dist_stat.to_csv(clust_filename, sep = '\t', index=False)
 
+    fig, ax = plt.subplots(**subplots_kwargs)
     for n in names: 
         sns.lineplot(data=dist_stat, x="clust_dist", y=n)
 
     plt.xlabel('Cluster Radius')
     plt.ylabel('Number of Clusters')
     plt.title(f'Positive vs Negative Clusters {input_gene}')
-    plt.savefig(edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_cluster_distance.png") 
-
-    dist_stat.to_csv(out_filename, sep = '\t', index=False)
+    plot_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_cluster_distance.png"
+    plt.savefig(plot_filename, dpi=300) 
 
 
 def clustering_distance(
-        df_struc, df_pvals, 
-        thr_distance, 
-        workdir, input_gene, input_uniprot, structureid, hits_clust_filename, 
-        screen_name='', 
+        df_struc, df_pvals, df_pvals_clust, 
+        dist, 
+        workdir, input_gene, screen_name = 'Meta', score_type='LFC3D',  
         columns=[f'SUM_LFC3D_neg_psig', f'SUM_LFC3D_pos_psig'], 
         names=['negative', 'positive'], 
-        pthr_cutoff='p<0.05', score_type='LFC3D', 
+        pthr_cutoff='p<0.05', 
         clustering_kwargs = {"n_clusters": None, "metric": "euclidean", "linkage": "single", }, 
-        subplots_kwargs={'figsize':(20,15)}, 
+        subplots_kwargs={'figsize':(15, 12)}, 
 ): 
     """
     Description
@@ -191,47 +187,47 @@ def clustering_distance(
     df_hits_clust = df_pvals.copy()
     df_hits_clust[["x_coord", "y_coord", "z_coord"]] = df_struc
 
-    colnames = dict(zip(names, columns))
+    columns_dict = dict(zip(names, columns))
     # OPEN CLUSTERING FILE #
-    df_pvals_clust = pd.read_csv(edits_filedir / hits_clust_filename, sep = '\t')
 
-    for name, colname in colnames.items(): 
-        df_pvals_temp = df_hits_clust.loc[(df_pvals[colname] == pthr_cutoff), ].reset_index(drop=True)
+    for name, colname in columns_dict.items(): 
+        df_pvals_temp = df_hits_clust.loc[(df_pvals[colname].isin(pthr_cutoff)), ].reset_index(drop=True)
         
         np_META_hits_coord = np.array(df_pvals_temp[["x_coord", "y_coord", "z_coord"]]).copy()
         if np_META_hits_coord.shape[0] < 2: 
             warnings.warn(f"Not enough data to perform agglomerative clustering")
             raise None
 
-        func_clustering = AgglomerativeClustering(**clustering_kwargs, distance_threshold=thr_distance)
-
+        func_clustering = AgglomerativeClustering(**clustering_kwargs, distance_threshold=dist)
         clustering = func_clustering.fit(np_META_hits_coord)
-        clus_lbl = clustering.labels_
-        n_c_output = int(max(clus_lbl)+1)
-        print(f'Number of clusters of {name} hits: {n_c_output}')
 
-        dendogram_filename = edits_filedir / f"plots/{input_gene}_{input_uniprot}_{name}_Dendogram_{str(int(thr_distance))}A.png"
-        fig = plot_dendrogram(clustering, df_pvals_temp, dendogram_filename, name, input_gene, subplots_kwargs)
+        fig = plot_dendrogram(clustering, df_pvals_temp, edits_filedir, 
+                              name, input_gene, screen_name, score_type, dist, subplots_kwargs)
 
         # CLUSTER INDEX AND LENGTH
-        df_pvals_clust = df_pvals_clust.loc[(df_pvals_clust[colname] == pthr_cutoff), ].reset_index(drop=True)
-        clust_indices = df_pvals_clust[f'{colname}_hit_clust_{str(int(thr_distance))}'].unique()
+        df_pvals_clust = df_pvals_clust.loc[(df_pvals_clust[colname].isin(pthr_cutoff)), ].reset_index(drop=True)
+        clust_indices = df_pvals_clust[f'{colname}_Clust_{str(int(dist))}A'].unique()
 
-        for c in clust_indices: 
-            this_c_data = df_pvals_clust.loc[df_pvals_clust[f'{colname}_hit_clust_{str(int(thr_distance))}'] == c, ].reset_index(drop=True)
-            print(f'{c} : {len(this_c_data)} : ', this_c_data.at[0, 'unipos'], '-', this_c_data.at[len(this_c_data)-1, 'unipos'])
+        txt_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_{name}_Dendogram_{str(int(dist))}A.txt"
+        with open(txt_filename, "w") as f:
+            for c in clust_indices: 
+                c_data = df_pvals_clust.loc[df_pvals_clust[f'{colname}_Clust_{str(int(dist))}A'] == c, ].reset_index(drop=True)
+                all_unipos = c_data["unipos"].tolist()
+                f.write(f'{c} : {len(c_data)} : {c_data.at[0, "unipos"]} - {c_data.at[len(c_data)-1, "unipos"]}\n')
+                f.write(f'   {all_unipos}\n')
 
     return clust_indices
 
 def plot_dendrogram(
-        clustering, df, dendogram_filename, name, input_gene, 
+        clustering, df_pvals_temp, 
+        edits_filedir, name, input_gene, screen_name, score_type, dist, 
         subplots_kwargs={'figsize':(20,15)}, 
 ):
     
     fig, ax = plt.subplots(**subplots_kwargs)
-    # create the counts of samples under each node
-    counts = np.zeros(clustering.children_.shape[0])
+    counts = np.zeros(clustering.children_.shape[0]) # CREATE COUNTS OF SAMPLE
     n_samples = len(clustering.labels_)
+    
     for i, merge in enumerate(clustering.children_):
         current_count = 0
         for child_idx in merge:
@@ -243,10 +239,11 @@ def plot_dendrogram(
 
     linkage_matrix = np.column_stack(
         [clustering.children_, clustering.distances_, counts]).astype(float)
-    xlbl = list(df['unipos'])
+    xlbl = list(df_pvals_temp['unipos'])
 
     # PLOT CORRESPONDING DENDROGRAM #
     dendrogram(linkage_matrix, color_threshold=6.0, labels=xlbl, leaf_rotation=90.)
-    plt.title(f'{input_gene} {name} Clusters')
+    plt.title(f'{input_gene} {score_type} {name} Clusters')
+    dendogram_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_{score_type}_{name}_Dendogram_{str(int(dist))}A.png"
     plt.savefig(dendogram_filename, dpi=300)
     plt.show()
