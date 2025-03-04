@@ -84,3 +84,5 @@ urllib3==2.0.6
 wandb==0.16.5
 xxhash==3.4.1
 yarl==1.9.4
+dssp=2.2.1
+dsspparser==0.1.3

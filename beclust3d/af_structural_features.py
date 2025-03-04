@@ -18,6 +18,7 @@ import requests
 import json
 import time
 import shutil
+import subprocess
 
 aamap = {
     'A': {'max_asa': 129.0, 'aa3cap': 'ALA'}, 'R': {'max_asa': 247.0, 'aa3cap': 'ARG'}, 
@@ -205,6 +206,18 @@ def query_dssp(
         f.write(result)
         f.close()
         print('MKDSSP query complete.')
+
+def run_dssp(
+    edits_filedir, af_filename, dssp_filename, 
+): 
+    if not os.path.exists(edits_filedir / dssp_filename): 
+        pdb_file_path = str(edits_filedir / af_filename)
+
+        # Run the mkdssp command
+        if shutil.which('dssp') is None:
+            subprocess.run(["mkdssp", pdb_file_path, os.path.join(edits_filedir/dssp_filename)], check=True)
+        else:
+            subprocess.run(["dssp", pdb_file_path, os.path.join(edits_filedir/dssp_filename)], check=True)
 
 def parse_dssp(
         edits_filedir, 
@@ -419,7 +432,7 @@ def af_structural_features(
         if str(user_dssp) != str(dssp_filename): 
             shutil.copy2(edits_filedir / user_dssp, edits_filedir / dssp_filename)
     else: # QUERY DATABASE #
-        query_dssp(edits_filedir, af_filename, dssp_filename)
+        run_dssp(edits_filedir, af_filename, dssp_filename)
     alphafold_dssp_filename = f"{structureid}_processed.dssp"
     dssp_parsed_filename = f"{structureid}_dssp_parsed.tsv"
     parse_dssp(edits_filedir, alphafold_dssp_filename, fastalist_filename, dssp_parsed_filename)
