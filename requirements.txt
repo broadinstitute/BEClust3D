@@ -84,3 +84,5 @@ urllib3==2.0.6
 wandb==0.16.5
 xxhash==3.4.1
 yarl==1.9.4
+muscle=5.3
+clustalo=1.2.4
