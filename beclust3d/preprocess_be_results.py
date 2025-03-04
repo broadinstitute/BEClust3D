@@ -32,6 +32,7 @@ def parse_base_editing_results(
     mut_col='Mutation category', val_col='logFC', 
     gene_col='Target Gene Symbol', edits_col='Amino Acid Edits', 
     split_char = ',', 
+    conservation_map_dfs=[], df_conservation_col='mouse_res_pos', 
 ): 
     """
     Description
@@ -73,28 +74,45 @@ def parse_base_editing_results(
     if not os.path.exists(edits_filedir / 'qc_validation'):
         os.mkdir(edits_filedir / 'qc_validation')
 
+    if len(conservation_map_dfs) == 0: 
+        conservation_map_dfs = [None]*len(input_dfs)
+    assert len(conservation_map_dfs) == len(input_dfs), 'Make sure there are the same number of items in your conservation_map_dfs'
+
     mut_dfs = {}
     # OUTPUT TSV BY INDIVIDUAL SCREENS #
-    for df, screen_name in zip(input_dfs, screen_names): 
+    for df, screen_name, df_conserv in zip(input_dfs, screen_names, conservation_map_dfs): 
+        print(screen_name)
+        # IF WE LOOK AT CONSERVATION #
+        if df_conserv is not None: conserv_list = [str(x) for x in df_conserv[df_conservation_col].tolist()]
+
         # NARROW DOWN TO INPUT_GENE #
         df_gene = df.loc[df[gene_col] == input_gene, ]
         mut_dfs[screen_name] = {}
         for mut_cat in mut_categories: 
             if not mut_cat in df_gene[mut_col].unique(): 
                 warnings.warn(f'{mut_cat} not in Dataframe')
+        # df_gene[edits_col] = df_gene[edits_col].str.strip(split_char) # CLEAN MUTATIONS #
+        # df_gene[edits_col] = df_gene[edits_col].str.split(split_char) # TURN MUTATIONS INTO LIST #
+        # df_gene[val_col] = df_gene[val_col].round(3)
+        # df_gene_exploded = df_gene.explode(edits_col)
+        # df_gene_exploded[mut_col] = df_gene_exploded[edits_col].apply(lambda mut: assign_mutation(mut))
+        # df_gene_exploded.to_csv('temp_afterexpl.csv')
 
         # NARROW DOWN TO EACH MUTATION TYPE #
         for mut in mut_categories: 
 
             # IF USER WANTS TO CATEGORIZE BY ONE SINGLE MUTATION PER GUIDE OR MULTIPLE MUTATIONS PER GUIDE #
             df_mut = df_gene.loc[df_gene[mut_col] == mut, ]
+            if len(df_mut) == 0: 
+                print(f'No {mut} in {input_gene} {screen_name} data')
+                continue
             df_mut = df_mut.reset_index(drop=True)
             print(f"Count of {mut} rows: " + str(len(df_mut)))
 
             # ASSIGN position refAA altAA #
-            df_mut[edits_col] = df_mut[edits_col].str.strip(',').str.strip(';') # CLEAN
+            df_mut[edits_col] = df_mut[edits_col].str.strip(split_char) # CLEAN
             df_mut[edits_col] = df_mut[edits_col].str.split(split_char) # STR to LIST
-            df_mut[val_col] = df_mut[val_col].round(3)
+            df_mut[val_col] = df_mut[val_col]
             df_mut[edits_col] = df_mut[edits_col].apply(lambda xs: identify_mutations(xs)) # FILTER FOR MUTATIONS #
 
             df_exploded = df_mut.explode(edits_col) # EACH ROW IS A MUTATION #
@@ -104,8 +122,13 @@ def parse_base_editing_results(
             # IF 3 LETTER CODES ARE USED, TRANSLATE TO 1 LETTER CODE #
             df_exploded['refAA'] = df_exploded['refAA'].str.upper().apply(lambda x: aa_map.get(x, x))
             df_exploded['altAA'] = df_exploded['altAA'].str.upper().apply(lambda x: aa_map.get(x, x))
+
+            # REMOVE NOT PRESENT RESIDUES #
+            ### exceptions for splice and no mut without a position column
+            if df_conserv is not None and mut not in ["Splice Site", "No Mutation"]: 
+                df_exploded = df_exploded[df_exploded['edit_pos'].isin(conserv_list)]
+
             df_subset = df_exploded[[edits_col, 'edit_pos', 'refAA', 'altAA', val_col]].rename(columns={edits_col: 'this_edit', val_col: 'LFC'})
-                
 
             if mut == 'Missense': 
                 df_subset = df_subset[(df_subset['refAA'] != df_subset['altAA']) & (df_subset['altAA'] != '*')]
