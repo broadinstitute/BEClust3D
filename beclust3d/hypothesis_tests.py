@@ -14,7 +14,7 @@ mut_categories_unspaced = [mc.replace(' ','_') for mc in mut_categories_spaced]
 
 def hypothesis_tests(
     input_dfs, workdir, 
-    input_gene, screen_names, 
+    screen_names, 
     cases, controls, comp_name, 
     mut_col='Mutation category', val_col='logFC', gene_col='Target Gene Symbol', 
 ): 
@@ -99,6 +99,18 @@ def hypothesis_plot(
     df_MW_input.replace(-999, pd.NA, inplace=True)  # replace -999 with NaN
     df_MW_input[f"p_{partial_col_header}"] = df_MW_input[f"p_{partial_col_header}"].apply(negative_log_transformation)
 
+    all_handles = []
+    all_labels = []
+    # PLOT TO EXTRACT LEGEND #
+    fig_dummy, ax_dummy = plt.subplots()
+    scatter_dummy = sns.scatterplot(
+        ax=ax_dummy, data=df_MW_input, 
+        x=f"U_{partial_col_header}", y=f"p_{partial_col_header}", 
+        hue=hue_colname, palette='tab20', s=100, alpha=0.7, edgecolor='k'
+    )
+    all_handles, all_labels = ax_dummy.get_legend_handles_labels()
+    plt.close(fig_dummy)
+
     if len(category_names) == 1: axes_list = [axes[0]] # FOR ONE SCREEN #
     else: axes_list = [axes[i,0] for i in range(len(category_names))] # FOR MULTIPLE SCREEN #
 
@@ -137,7 +149,6 @@ def hypothesis_plot(
     if len(category_names) == 1: axes_list = [axes[1]] # FOR ONE SCREEN #
     else: axes_list = [axes[i,1] for i in range(len(category_names))] # FOR MULTIPLE SCREEN #
 
-    # PLOT KS #
     for ax, name in zip(axes_list, category_names):
         plot1 = sns.scatterplot(ax=ax, data=df_KS_input[df_KS_input[cat_colname]==name], 
                                 x=f"D_{partial_col_header}", y=f"p_{partial_col_header}", 
@@ -151,11 +162,10 @@ def hypothesis_plot(
         [ax.spines[side].set_visible(False) for side in ax.spines]
         ax.grid(which='major', color='white', linewidth=0.5)
         ax.set_axisbelow(True)
-
         # LABELS #
         ax.set_xlabel('KS D-Value')
         ax.set_ylabel('KS -log(P-Value)')
-    
+
     # SAVE PLOT #
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
     plt.tight_layout()
@@ -163,9 +173,11 @@ def hypothesis_plot(
     plt.savefig(edits_filedir / plot_filename, dpi=500)
 
     # CREATE SEPARATE LEGEND PLOT #
-    legend_fig, legend_ax = plt.subplots(figsize=(4, len(handles) * 0.3))
+    legend_fig, legend_ax = plt.subplots(figsize=(4, len(all_handles) * 0.3))
     legend_ax.axis('off')
-    legend_ax.legend(handles, labels, title=hue_colname, loc='center', fontsize='small', frameon=False)
+    legend_ax.legend(all_handles, all_labels, title=hue_colname, loc='center', fontsize='small', frameon=False)
+
+    # Save legend separately
     legend_filename = f"plots/hypothesis{hypothesis}_legend_by_{cat_colname}.pdf"
     legend_fig.savefig(edits_filedir / legend_filename, dpi=500)
 

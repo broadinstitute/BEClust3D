@@ -19,6 +19,7 @@ from af_structural_features import af_structural_features
 from average_split_bin_metaaggregation import metaaggregation, average_split_meta, bin_meta, znorm_meta
 from annotate_spatial_clusters import clustering, clustering_distance
 from average_split_bin_plot import average_split_bin_plots
+from hypothesis_tests import hypothesis_tests
 
 # 4 is meta aggregating over multiple screens, also an optional function
 # 6 add uniprot annotations is another good extra feature
