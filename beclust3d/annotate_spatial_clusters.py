@@ -215,6 +215,8 @@ def clustering_distance(
         with open(txt_filename, "w") as f:
             for c in clust_indices: 
                 c_data = df_pvals_clust.loc[df_pvals_clust[f'{colname}_Clust_{str(int(dist))}A'] == c, ].reset_index(drop=True)
+                if len(c_data) == 0: # IN THE CASE OF INCOMPLETE STRUCTURE DATA (PDB) SOME CLUSTERS ARE REMOVED #
+                    continue
                 all_unipos = c_data["unipos"].tolist()
                 f.write(f'{c} : {len(c_data)} : {c_data.at[0, "unipos"]} - {c_data.at[len(c_data)-1, "unipos"]}\n')
                 f.write(f'   {all_unipos}\n')
