@@ -80,6 +80,8 @@ def clustering(
         # EXTRACT ROWS ABOVE CUTOFF #
         dict_hits = {}
         df_pvals_temp = df_hits_clust.loc[(df_hits_clust[name].isin(pthr_cutoff)), ].reset_index(drop=True)
+        # REMOVE ROWS WITHOUT POSITION INFO FOR PDBs #
+        df_pvals_temp = df_pvals_temp[~df_pvals_temp[['x_coord', 'y_coord', 'z_coord']].isin(['-']).any(axis=1)]
         dict_hits['unipos'] = list(df_pvals_temp['unipos'])
 
         # EXTRACT X Y Z OF HITS ABOVE CUTOFF #
@@ -192,7 +194,8 @@ def clustering_distance(
 
     for name, colname in columns_dict.items(): 
         df_pvals_temp = df_hits_clust.loc[(df_pvals[colname].isin(pthr_cutoff)), ].reset_index(drop=True)
-        
+        df_pvals_temp = df_pvals_temp[~df_pvals_temp[['x_coord', 'y_coord', 'z_coord']].isin(['-']).any(axis=1)]
+
         np_META_hits_coord = np.array(df_pvals_temp[["x_coord", "y_coord", "z_coord"]]).copy()
         if np_META_hits_coord.shape[0] < 2: 
             warnings.warn(f"Not enough data to perform agglomerative clustering")
@@ -212,6 +215,8 @@ def clustering_distance(
         with open(txt_filename, "w") as f:
             for c in clust_indices: 
                 c_data = df_pvals_clust.loc[df_pvals_clust[f'{colname}_Clust_{str(int(dist))}A'] == c, ].reset_index(drop=True)
+                if len(c_data) == 0: # IN THE CASE OF INCOMPLETE STRUCTURE DATA (PDB) SOME CLUSTERS ARE REMOVED #
+                    continue
                 all_unipos = c_data["unipos"].tolist()
                 f.write(f'{c} : {len(c_data)} : {c_data.at[0, "unipos"]} - {c_data.at[len(c_data)-1, "unipos"]}\n')
                 f.write(f'   {all_unipos}\n')

@@ -251,6 +251,7 @@ def parse_dssp(
 
         if len(pddict_ch_entry) == 0:
             dssp_SS9, dssp_ASA, dssp_Phi, dssp_Psi, dssp_SS3 = '-', '-', '-', '-', '-'
+            norm_ASA, exposure, norm_Phi, norm_Psi = '-', '-', '-', '-'
         elif len(pddict_ch_entry) == 1:
             dssp_SS9 = pddict_ch_entry['struct'].iloc[0].strip() ###
             if dssp_SS9 == "-":               dssp_SS9 = "L"
@@ -303,14 +304,24 @@ def count_aa_within_radius(
         t_zcoord = df_coord.at[taa, "z_coord"]
 
         dis_count, naas, naas_positions = 0, [], []
+        if t_xcoord == '-' or t_ycoord == '-' or t_zcoord == '-': 
+            taa_count.append(dis_count)
+            taa_naa.append(';'.join(naas))
+            taa_naa_positions.append(';'.join(naas_positions))
+            continue
         for naa in range(len(df_coord)): 
             if taa != naa:
                 unires = df_coord.at[naa, "unires"]
                 unipos = df_coord.at[naa, "unipos"]
+                xcoord = df_coord.at[naa, "x_coord"]
+                ycoord = df_coord.at[naa, "y_coord"]
+                zcoord = df_coord.at[naa, "z_coord"]
 
-                xcoord = df_coord.at[naa, "x_coord"] - t_xcoord
-                ycoord = df_coord.at[naa, "y_coord"] - t_ycoord
-                zcoord = df_coord.at[naa, "z_coord"] - t_zcoord
+                if xcoord == '-' or ycoord == '-' or zcoord == '-': 
+                    continue
+                xcoord = float(xcoord) - float(t_xcoord)
+                ycoord = float(ycoord) - float(t_ycoord)
+                zcoord = float(zcoord) - float(t_zcoord)
                 pairwise_dist = math.sqrt((xcoord)**2 + (ycoord)**2 + (zcoord)**2)
                 if pairwise_dist <= radius: 
                     dis_count += 1
@@ -328,50 +339,58 @@ def count_aa_within_radius(
 
 def degree_of_burial(
         df_dssp, df_coord, 
-        edits_filedir, coord_dssp_filename
+        edits_filedir, coord_dssp_filename, af, 
 ): 
     """
     Description
         Calculate the degree of burial per residue with maxRSA metric
     """
 
-    maxRSA = df_dssp["RSA"].max()
-    df_dssp['dBurial'] = round(maxRSA - df_dssp["RSA"], 3)
-    df_coord_dssp = pd.merge(df_coord, df_dssp, on=["unipos", "unires"])
+    if not af: 
+        df_coord_dssp = df_coord.copy()
+        column_names = ['SS9', 'SS3', 'ACC', 'RSA', 'exposure', 'PHI', 'normPHI', 
+                        'PSI', 'normPSI', 'dBurial', 'normSumdBurial', 'pLDDT_dis']
+        for colname in column_names: 
+            df_coord_dssp[colname] = '-'
+    else: 
+        maxRSA = df_dssp["RSA"].max()
+        df_dssp['dBurial'] = round(maxRSA - df_dssp["RSA"], 3)
+        df_coord_dssp = pd.merge(df_coord, df_dssp, on=["unipos", "unires"])
 
-    # CALCULATE DEGREE OF BURIAL PER RESIDUE normSumdBurial AND CATEGORY pLDDT_dis #
-    aa_wise_cdBurial = []
-    arr_pLDDT_discrete = []
-    for i in range(len(df_coord_dssp)): 
-        taa_dBurial  = df_coord_dssp.at[i, 'dBurial']
-        naa_list     = df_coord_dssp.at[i, 'Naa'].split(';') # neighboring amino acids
-        naa_pos_list = df_coord_dssp.at[i, 'Naa_pos'].split(';') # neighboring amino acid positions
+        # CALCULATE DEGREE OF BURIAL PER RESIDUE normSumdBurial AND CATEGORY pLDDT_dis #
+        aa_wise_cdBurial = []
+        arr_pLDDT_discrete = []
+        for i in range(len(df_coord_dssp)): 
+            taa_dBurial  = df_coord_dssp.at[i, 'dBurial']
+            naa_list     = df_coord_dssp.at[i, 'Naa'].split(';') # neighboring amino acids
+            naa_pos_list = df_coord_dssp.at[i, 'Naa_pos'].split(';') # neighboring amino acid positions
 
-        # CALCULATE #
-        sum_dBurial = 0
-        for naa_pos in naa_pos_list: 
-            if naa_pos != '': 
-                sum_dBurial += round(df_coord_dssp.at[int(naa_pos)-1, "dBurial"], 2)
-        norm_sum_dBurial = round(sum_dBurial / len(naa_list), 2)
-        aa_wise_cdBurial.append(round(norm_sum_dBurial * taa_dBurial, 3))
+            # CALCULATE #
+            sum_dBurial = 0
+            for naa_pos in naa_pos_list: 
+                if naa_pos != '': 
+                    sum_dBurial += round(df_coord_dssp.at[int(naa_pos)-1, "dBurial"], 2)
+            norm_sum_dBurial = round(sum_dBurial / len(naa_list), 2)
+            aa_wise_cdBurial.append(round(norm_sum_dBurial * taa_dBurial, 3))
 
-        # CATEGORIZE #
-        pLDDT = df_coord_dssp.at[i, 'bfactor_pLDDT']
-        if         pLDDT < 50:  pLDDT_discrete = 'very low'
-        elif 50 <= pLDDT < 70:  pLDDT_discrete = 'low'
-        elif 70 <= pLDDT < 90:  pLDDT_discrete = 'confident'
-        else:                   pLDDT_discrete = 'high'
-        arr_pLDDT_discrete.append(pLDDT_discrete)
+            # CATEGORIZE #
+            pLDDT = df_coord_dssp.at[i, 'bfactor_pLDDT']
+            if         pLDDT < 50:  pLDDT_discrete = 'very low'
+            elif 50 <= pLDDT < 70:  pLDDT_discrete = 'low'
+            elif 70 <= pLDDT < 90:  pLDDT_discrete = 'confident'
+            else:                   pLDDT_discrete = 'high'
+            arr_pLDDT_discrete.append(pLDDT_discrete)
 
-    df_coord_dssp['normSumdBurial'] = aa_wise_cdBurial
-    df_coord_dssp['pLDDT_dis'] = arr_pLDDT_discrete
+        df_coord_dssp['normSumdBurial'] = aa_wise_cdBurial
+        df_coord_dssp['pLDDT_dis'] = arr_pLDDT_discrete
+
     df_coord_dssp.to_csv(edits_filedir / coord_dssp_filename, sep="\t", index=False)
     return df_coord_dssp
 
 def af_structural_features(
         workdir, 
         input_gene, input_uniprot, structureid, radius=6.0, 
-        user_uniprot='', user_pdb='', user_dssp='', 
+        user_uniprot='', user_pdb='', user_dssp='', af=True, 
 ): 
     """
     Description
@@ -439,8 +458,7 @@ def af_structural_features(
 
     df_dssp = pd.read_csv(edits_filedir / dssp_parsed_filename, sep = '\t')
     df_coord = count_aa_within_radius(edits_filedir, coord_filename, radius=radius)
-    df_coord = count_aa_within_radius(edits_filedir, coord_filename, radius=radius)
 
     coord_dssp_filename = f"{structureid}_coord_struc_features.tsv"
-    df_coord_dssp = degree_of_burial(df_dssp, df_coord, edits_filedir, coord_dssp_filename)
+    df_coord_dssp = degree_of_burial(df_dssp, df_coord, edits_filedir, coord_dssp_filename, af)
     return df_coord_dssp
