@@ -205,7 +205,7 @@ def clustering_distance(
     # OPEN CLUSTERING FILE #
 
     for name, colname in columns_dict.items(): 
-        df_pvals_temp = df_hits_clust.loc[(df_pvals[colname].isin(pthr_cutoff)), ].reset_index(drop=True)
+        df_pvals_temp = df_hits_clust.loc[(df_hits_clust[colname].isin(pthr_cutoff)), ].reset_index(drop=True)
         df_pvals_temp = df_pvals_temp[~df_pvals_temp[['x_coord', 'y_coord', 'z_coord']].isin(['-']).any(axis=1)]
 
         np_META_hits_coord = np.array(df_pvals_temp[["x_coord", "y_coord", "z_coord"]]).copy()
