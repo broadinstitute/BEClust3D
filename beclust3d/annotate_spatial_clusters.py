@@ -22,7 +22,7 @@ def clustering(
         workdir, input_gene, screen_name = 'Meta', 
         columns=[f'SUM_LFC3D_neg_psig', f'SUM_LFC3D_pos_psig'], 
         names=['negative', 'positive'], 
-        max_distances=20, pthr_cutoff=['p<0.05'], score_type='LFC3D', 
+        max_distances=20, pthr_cutoff=['p<0.05'], score_type='LFC3D', merge_col='unipos',
 
         clustering_kwargs = {"n_clusters": None, "metric": "euclidean", "linkage": "single", }, 
         subplots_kwargs={'figsize':(10,7)}, 
@@ -69,7 +69,13 @@ def clustering(
         os.mkdir(edits_filedir / f'cluster_{score_type}')
 
     df_hits_clust = df_pvals.copy()
-    df_hits_clust[["x_coord", "y_coord", "z_coord"]] = df_struc
+    if len(df_struc.columns) == 3: 
+        df_hits_clust[["x_coord", "y_coord", "z_coord"]] = df_struc
+    elif len(df_struc.columns) == 4: 
+        df_hits_clust = pd.merge(df_hits_clust, df_struc, on=merge_col, how='left') 
+        df_hits_clust = df_hits_clust.rename(columns=dict(zip(df_struc.columns, ['x_coord', 'y_coord', 'z_coord'])))
+    else: 
+        warnings.warn("df_struc must have 3 or 4 columns")
 
     # CLUSTERING #
     arr_d_thr = [float(i+1) for i in range(max_distances)] # CLUSTERING DISTANCE HYPERPARAM
@@ -82,7 +88,7 @@ def clustering(
         df_pvals_temp = df_hits_clust.loc[(df_hits_clust[name].isin(pthr_cutoff)), ].reset_index(drop=True)
         # REMOVE ROWS WITHOUT POSITION INFO FOR PDBs #
         df_pvals_temp = df_pvals_temp[~df_pvals_temp[['x_coord', 'y_coord', 'z_coord']].isin(['-']).any(axis=1)]
-        dict_hits['unipos'] = list(df_pvals_temp['unipos'])
+        dict_hits[merge_col] = list(df_pvals_temp[merge_col])
 
         # EXTRACT X Y Z OF HITS ABOVE CUTOFF #
         np_META_hits_coord = np.array(df_pvals_temp[['x_coord', 'y_coord', 'z_coord']].copy())
@@ -100,7 +106,7 @@ def clustering(
             arr.append(n_c_output)
 
             dict_hits[f"{name}_Clust_{str(int(dist))}A"] = clus_lbl
-        df_hits_clust = df_hits_clust.merge(pd.DataFrame(dict_hits), how='left', on=['unipos'])
+        df_hits_clust = df_hits_clust.merge(pd.DataFrame(dict_hits), how='left', on=[merge_col])
 
     df_hits_clust.fillna('-')
     hits_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits.tsv"
@@ -141,9 +147,9 @@ def clustering_distance(
         workdir, input_gene, screen_name = 'Meta', score_type='LFC3D',  
         columns=[f'SUM_LFC3D_neg_psig', f'SUM_LFC3D_pos_psig'], 
         names=['negative', 'positive'], 
-        pthr_cutoff='p<0.05', 
+        pthr_cutoff='p<0.05', merge_col='unipos', 
         clustering_kwargs = {"n_clusters": None, "metric": "euclidean", "linkage": "single", }, 
-        subplots_kwargs={'figsize':(15, 12)}, 
+        subplots_kwargs={'figsize':(15, 12)}, horizontal=False, 
 ): 
     """
     Description
@@ -187,7 +193,13 @@ def clustering_distance(
         os.mkdir(edits_filedir / 'plots')
 
     df_hits_clust = df_pvals.copy()
-    df_hits_clust[["x_coord", "y_coord", "z_coord"]] = df_struc
+    if len(df_struc.columns) == 3: 
+        df_hits_clust[["x_coord", "y_coord", "z_coord"]] = df_struc
+    elif len(df_struc.columns) == 4: 
+        df_hits_clust = pd.merge(df_hits_clust, df_struc, on=merge_col, how='left') 
+        df_hits_clust = df_hits_clust.rename(columns=dict(zip(df_struc.columns, ['x_coord', 'y_coord', 'z_coord'])))
+    else: 
+        warnings.warn("df_struc must have 3 or 4 columns")
 
     columns_dict = dict(zip(names, columns))
     # OPEN CLUSTERING FILE #
@@ -204,8 +216,8 @@ def clustering_distance(
         func_clustering = AgglomerativeClustering(**clustering_kwargs, distance_threshold=dist)
         clustering = func_clustering.fit(np_META_hits_coord)
 
-        fig = plot_dendrogram(clustering, df_pvals_temp, edits_filedir, 
-                              name, input_gene, screen_name, score_type, dist, subplots_kwargs)
+        fig = plot_dendrogram(clustering, df_pvals_temp, edits_filedir, name, input_gene, 
+                              screen_name, score_type, dist, merge_col, horizontal, subplots_kwargs)
 
         # CLUSTER INDEX AND LENGTH
         df_pvals_clust = df_pvals_clust.loc[(df_pvals_clust[colname].isin(pthr_cutoff)), ].reset_index(drop=True)
@@ -217,15 +229,16 @@ def clustering_distance(
                 c_data = df_pvals_clust.loc[df_pvals_clust[f'{colname}_Clust_{str(int(dist))}A'] == c, ].reset_index(drop=True)
                 if len(c_data) == 0: # IN THE CASE OF INCOMPLETE STRUCTURE DATA (PDB) SOME CLUSTERS ARE REMOVED #
                     continue
-                all_unipos = c_data["unipos"].tolist()
-                f.write(f'{c} : {len(c_data)} : {c_data.at[0, "unipos"]} - {c_data.at[len(c_data)-1, "unipos"]}\n')
+                all_unipos = c_data[merge_col].tolist()
+                f.write(f'{c} : {len(c_data)} : {c_data.at[0, merge_col]} - {c_data.at[len(c_data)-1, merge_col]}\n')
                 f.write(f'   {all_unipos}\n')
 
     return clust_indices
 
 def plot_dendrogram(
         clustering, df_pvals_temp, 
-        edits_filedir, name, input_gene, screen_name, score_type, dist, 
+        edits_filedir, name, input_gene, screen_name, 
+        score_type, dist, merge_col, horizontal, 
         subplots_kwargs={'figsize':(20,15)}, 
 ):
     
@@ -244,10 +257,13 @@ def plot_dendrogram(
 
     linkage_matrix = np.column_stack(
         [clustering.children_, clustering.distances_, counts]).astype(float)
-    xlbl = list(df_pvals_temp['unipos'])
+    xlbl = list(df_pvals_temp[merge_col])
 
     # PLOT CORRESPONDING DENDROGRAM #
-    dendrogram(linkage_matrix, color_threshold=6.0, labels=xlbl, leaf_rotation=90.)
+    if horizontal: 
+        dendrogram(linkage_matrix, color_threshold=6.0, labels=xlbl, orientation='right')
+    else: 
+        dendrogram(linkage_matrix, color_threshold=6.0, labels=xlbl, leaf_rotation=90.)
     plt.title(f'{input_gene} {score_type} {name} Clusters')
     dendogram_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_{score_type}_{name}_Dendogram_{str(int(dist))}A.png"
     plt.savefig(dendogram_filename, dpi=300)
