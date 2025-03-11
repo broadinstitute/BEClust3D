@@ -146,7 +146,7 @@ def RSA_vs_pLDDT_barplot(df_filtered, gene_name, plot_name):
     plt.title(f"{gene_name} RSA vs. pLDDT Scatterplot")
     plt.savefig(plot_name, dpi=300)
 
-def hits_vs_feature_barplot(df_filtered, xcolumn, xname, gene_name, plot_name):
+def hits_vs_feature_barplot(df_filtered, xcolumn, xname, gene_name, plot_name, type='count'):
     """
     Description
         Generate hit count barplot for specified feature (ex. RSA, pLDDT, Domain, etc.)
@@ -162,12 +162,40 @@ def hits_vs_feature_barplot(df_filtered, xcolumn, xname, gene_name, plot_name):
             Gene name
         plot_name: str
             Plot name to be saved in plots folder
+        type: str, optional
+            Type of plot: 'count' for direct hit counts, 'fraction' for fraction percentages (default: 'count')
     """
     plt.figure(figsize=(10, 6))
-    sns.countplot(data=df_filtered, x=xcolumn, hue='dir', palette={'NEG': 'darkred', 'POS': 'darkblue'})
+
+    if type == 'fraction':
+        # Calculate total counts of POS and NEG across the entire dataset
+        total_pos = df_filtered[df_filtered['dir'] == 'POS'].shape[0]
+        total_neg = df_filtered[df_filtered['dir'] == 'NEG'].shape[0]
+
+        # Create a DataFrame with the original counts for each xcolumn category and dir
+        count_data = df_filtered.groupby([xcolumn, 'dir']).size().unstack(fill_value=0).reset_index()
+
+        # Calculate fractions for POS and NEG independently (normalize so each sums to 100%)
+        if total_pos > 0:
+            count_data['POS'] = (count_data['POS'] / total_pos) * 100
+        if total_neg > 0:
+            count_data['NEG'] = (count_data['NEG'] / total_neg) * 100
+
+        # Melt the DataFrame to a long format for plotting
+        fraction_data_melted = count_data.melt(id_vars=xcolumn, value_vars=['POS', 'NEG'], 
+                                               var_name='dir', value_name='fraction')
+
+        # Plot the fractions
+        sns.barplot(data=fraction_data_melted, x=xcolumn, y='fraction', hue='dir', 
+                    palette={'NEG': 'darkred', 'POS': 'darkblue'})
+        plt.ylabel('Fraction of Hits (%)')
+    else:
+        # Count plot
+        sns.countplot(data=df_filtered, x=xcolumn, hue='dir', 
+                      palette={'NEG': 'darkred', 'POS': 'darkblue'})
+        plt.ylabel('Count of Hits')
 
     plt.xlabel(xname)
-    plt.ylabel('Count of Hits')
     plt.title(f"{gene_name} {xname} Hit Count Barplot")
     plt.legend(title='dir')
     plt.savefig(plot_name)
