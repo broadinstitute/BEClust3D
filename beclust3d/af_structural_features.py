@@ -135,32 +135,37 @@ def parse_coord(
     atom_df = alphafold_pdb.df['ATOM']
     fasta_df = pd.read_csv(edits_filedir / fastalist_filename, sep = '\t')
     coord_file = open(edits_filedir / coord_filename, 'w')
-    coord_file.write('\t'.join(['unipos', 'unires', 'x_coord', 'y_coord', 'z_coord', 'bfactor_pLDDT']) + '\n')
+    coord_file.write('\t'.join(['unipos', 'unires', 'x_coord', 'y_coord', 'z_coord', 'chain', 'bfactor_pLDDT']) + '\n')
 
     # PARSE OUT X Y Z B DATA FROM PROCESSED FASTA, PROCESSED AF #
     output_data = []
+    unipos_dict = fasta_df['unipos'].to_dict()
+    uniaa_dict = fasta_df['unires'].to_dict()
+    
     for i in range(0, len(fasta_df)):
-        unipos = fasta_df.at[i, 'unipos'] ### not fast, dict better
-        uniaa = fasta_df.at[i, 'unires'] ### not fast, dict better
+        unipos = unipos_dict[i]
+        uniaa = uniaa_dict[i]
         residue_entry = atom_df.loc[atom_df['residue_number'] == int(unipos), ] ###
         ca_entry = residue_entry.loc[residue_entry['atom_name'] == "CA", ] ###
 
         if len(ca_entry) == 0: 
             x_coord, y_coord, z_coord, b_factor = "-", "-", "-", "-"
         elif len(ca_entry) == 1: 
-            aa_at_ca = ca_entry['residue_name'].iloc[0] ###
+            aa_at_ca = ca_entry['residue_name'].iloc[0]
             uni_res = aamap[str(uniaa)]['aa3cap']
             if aa_at_ca == uni_res: 
                 x_coord  = round(float(ca_entry['x_coord'].iloc[0]), 3)
                 y_coord  = round(float(ca_entry['y_coord'].iloc[0]), 3)
                 z_coord  = round(float(ca_entry['z_coord'].iloc[0]), 3)
+                chain_id  = ca_entry['chain_id'].iloc[0]
                 b_factor = round(float(ca_entry['b_factor'].iloc[0]), 3)
             else: 
                 warnings.warn(f"residue mismatch {aa_at_ca}: {uni_res}")
         elif len(ca_entry) > 1: 
-            warnings.warn("PROBLEM - CHECK") ###
+            warnings.warn("PROBLEM - CHECK")
 
-        output_data_entry = '\t'.join([str(unipos), str(uniaa), str(x_coord), str(y_coord), str(z_coord), str(b_factor)])+'\n'
+        output_data_entry = '\t'.join([str(unipos), str(uniaa), str(x_coord), str(y_coord), str(z_coord), 
+                                       str(chain_id), str(b_factor)])+'\n'
         output_data.append(output_data_entry)
 
     del alphafold_pdb, atom_df, fasta_df
@@ -244,9 +249,12 @@ def parse_dssp(
                                       'exposure', 'PHI', 'normPHI', 'PSI', 'normPSI']) + '\n')
     
     output_data = []
+    unipos_dict = fasta_df['unipos'].to_dict()
+    uniaa_dict = fasta_df['unires'].to_dict()
+
     for i in range(len(fasta_df)): 
-        unipos = fasta_df.at[i, 'unipos'] ###
-        uniaa = fasta_df.at[i, 'unires'] ###
+        unipos = unipos_dict[i]
+        uniaa = uniaa_dict[i]
         pddict_ch_entry = pddict_ch.loc[pddict_ch['inscode'] == str(unipos), ] ###
 
         if len(pddict_ch_entry) == 0:
@@ -360,10 +368,15 @@ def degree_of_burial(
         # CALCULATE DEGREE OF BURIAL PER RESIDUE normSumdBurial AND CATEGORY pLDDT_dis #
         aa_wise_cdBurial = []
         arr_pLDDT_discrete = []
+        taa_dBurial_dict = df_coord_dssp['dBurial']
+        naa_list_dict = df_coord_dssp['Naa']
+        naa_pos_list_dict = df_coord_dssp['Naa_pos']
+        pLDDT_dict = df_coord_dssp['bfactor_pLDDT']
+
         for i in range(len(df_coord_dssp)): 
-            taa_dBurial  = df_coord_dssp.at[i, 'dBurial']
-            naa_list     = df_coord_dssp.at[i, 'Naa'].split(';') # neighboring amino acids
-            naa_pos_list = df_coord_dssp.at[i, 'Naa_pos'].split(';') # neighboring amino acid positions
+            taa_dBurial  = taa_dBurial_dict[i]
+            naa_list     = naa_list_dict[i].split(';') # neighboring amino acids
+            naa_pos_list = naa_pos_list_dict[i].split(';')
 
             # CALCULATE #
             sum_dBurial = 0
@@ -374,7 +387,7 @@ def degree_of_burial(
             aa_wise_cdBurial.append(round(norm_sum_dBurial * taa_dBurial, 3))
 
             # CATEGORIZE #
-            pLDDT = df_coord_dssp.at[i, 'bfactor_pLDDT']
+            pLDDT = pLDDT_dict[i]
             if         pLDDT < 50:  pLDDT_discrete = 'very low'
             elif 50 <= pLDDT < 70:  pLDDT_discrete = 'low'
             elif 70 <= pLDDT < 90:  pLDDT_discrete = 'confident'
