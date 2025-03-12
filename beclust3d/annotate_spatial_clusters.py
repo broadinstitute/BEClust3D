@@ -215,7 +215,8 @@ def clustering_distance(
         clustering = func_clustering.fit(np_META_hits_coord)
 
         fig = plot_dendrogram(clustering, df_pvals_temp, edits_filedir, 
-                              name, input_gene, screen_name, score_type, dist, horizontal, subplots_kwargs)
+                              name, input_gene, screen_name, score_type, 
+                              dist, horizontal, merge_col, subplots_kwargs)
 
         # CLUSTER INDEX AND LENGTH
         df_pvals_clust_i = df_pvals_clust.loc[(df_pvals_clust[colname].isin(pthr_cutoff)), ].reset_index(drop=True)
@@ -235,7 +236,8 @@ def clustering_distance(
 
 def plot_dendrogram(
         clustering, df_pvals_temp, 
-        edits_filedir, name, input_gene, screen_name, score_type, dist, horizontal, 
+        edits_filedir, name, input_gene, screen_name, score_type, 
+        dist, horizontal, merge_col, 
         subplots_kwargs={'figsize':(20,15)}, 
 ):
     
@@ -254,7 +256,7 @@ def plot_dendrogram(
 
     linkage_matrix = np.column_stack(
         [clustering.children_, clustering.distances_, counts]).astype(float)
-    xlbl = list(df_pvals_temp['unipos'])
+    xlbl = list(df_pvals_temp[merge_col])
 
     # PLOT CORRESPONDING DENDROGRAM #
     if horizontal: dendrogram(linkage_matrix, color_threshold=6.0, labels=xlbl, orientation='right')
