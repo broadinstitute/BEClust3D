@@ -360,7 +360,7 @@ def bin_meta(
 
 def znorm_meta(
     df_bidir_meta, df_neg_stats, df_pos_stats, 
-    workdir, input_gene, 
+    workdir, input_gene, nRandom=1000, 
     pthrs=[0.05, 0.01, 0.001], score_type='LFC3D', aggr_func_name='SUM', 
 ): 
     """
@@ -427,7 +427,7 @@ def znorm_meta(
 
     df_meta_Z = pd.concat([df_bidir_meta, pd.DataFrame(result_data).replace(0,'-')], axis=1)
     # DROP ALL RANDOMIZATIONS #
-    drop_cols = [col for col in df_meta_Z.columns if 'LFCr' in col or 'LFC3Dr' in col]
+    drop_cols = [f'{aggr_func_name}_{score_type}r{str(i+1)}_neg' for i in range(nRandom)] + [f'{aggr_func_name}_{score_type}r{str(i+1)}_pos' for i in range(nRandom)]
     df_meta_Z = df_meta_Z.drop(columns=drop_cols)
 
     filename = edits_filedir / f"metaaggregation/{input_gene}_MetaAggr_{score_type}.tsv"
