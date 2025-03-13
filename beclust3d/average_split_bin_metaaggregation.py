@@ -426,7 +426,9 @@ def znorm_meta(
                 result_data[f'{header_main}_{sign}_{pthr_str}_psig'].append(signal_plabel)
 
     df_meta_Z = pd.concat([df_bidir_meta, pd.DataFrame(result_data).replace(0,'-')], axis=1)
-    df_meta_Z = df_meta_Z
+    # DROP ALL RANDOMIZATIONS #
+    drop_cols = [col for col in df_meta_Z.columns if 'LFCr' in col or 'LFC3Dr' in col]
+    df_meta_Z = df_meta_Z.drop(columns=drop_cols)
 
     filename = edits_filedir / f"metaaggregation/{input_gene}_MetaAggr_{score_type}.tsv"
     df_meta_Z.to_csv(filename, "\t", index=False)
