@@ -21,6 +21,7 @@ from annotate_spatial_clusters import clustering, clustering_distance
 from average_split_bin_plot import average_split_bin_plots
 from hypothesis_tests import hypothesis_tests
 from characterization_plots import RSA_vs_pLDDT_scatter, lfc_vs_lfc3d_scatterplot, hits_feature_barplot
+from characterization import enrichment_test, fetch_uniprot_domains
 
 # 4 is meta aggregating over multiple screens, also an optional function
 # 6 add uniprot annotations is another good extra feature

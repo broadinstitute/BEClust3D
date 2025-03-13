@@ -344,6 +344,7 @@ def plot_enrichment_test(results, pthr, input_gene, labels):
     ax.set_title(f'{input_gene} Enrichment Test Odds Ratios')
     plt.tight_layout()
     plt.show()
+    # plt.savefig()
 
 import requests
 import csv
