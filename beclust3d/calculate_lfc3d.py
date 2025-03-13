@@ -78,8 +78,8 @@ def calculate_lfc3d(
             df_struct_3d = pd.concat([df_struct_3d, pd.DataFrame({f"{screen_name}_LFC3D": taa_wise_norm_LFC})], axis=1)
             del df_struc_edits_dict, taa_wise_norm_LFC
         
-        df_struct_3d[f"{screen_name}_LFC"] = df_struc_edits[f'{function_type}_{mut}_LFC']
-        df_struct_3d[f"{screen_name}_LFC_Z"] = df_struc_edits[f'{function_type}_{mut}_LFC_Z']
+        # df_struct_3d[f"{screen_name}_LFC"] = df_struc_edits[f'{function_type}_{mut}_LFC'] # duplicate LFC
+        # df_struct_3d[f"{screen_name}_LFC_Z"] = df_struc_edits[f'{function_type}_{mut}_LFC_Z'] # duplicate LFC-Z
 
         df_struct_3d = pd.concat([df_struct_3d, 
                                   df_struc_edits[[f'{function_type}_{mut}_LFC']].rename(
