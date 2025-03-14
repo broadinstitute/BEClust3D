@@ -141,8 +141,8 @@ def high_vs_low_pLDDT(data, pthr, domain_labels):
             Confidence interval
     """
     
-    below = data[data['mean_Missense_LFC_Z'] < pthr]
-    above = data[data['mean_Missense_LFC_Z'] >= pthr]
+    below = data[data['mean_Missense_LFC_p'] < pthr]
+    above = data[data['mean_Missense_LFC_p'] >= pthr]
     table = np.array([
         [len(below[below['pLDDT_dis'].isin(domain_labels['in'])]),
             len(below[below['pLDDT_dis'].isin(domain_labels['out'])])],
@@ -175,8 +175,8 @@ def inside_vs_outside_domain(data, pthr):
             Confidence interval
     """
 
-    below = data[data['mean_Missense_LFC_Z'] < pthr].reset_index(drop=True)
-    above = data[data['mean_Missense_LFC_Z'] >= pthr].reset_index(drop=True)
+    below = data[data['mean_Missense_LFC_p'] < pthr].reset_index(drop=True)
+    above = data[data['mean_Missense_LFC_p'] >= pthr].reset_index(drop=True)
     below_in_domain = below[below['domain'] != '-']
     below_out_domain = below[below['domain'] == '-']
     above_in_domain = above[above['domain'] != '-']
