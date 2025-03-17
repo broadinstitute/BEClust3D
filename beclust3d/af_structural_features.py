@@ -149,7 +149,7 @@ def parse_coord(
         ca_entry = residue_entry.loc[residue_entry['atom_name'] == "CA", ] ###
 
         if len(ca_entry) == 0: 
-            x_coord, y_coord, z_coord, b_factor = "-", "-", "-", "-"
+            x_coord, y_coord, z_coord, chain_id, b_factor = "-", "-", "-", "-", "-"
         elif len(ca_entry) == 1: 
             aa_at_ca = ca_entry['residue_name'].iloc[0]
             uni_res = aamap[str(uniaa)]['aa3cap']
