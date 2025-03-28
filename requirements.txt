@@ -80,7 +80,7 @@ transformers==4.39.2
 typing_extensions==4.9.0
 tzdata==2023.3
 ucimlrepo==0.0.2
-urllib3==2.0.6
+urllib3==2.2.2
 wandb==0.16.5
 xxhash==3.4.1
 yarl==1.9.4
