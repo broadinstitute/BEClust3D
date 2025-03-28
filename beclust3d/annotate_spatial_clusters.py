@@ -259,8 +259,8 @@ def plot_dendrogram(
     xlbl = list(df_pvals_temp[merge_col])
 
     # PLOT CORRESPONDING DENDROGRAM #
-    if horizontal: dendrogram(linkage_matrix, color_threshold=6.0, labels=xlbl, orientation='right')
-    else: dendrogram(linkage_matrix, color_threshold=6.0, labels=xlbl, leaf_rotation=90.)
+    if horizontal: dendrogram(linkage_matrix, color_threshold=dist, labels=xlbl, orientation='right')
+    else: dendrogram(linkage_matrix, color_threshold=dist, labels=xlbl, leaf_rotation=90.)
     plt.title(f'{input_gene} {score_type} {name} Clusters')
     dendogram_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_{score_type}_{name}_Dendogram_{str(int(dist))}A.png"
     plt.savefig(dendogram_filename, dpi=300)
