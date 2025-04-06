@@ -81,7 +81,7 @@ def clustering(
     column_lists = [[] for _ in columns]
     columns_dict = dict(zip(columns, column_lists)) # FOR EVERY DATA COLUMN TO CLUSTER
     
-    for name, arr in columns_dict.items(): 
+    for i, (name, arr) in enumerate(columns_dict.items()): 
         # EXTRACT ROWS ABOVE CUTOFF #
         dict_hits = {}
         df_pvals_temp = df_hits_clust.loc[(df_hits_clust[name].isin(pthr_cutoff)), ].reset_index(drop=True)
@@ -93,6 +93,7 @@ def clustering(
         np_META_hits_coord = np.array(df_pvals_temp[['x_coord', 'y_coord', 'z_coord']].copy())
         if np_META_hits_coord.shape[0] < 2: # NO DATA TO CLUSTER ON #
             warnings.warn(f"Not enough data to perform agglomerative clustering")
+            names[i] = None
             continue
 
         # FOR RANGE OF RADIUS, RUN CLUSTERING #
@@ -112,6 +113,7 @@ def clustering(
     df_hits_clust.to_csv(hits_filename, sep='\t', index=False)
 
     # PLOT #
+    names = [n for n in names if n is not None]
     yvals = list(columns_dict.values())
     plot_cluster_distance(arr_d_thr, yvals, names, edits_filedir, 
                           input_gene, screen_name, score_type, subplots_kwargs)
