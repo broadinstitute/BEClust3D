@@ -240,6 +240,7 @@ def hypothesis_two(
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('U_', 'p_')])
     if testtype == 'KolmogorovSmirnov': 
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('D_', 'p_')])
+    col_names.extend(['num_of_cases','num_of_controls'])
 
     df_output = pd.DataFrame(columns=col_names)
     df_control = pd.DataFrame()
@@ -264,7 +265,8 @@ def hypothesis_two(
             df_case = pd.DataFrame()
             for case in cases: 
                 df_case = pd.concat([df_case, df_edits.loc[df_edits[mut_col]==case].reset_index(drop=True)])
-            new_row.extend(add_to_row(df_case, df_control, val_col, testtype))
+            new_row.extend(add_to_row(df_case, df_control, val_col, testtype, gene_col, current_gene))
+            new_row.extend([len(df_case),len(df_control)])
             
             # ADD NEW ROW #
             df_output.loc[len(df_output)] = new_row
