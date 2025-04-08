@@ -67,8 +67,11 @@ def hypothesis_tests(
 
 
 def add_to_row(
-    df1, df2, val_col, function
+    df1, df2, val_col, function, gene_col, gene_name
 ): 
+    df1 = df1[df1[gene_col] == gene_name]
+    df2 = df2[df2[gene_col] == gene_name]
+
     if len(df1) > 0 and len(df2) > 0: 
         if function == 'KolmogorovSmirnov': 
             U1, p = ks_2samp(df1[val_col], df2[val_col])
