@@ -22,7 +22,7 @@ def get_plabel(z_LFC, direction):
     if direction == 'negative': 
         thresholds = [(-3.09,'-p=0.001'), (-2.32,'-p=0.01'), (-1.64,'-p=0.05'), (-1.28,'-p=0.1'), (-0.52,'-p=0.3')] 
     else: 
-        thresholds = [(3.09,'+p=0.001'), (2.58,'+p=0.01'), (1.96,'+p=0.05'), (1.65,'+p=0.1'), (1.0,'+p=0.3')]
+        thresholds = [(3.09,'+p=0.001'), (2.32,'+p=0.01'), (1.64,'+p=0.05'), (1.28,'+p=0.1'), (0.52,'+p=0.3')]
     for threshold, label in thresholds:
         if (direction == 'negative' and z_LFC < threshold) or (direction == 'positive' and z_LFC > threshold):
             return label
@@ -164,6 +164,8 @@ def prioritize_by_sequence(
         df_protein[f'{function_name}_{mut}_LFC_Z'] = list_z_LFC
         df_protein[f'{function_name}_{mut}_LFC_p'] = list_p_LFC
         df_protein[f'{function_name}_{mut}_LFC_plab'] = list_plab_LFC
+        df_protein[f'{function_name}_{mut}_LFC_neg_psig'] = df_protein.apply(lambda row: row[f'{function_name}_{mut}_LFC_plab'][1:] if row[f'{function_name}_{mut}_LFC_plab'].startswith('-') else '-',axis=1)
+        df_protein[f'{function_name}_{mut}_LFC_pos_psig'] = df_protein.apply(lambda row: row[f'{function_name}_{mut}_LFC_plab'][1:] if row[f'{function_name}_{mut}_LFC_plab'].startswith('+') else '-',axis=1)
         del list_z_LFC, list_p_LFC, list_plab_LFC
 
     strcons_edits_filename = f"screendata/{input_gene}_{screen_name}_proteinedits.tsv"
