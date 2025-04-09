@@ -46,9 +46,9 @@ def hypothesis_tests(
                                   screen_names, gene_col, mut_col, val_col, testtype='MannWhitney')
     df_KS1_input = hypothesis_one(input_dfs, unique_genes, edits_filedir, cases, controls, comp_name, 
                                   screen_names, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
-    hypothesis_plot(edits_filedir, screen_names, 'screenid', 'gene_name', 
+    hypothesis_plot(edits_filedir, screen_names, 'screenid', 'gene_name',  # This gives hypothesis1_scatterplot_by_screenid.png (this only works for a single screen but others)
                     testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1')
-    if len(screen_names) > 1:
+    if len(screen_names) > 1: # This gives hypothesis1_scatterplot_by_gene_name.png
         hypothesis_plot(edits_filedir, unique_genes, 'gene_name', 'screenid', 
                         testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1')
     # MW AND KS TESTS HYPOTHESIS 2 #
@@ -56,10 +56,10 @@ def hypothesis_tests(
                                   screen_names, gene_col, mut_col, val_col, testtype='MannWhitney')
     df_KS2_input = hypothesis_two(input_dfs, unique_genes, edits_filedir, cases, controls, comp_name, 
                                   screen_names, gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
-    hypothesis_plot(edits_filedir, screen_names, 'screenid', 'gene_name', 
+    hypothesis_plot(edits_filedir, screen_names, 'screenid', 'gene_name', # This gives hypothesis2_scatterplot_by_screenid.png
                     testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')
 
-    if len(screen_names) > 1:
+    if len(screen_names) > 1:  # This gives hypothesis2_scatterplot_by_gene_name.png
         hypothesis_plot(edits_filedir, unique_genes, 'gene_name', 'screenid', 
                         testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2')
         
@@ -172,8 +172,8 @@ def hypothesis_plot(
     # SAVE PLOT #
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
     plt.tight_layout()
-    plot_filename = f"plots/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.pdf"
-    plt.savefig(edits_filedir / plot_filename, dpi=500)
+    plot_filename = f"qc_validation/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.png"
+    plt.savefig(edits_filedir / plot_filename, dpi=300)
 
     # CREATE SEPARATE LEGEND PLOT #
     legend_fig, legend_ax = plt.subplots(figsize=(4, len(all_handles) * 0.3))
@@ -181,7 +181,7 @@ def hypothesis_plot(
     legend_ax.legend(all_handles, all_labels, title=hue_colname, loc='center', fontsize='small', frameon=False)
 
     # Save legend separately
-    legend_filename = f"plots/hypothesis{hypothesis}_legend_by_{cat_colname}.pdf"
+    legend_filename = f"qc_validation/hypothesis{hypothesis}_legend_by_{cat_colname}.png"
     legend_fig.savefig(edits_filedir / legend_filename, dpi=500)
 
 
@@ -199,14 +199,13 @@ def hypothesis_one(
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('U_', 'p_')])
     if testtype == 'KolmogorovSmirnov': 
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('D_', 'p_')])
-
+    col_names.extend(['num_of_cases','num_of_controls'])
     df_output = pd.DataFrame(columns=col_names)
     # PER SCREEN PER GENE #
     for df_input, screen_name in zip(df_inputs, screen_names): 
         for current_gene in unique_genes: 
             df_edits = df_input[df_input[gene_col] == current_gene]
             new_row = [screen_name, current_gene]
-
             # PARSE DF FOR EACH MUT TYPE #
             df_case = pd.DataFrame()
             for case in cases: 
@@ -214,10 +213,14 @@ def hypothesis_one(
             df_control = pd.DataFrame()
             for control in controls: 
                 df_control = pd.concat([df_control, df_edits.loc[df_edits[mut_col]==control].reset_index(drop=True)])
-            new_row.extend(add_to_row(df_case, df_control, val_col, testtype))
+            # new_row.extend(add_to_row(df_case, df_control, val_col, testtype))
+            new_row.extend(add_to_row(df_case, df_control, val_col, testtype, gene_col, current_gene))
+            new_row.extend([len(df_case),len(df_control)])
 
             # ADD NEW ROW #
             df_output.loc[len(df_output)] = new_row
+            # df_output.loc[len(df_output),'num_of_cases'] = len(df_case)
+            # df_output.loc[len(df_output),'num_of_controls'] = len(df_control)
             del new_row, df_case, df_control
 
     # SAVE FILE #
@@ -228,7 +231,7 @@ def hypothesis_one(
 
 # HYPOTHESIS 2: There's a significant difference in the signal (LFC) #
 # between knockout (nonsense/splice) mutations per gene and none (silent/no mutations) from entire screen #
-
+# the control is not per gene level.
 def hypothesis_two(
     df_inputs, unique_genes, edits_filedir, 
     cases, controls, comp_name, 
@@ -270,6 +273,8 @@ def hypothesis_two(
             
             # ADD NEW ROW #
             df_output.loc[len(df_output)] = new_row
+            # df_output.loc[len(df_output),'num_of_cases'] = len(df_case)
+            # df_output.loc[len(df_output),'num_of_controls'] = len(df_control)
             del new_row, df_case
     del df_control
 
