@@ -155,6 +155,7 @@ def metaaggregation_histogram(
     
     plt.subplots_adjust(wspace=0.3)
     plt.savefig(out_filename, dpi=300)
+    plt.close()
     return results_list[0], results_list[1]
 
 def metaaggregation_hisplot(
@@ -180,7 +181,8 @@ def metaaggregation_hisplot(
         ax[i].set_axisbelow(True)
 
     plt.subplots_adjust(wspace=0.3)
-    plt.savefig(out_name, dpi=300) 
+    plt.savefig(out_name, dpi=300)
+    plt.close()
 
 def metaaggregation_scatterplot(
         df_meta, params, input_gene, pthr, 
@@ -227,3 +229,4 @@ def metaaggregation_scatterplot(
 
     plt.subplots_adjust(wspace=0.3)
     plt.savefig(outname, dpi=300)
+    plt.close()
