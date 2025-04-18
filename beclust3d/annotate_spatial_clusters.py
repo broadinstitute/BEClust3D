@@ -372,7 +372,7 @@ def plot_cluster_distance(
 
     fig, ax = plt.subplots(**subplots_kwargs)
     for n in names: 
-        sns.lineplot(data=dist_stat, x="clust_dist", y=n)
+        sns.lineplot(data=dist_stat, x="clust_dist", y=n, legend=True)
 
     plt.xlabel('Cluster Radius')
     plt.ylabel('Number of Clusters')
