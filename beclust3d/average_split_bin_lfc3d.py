@@ -128,17 +128,25 @@ def average_split_bin(
                     ### can we fix the default format 250120
                    for sign in ['neg', 'pos']]
         result_data = {f'{screen_name}_{score_type}_{sign}_{suffix}': [] 
-                       for sign in ['neg', 'pos'] for suffix in ['z', 'p', 'psig']}
+                       for sign in ['neg', 'pos'] for suffix in ['z', 'p', 'psig', '005_psig', '001_psig','0001_psig']}
 
         for i in range(len(df_z)):
             for colname, param, sign in zip(colnames, params, ['neg', 'pos']): 
-                signal = float(df_z.at[i, colname])
-                signal_z, signal_p, signal_plabel = calculate_stats(signal, param, pthr)
-                
+                if df_z.at[i, colname] != '-' and df_z.at[i, colname] != None:
+                    signal = float(df_z.at[i, colname])
+                    signal_z, signal_p, signal_plabel = calculate_stats(signal, param, pthr)
+                    _, _, signal_plabel_005 = calculate_stats(signal, param, 0.05)
+                    _, _, signal_plabel_001 = calculate_stats(signal, param, 0.01)
+                    _, _, signal_plabel_0001 = calculate_stats(signal, param, 0.001)
+                else:
+                    signal,signal_z,signal_p, signal_plabel,signal_plabel_005, signal_plabel_001, signal_plabel_0001 = '-','-','-','-','-','-','-'
                 # Append results to the dictionary
                 result_data[f'{screen_name}_{score_type}_{sign}_z'].append(signal_z)
                 result_data[f'{screen_name}_{score_type}_{sign}_p'].append(signal_p)
                 result_data[f'{screen_name}_{score_type}_{sign}_psig'].append(signal_plabel)
+                result_data[f'{screen_name}_{score_type}_{sign}_005_psig'].append(signal_plabel_005)
+                result_data[f'{screen_name}_{score_type}_{sign}_001_psig'].append(signal_plabel_001)
+                result_data[f'{screen_name}_{score_type}_{sign}_0001_psig'].append(signal_plabel_0001)
 
         df_z = pd.concat([df_z, pd.DataFrame(result_data)], axis=1)
 
