@@ -150,7 +150,7 @@ def average_split_bin(
 
         df_z = pd.concat([df_z, pd.DataFrame(result_data)], axis=1)
 
-    filename = edits_filedir / f"{score_type}/{structureid}_NonAggr_{score_type}.tsv"
+    filename = edits_filedir / f"{score_type}/{input_gene}_NonAggr_{score_type}.tsv"
     df_z.to_csv(filename, "\t", index=False)
 
     return df_bidir, df_LFC_LFC3D_dis, df_z
