@@ -67,10 +67,13 @@ def hypothesis_tests(
 
 
 def add_to_row(
-    df1, df2, val_col, function, gene_col, gene_name
+    df1, df2, val_col, function, gene_col=False, gene_name=False
 ): 
-    df1 = df1[df1[gene_col] == gene_name]
-    df2 = df2[df2[gene_col] == gene_name]
+    if gene_col and gene_name:
+        df1 = df1[df1[gene_col] == gene_name]
+        df2 = df2[df2[gene_col] == gene_name]
+    else:
+        pass
 
     if len(df1) > 0 and len(df2) > 0: 
         if function == 'KolmogorovSmirnov': 
