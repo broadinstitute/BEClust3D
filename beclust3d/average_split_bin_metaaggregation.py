@@ -403,7 +403,7 @@ def znorm_meta(
         os.mkdir(edits_filedir / 'metaaggregation')
 
     header_main = f'{aggr_func_name}_{score_type}'
-    pthrs_str = [str(pthr).split('.')[1] for pthr in pthrs]
+    pthrs_str = [str(pthr).replace('.','') for pthr in pthrs]
     # CONVERT SIGNAL TO Z SCORE #
     colnames = [f'{header_main}_{sign}' for sign in ['neg', 'pos']]
     params = [{'mu': df_neg_stats['mean'], 's': df_neg_stats['std']}, 
