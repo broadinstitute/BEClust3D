@@ -362,13 +362,12 @@ def clustering(
 def plot_cluster_distance(
         x, ys, names, edits_filedir, input_gene, screen_name, score_type, 
         subplots_kwargs={'figsize':(10,7)}, 
+        pthr=None, meta=False
 ): 
     dist_dict = {'clust_dist': x}
     for n, y in zip(names, ys): 
         dist_dict[n] = y
     dist_stat = pd.DataFrame(dist_dict)
-    clust_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits_List.tsv" 
-    dist_stat.to_csv(clust_filename, sep = '\t', index=False)
 
     fig, ax = plt.subplots(**subplots_kwargs)
     for n in names: 
@@ -377,8 +376,25 @@ def plot_cluster_distance(
     plt.xlabel('Cluster Radius')
     plt.ylabel('Number of Clusters')
     plt.title(f'Positive vs Negative Clusters {input_gene}')
-    plot_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_cluster_distance.png"
-    plt.savefig(plot_filename, dpi=300) 
+    if pthr:
+        if meta:
+            plot_filename = edits_filedir / 'metaaggregation' /f"cluster_{score_type}/{input_gene}_{screen_name}_cluster_distance.png"
+            clust_filename = edits_filedir / 'metaaggregation'  / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits_List.tsv"
+
+        else:
+            plot_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_cluster_distance.png"
+            clust_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits_List.tsv"                 
+    else:
+        if meta:
+            plot_filename = edits_filedir / 'metaaggregation' / f"cluster_{score_type}/{input_gene}_{screen_name}_cluster_distance.png"
+            clust_filename = edits_filedir / 'metaaggregation' / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits_List.tsv"
+        else:
+            plot_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_cluster_distance.png"
+            clust_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits_List.tsv"         
+        
+    dist_stat.to_csv(clust_filename, sep = '\t', index=False)        
+    plt.savefig(plot_filename, dpi=300)
+    plt.close()
 
 
 def clustering_distance(
@@ -390,6 +406,7 @@ def clustering_distance(
         pthr_cutoff=['p<0.05'], 
         clustering_kwargs = {"n_clusters": None, "metric": "euclidean", "linkage": "single", }, 
         subplots_kwargs={'figsize':(15, 12)}, 
+        meta=False
 ): 
     """
     Description
@@ -438,29 +455,24 @@ def clustering_distance(
     columns_dict = dict(zip(names, columns))
     # OPEN CLUSTERING FILE #
 
-    for name, colname in columns_dict.items(): 
-        df_pvals_temp = df_hits_clust.loc[(df_pvals[colname].isin(pthr_cutoff)), ].reset_index(drop=True)
-        df_pvals_temp = df_pvals_temp[~df_pvals_temp[['x_coord', 'y_coord', 'z_coord']].isin(['-']).any(axis=1)]
-
-        np_META_hits_coord = np.array(df_pvals_temp[["x_coord", "y_coord", "z_coord"]]).copy()
-        if np_META_hits_coord.shape[0] < 2: 
-            warnings.warn(f"Not enough data to perform agglomerative clustering")
-            raise None
-
-        func_clustering = AgglomerativeClustering(**clustering_kwargs, distance_threshold=dist)
-        clustering = func_clustering.fit(np_META_hits_coord)
-
-        fig = plot_dendrogram(clustering, df_pvals_temp, edits_filedir, 
-                              name, input_gene, screen_name, score_type, dist, subplots_kwargs)
-
+    for name, colname in columns_dict.items():
         # CLUSTER INDEX AND LENGTH
-        df_pvals_clust = df_pvals_clust.loc[(df_pvals_clust[colname].isin(pthr_cutoff)), ].reset_index(drop=True)
-        clust_indices = df_pvals_clust[f'{colname}_Clust_{str(int(dist))}A'].unique()
-
-        txt_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_{name}_Dendogram_{str(int(dist))}A.txt"
+        df_pvals_clust_filtered = df_pvals_clust.loc[(df_pvals_clust[colname].isin(pthr_cutoff)), ].reset_index(drop=True).copy()
+        cluster_colname = str()
+        if score_type == 'union':
+            cluster_colname = f'{colname}_UNION_Clust_{str(int(dist))}A'
+        else:
+            cluster_colname = f'{colname}_Clust_{str(int(dist))}A'
+            
+        clust_indices = df_pvals_clust_filtered[cluster_colname].unique()
+        
+        if meta:
+            txt_filename = edits_filedir / 'metaaggregation' / f"cluster_{score_type}/{input_gene}_{screen_name}_{score_type}_{name}_Dendrogram_{str(int(dist))}A.txt"
+        else:
+            txt_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_{score_type}_{name}_Dendrogram_{str(int(dist))}A.txt"
         with open(txt_filename, "w") as f:
             for c in clust_indices: 
-                c_data = df_pvals_clust.loc[df_pvals_clust[f'{colname}_Clust_{str(int(dist))}A'] == c, ].reset_index(drop=True)
+                c_data = df_pvals_clust_filtered.loc[df_pvals_clust_filtered[cluster_colname] == c, ].reset_index(drop=True)
                 if len(c_data) == 0: # IN THE CASE OF INCOMPLETE STRUCTURE DATA (PDB) SOME CLUSTERS ARE REMOVED #
                     continue
                 all_unipos = c_data["unipos"].tolist()
@@ -472,8 +484,8 @@ def clustering_distance(
 def plot_dendrogram(
         clustering, df_pvals_temp, 
         edits_filedir, name, input_gene, screen_name, score_type, dist, 
-        subplots_kwargs={'figsize':(20,15)}, 
-):
+        meta=False, subplots_kwargs={'figsize':(20,15)}
+    ):
     
     fig, ax = plt.subplots(**subplots_kwargs)
     counts = np.zeros(clustering.children_.shape[0]) # CREATE COUNTS OF SAMPLE
@@ -495,6 +507,12 @@ def plot_dendrogram(
     # PLOT CORRESPONDING DENDROGRAM #
     dendrogram(linkage_matrix, color_threshold=6.0, labels=xlbl, leaf_rotation=90.)
     plt.title(f'{input_gene} {score_type} {name} Clusters')
-    dendogram_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_{score_type}_{name}_Dendogram_{str(int(dist))}A.png"
-    plt.savefig(dendogram_filename, dpi=300)
-    plt.show()
+    
+    if meta:
+        Dendrogram_filename = edits_filedir  / 'metaaggregation'/ f"cluster_{score_type}/{input_gene}_{screen_name}_{score_type}_{name}_Dendrogram_{str(int(dist))}A.png"
+    else:
+        Dendrogram_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_{score_type}_{name}_Dendrogram_{str(int(dist))}A.png"
+            
+    plt.savefig(Dendrogram_filename, dpi=300)
+    # plt.show()
+    plt.close()
