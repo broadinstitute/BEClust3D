@@ -107,6 +107,7 @@ def dual_scatterplot_by_residue(
     df_struc_consvr, edits_filedir, input_gene, screen_name, function_type, mut='Missense', 
 ): 
     df_struc_consvr = df_struc_consvr[df_struc_consvr[f'{function_type}_{mut}_LFC'] != '-']
+    df_struc_consvr[f'{function_type}_{mut}_LFC'] = df_struc_consvr[f'{function_type}_{mut}_LFC'].astype(float)
     df_struc_consvr_pos = df_struc_consvr[df_struc_consvr[f'{function_type}_{mut}_LFC'] > 0.0]
     df_struc_consvr_neg = df_struc_consvr[df_struc_consvr[f'{function_type}_{mut}_LFC'] < 0.0]
 
@@ -151,6 +152,7 @@ def dual_histogram_by_residue(
         ax.set_axisbelow(True)
 
     df_struc_consvr = df_struc_consvr[df_struc_consvr[f'{function_type}_{mut}_LFC'] != '-']
+    df_struc_consvr[f'{function_type}_{mut}_LFC'] = df_struc_consvr[f'{function_type}_{mut}_LFC'].astype(float)
     df_struc_consvr_pos = df_struc_consvr[df_struc_consvr[f'{function_type}_{mut}_LFC'] > 0.0]
     df_struc_consvr_neg = df_struc_consvr[df_struc_consvr[f'{function_type}_{mut}_LFC'] < 0.0]
     plot1 = sns.histplot(ax=axs[0], data=df_struc_consvr_pos, x=f'{function_type}_{mut}_LFC', hue=f'{function_type}_{mut}_LFC_plab', bins=80, palette='tab10')
