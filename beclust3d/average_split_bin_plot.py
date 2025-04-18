@@ -20,17 +20,34 @@ def average_split_bin_plots(
     if not os.path.exists(edits_filedir / 'plots'):
         os.mkdir(edits_filedir / 'plots')
 
-    pthr_str = str(pthr).split('.')[1]
-    neg = '_'.join([name, func, score_type, 'neg']).replace('__', '_').strip('_')
-    pos = '_'.join([name, func, score_type, 'pos']).replace('__', '_').strip('_')
+    # pthr_str = str(pthr).split('.')[1]
+    pthr_str = str(pthr).replace('.','')
+    # neg = '_'.join([name, func, score_type, 'neg']).replace('__', '_').strip('_')
+    # pos = '_'.join([name, func, score_type, 'pos']).replace('__', '_').strip('_')
+    if func == '':
+        if name == '':
+            neg = '_'.join([score_type, 'neg']).replace('__', '_').strip('_')
+            pos = '_'.join([score_type, 'pos']).replace('__', '_').strip('_')
+            histogram_params = [(f'{score_type}r_neg', neg, 'Negative'), 
+                                (f'{score_type}r_pos', pos, 'Positive'), ]                
+        else:
+            neg = '_'.join([name, score_type, 'neg']).replace('__', '_').strip('_')
+            pos = '_'.join([name, score_type, 'pos']).replace('__', '_').strip('_')
+            histogram_params = [(f'{name}_AVG_{score_type}r_neg', neg, 'Negative'), 
+                                (f'{name}_AVG_{score_type}r_pos', pos, 'Positive'), ]            
+    else:
+        if name == '' or 'Meta':
+            neg = '_'.join([func, score_type, 'neg']).replace('__', '_').strip('_')
+            pos = '_'.join([func, score_type, 'pos']).replace('__', '_').strip('_')
+            histogram_params = [(f'{func}_{score_type}r_neg', neg, 'Negative'), 
+                                (f'{func}_{score_type}r_pos', pos, 'Positive'), ]               
+        else:
+            neg = '_'.join([name, func, score_type, 'neg']).replace('__', '_').strip('_')
+            pos = '_'.join([name, func, score_type, 'pos']).replace('__', '_').strip('_')
+            histogram_params = [(f'{name}_{func}_{score_type}r_neg', neg, 'Negative'), 
+                                (f'{name}_{func}_{score_type}r_pos', pos, 'Positive'), ]     
 
     # HISTOGRAMS #
-    if name == '': 
-        histogram_params = [(f'{func}_{score_type}r_neg', neg, 'Negative'), 
-                            (f'{func}_{score_type}r_pos', pos, 'Positive'), ]
-    else: 
-        histogram_params = [(f'{name}_AVG_{score_type}r_neg', neg, 'Negative'), 
-                            (f'{name}_AVG_{score_type}r_pos', pos, 'Positive'), ]
     res_neg, res_pos = metaaggregation_histogram(df_Z, histogram_params, 
                                                  edits_filedir / f"plots/{input_gene}_{name}_signal_vs_background.png" )
 
