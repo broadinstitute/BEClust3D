@@ -175,18 +175,29 @@ def hypothesis_plot(
     # SAVE PLOT #
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
     plt.tight_layout()
+<<<<<<< HEAD
     plot_filename = f"plots/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.pdf"
     plt.savefig(edits_filedir / plot_filename, dpi=500)
 
+=======
+    plot_filename = f"plots/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.png"
+    plt.savefig(edits_filedir / plot_filename, dpi=500)
+    plt.close()
+    
+>>>>>>> ef5b46a (Change output directory)
     # CREATE SEPARATE LEGEND PLOT #
     legend_fig, legend_ax = plt.subplots(figsize=(4, len(all_handles) * 0.3))
     legend_ax.axis('off')
     legend_ax.legend(all_handles, all_labels, title=hue_colname, loc='center', fontsize='small', frameon=False)
 
     # Save legend separately
+<<<<<<< HEAD
     legend_filename = f"plots/hypothesis{hypothesis}_legend_by_{cat_colname}.pdf"
+=======
+    legend_filename = f"plots/hypothesis{hypothesis}_legend_by_{cat_colname}.png"
+>>>>>>> ef5b46a (Change output directory)
     legend_fig.savefig(edits_filedir / legend_filename, dpi=500)
-
+    plt.close()
 
 # HYPOTHESIS 1: There is a significant difference in the signal (LFC) #
 # between knockout (nonsense/splice) mutations and none (silent/no mutations) per screen, per gene #
