@@ -387,7 +387,7 @@ def clustering_distance(
         workdir, input_gene, screen_name = 'Meta', score_type='LFC3D',  
         columns=[f'SUM_LFC3D_neg_psig', f'SUM_LFC3D_pos_psig'], 
         names=['negative', 'positive'], 
-        pthr_cutoff='p<0.05', 
+        pthr_cutoff=['p<0.05'], 
         clustering_kwargs = {"n_clusters": None, "metric": "euclidean", "linkage": "single", }, 
         subplots_kwargs={'figsize':(15, 12)}, 
 ): 
