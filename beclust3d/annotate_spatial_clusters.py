@@ -505,7 +505,7 @@ def plot_dendrogram(
     xlbl = list(df_pvals_temp['unipos'])
 
     # PLOT CORRESPONDING DENDROGRAM #
-    dendrogram(linkage_matrix, color_threshold=6.0, labels=xlbl, leaf_rotation=90.)
+    dendrogram(linkage_matrix, color_threshold=dist, labels=xlbl, leaf_rotation=90.)
     plt.title(f'{input_gene} {score_type} {name} Clusters')
     
     if meta:
