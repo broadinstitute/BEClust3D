@@ -16,7 +16,7 @@ warnings.filterwarnings('ignore')
 
 def average_split_bin(
         df_LFC_LFC3D_rand, 
-        workdir, input_gene, structureid, screen_names, 
+        workdir, input_gene, screen_names, 
         pthr=0.05, score_type='LFC3D', print_statements=True,
 ): 
     """
