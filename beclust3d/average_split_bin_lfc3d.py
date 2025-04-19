@@ -16,7 +16,7 @@ warnings.filterwarnings('ignore')
 
 def average_split_bin(
         df_LFC_LFC3D_rand, 
-        workdir, input_gene, structureid, screen_names, 
+        workdir, input_gene, screen_names, 
         pthr=0.05, score_type='LFC3D', print_statements=True,
 ): 
     """
@@ -73,9 +73,9 @@ def average_split_bin(
             taa_LFC3D_raw = df_LFC_LFC3D_rand.at[aa, header_LFC3D] # TARGET SCORE per AA per SCREEN 
             
             # SEPARATE INTO POS AND NEG #
-            taa_LFC3D = float(taa_LFC3D_raw) if taa_LFC3D_raw != '-' else 0.0
-            taa_wise_LFC3D_neg.append(taa_LFC3D if taa_LFC3D < 0 else 0.0) # either the value or 0.0
-            taa_wise_LFC3D_pos.append(taa_LFC3D if taa_LFC3D > 0 else 0.0) # either the value or 0.0
+            taa_LFC3D = float(taa_LFC3D_raw) if taa_LFC3D_raw != '-' else None
+            taa_wise_LFC3D_neg.append(taa_LFC3D if taa_LFC3D is not None and taa_LFC3D < 0 else '-')
+            taa_wise_LFC3D_pos.append(taa_LFC3D if taa_LFC3D is not None and taa_LFC3D > 0 else '-')
 
         df_bidir[f"{screen_name}_{score_type}_neg"]      = taa_wise_LFC3D_neg # LFC3D_neg per SCREEN
         df_bidir[f"{screen_name}_{score_type}_pos"]      = taa_wise_LFC3D_pos # LFC3D_pos per SCREEN
@@ -128,21 +128,29 @@ def average_split_bin(
                     ### can we fix the default format 250120
                    for sign in ['neg', 'pos']]
         result_data = {f'{screen_name}_{score_type}_{sign}_{suffix}': [] 
-                       for sign in ['neg', 'pos'] for suffix in ['z', 'p', 'psig']}
+                       for sign in ['neg', 'pos'] for suffix in ['z', 'p', 'psig', '005_psig', '001_psig','0001_psig']}
 
         for i in range(len(df_z)):
             for colname, param, sign in zip(colnames, params, ['neg', 'pos']): 
-                signal = float(df_z.at[i, colname])
-                signal_z, signal_p, signal_plabel = calculate_stats(signal, param, pthr)
-                
+                if df_z.at[i, colname] != '-' and df_z.at[i, colname] != None:
+                    signal = float(df_z.at[i, colname])
+                    signal_z, signal_p, signal_plabel = calculate_stats(signal, param, pthr)
+                    _, _, signal_plabel_005 = calculate_stats(signal, param, 0.05)
+                    _, _, signal_plabel_001 = calculate_stats(signal, param, 0.01)
+                    _, _, signal_plabel_0001 = calculate_stats(signal, param, 0.001)
+                else:
+                    signal,signal_z,signal_p, signal_plabel,signal_plabel_005, signal_plabel_001, signal_plabel_0001 = '-','-','-','-','-','-','-'
                 # Append results to the dictionary
                 result_data[f'{screen_name}_{score_type}_{sign}_z'].append(signal_z)
                 result_data[f'{screen_name}_{score_type}_{sign}_p'].append(signal_p)
                 result_data[f'{screen_name}_{score_type}_{sign}_psig'].append(signal_plabel)
+                result_data[f'{screen_name}_{score_type}_{sign}_005_psig'].append(signal_plabel_005)
+                result_data[f'{screen_name}_{score_type}_{sign}_001_psig'].append(signal_plabel_001)
+                result_data[f'{screen_name}_{score_type}_{sign}_0001_psig'].append(signal_plabel_0001)
 
         df_z = pd.concat([df_z, pd.DataFrame(result_data)], axis=1)
 
-    filename = edits_filedir / f"{score_type}/{structureid}_NonAggr_{score_type}.tsv"
+    filename = edits_filedir / f"{score_type}/{input_gene}_NonAggr_{score_type}.tsv"
     df_z.to_csv(filename, "\t", index=False)
 
     return df_bidir, df_LFC_LFC3D_dis, df_z

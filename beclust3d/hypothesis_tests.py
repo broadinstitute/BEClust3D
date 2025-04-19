@@ -175,7 +175,7 @@ def hypothesis_plot(
     # SAVE PLOT #
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
     plt.tight_layout()
-    plot_filename = f"plots/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.pdf"
+    plot_filename = f"plots/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.png"
     plt.savefig(edits_filedir / plot_filename, dpi=500)
     plt.close()
     
@@ -185,7 +185,7 @@ def hypothesis_plot(
     legend_ax.legend(all_handles, all_labels, title=hue_colname, loc='center', fontsize='small', frameon=False)
 
     # Save legend separately
-    legend_filename = f"plots/hypothesis{hypothesis}_legend_by_{cat_colname}.pdf"
+    legend_filename = f"plots/hypothesis{hypothesis}_legend_by_{cat_colname}.png"
     legend_fig.savefig(edits_filedir / legend_filename, dpi=500)
     plt.close()
 

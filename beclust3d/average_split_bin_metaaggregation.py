@@ -81,12 +81,14 @@ def metaaggregation(
                     values_LFC3D_pos.append(LFC3D_value)
 
         # APPLY AGGR FUNCTION #
-        list_LFC3D_neg.append(aggr_func(values_LFC3D_neg) if values_LFC3D_neg else 0.0)
-        list_LFC3D_pos.append(aggr_func(values_LFC3D_pos) if values_LFC3D_pos else 0.0)
+        list_LFC3D_neg.append(aggr_func(values_LFC3D_neg) if values_LFC3D_neg else None)
+        list_LFC3D_pos.append(aggr_func(values_LFC3D_pos) if values_LFC3D_pos else None)
 
     df_bidir_meta[f'{aggr_func_name}_{score_type}_neg'] = list_LFC3D_neg
     df_bidir_meta[f'{aggr_func_name}_{score_type}_pos'] = list_LFC3D_pos
-    df_bidir_meta[header_main] = [sum(x) for x in zip(list_LFC3D_neg.replace('-', np.nan), list_LFC3D_pos.replace('-', np.nan))]
+    list_LFC3D_neg = [np.nan if x == '-' else x for x in list_LFC3D_neg]
+    list_LFC3D_pos = [np.nan if x == '-' else x for x in list_LFC3D_pos]
+    df_bidir_meta[header_main] = [sum(x) for x in zip(list_LFC3D_neg, list_LFC3D_pos)]
     del list_LFC3D_neg, list_LFC3D_pos
 
     # PULL RANDOMIZED DATA #
@@ -121,8 +123,8 @@ def metaaggregation(
     df_LFC3D_pos = df_bidir_meta.loc[df_bidir_meta[header_main] > 0.0, ].reset_index(drop=True)
     df_neg_stats = df_LFC3D_neg[header_main].describe()
     df_pos_stats = df_LFC3D_pos[header_main].describe()
-    print(df_neg_stats)
-    print(df_pos_stats)
+    # print(df_neg_stats)
+    # print(df_pos_stats)
 
     # CALCULATE BINS #
     quantile_values = {}
@@ -401,7 +403,7 @@ def znorm_meta(
         os.mkdir(edits_filedir / 'metaaggregation')
 
     header_main = f'{aggr_func_name}_{score_type}'
-    pthrs_str = [str(pthr).split('.')[1] for pthr in pthrs]
+    pthrs_str = [str(pthr).replace('.','') for pthr in pthrs]
     # CONVERT SIGNAL TO Z SCORE #
     colnames = [f'{header_main}_{sign}' for sign in ['neg', 'pos']]
     params = [{'mu': df_neg_stats['mean'], 's': df_neg_stats['std']}, 

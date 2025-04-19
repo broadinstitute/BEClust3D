@@ -41,7 +41,7 @@ def add_annotation(df_coord_struc, workdir, input_gene, input_uniprot, structure
 
     # Download UniProt data
     ffile = f"{input_uniprot}.txt"
-    target_path = os.path.join("drive/MyDrive/BEPipeline", input_gene)
+    target_path = workdir
     os.makedirs(os.path.dirname(target_path), exist_ok=True)
     subprocess.run(["wget", f"https://rest.uniprot.org/uniprotkb/{ffile}"])
 
