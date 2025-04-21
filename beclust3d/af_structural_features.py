@@ -425,25 +425,28 @@ def af_structural_features(
     
     out_fasta = edits_filedir / f"{input_gene}_{input_uniprot}.tsv"
     if len(user_uniprot) > 0: # USER INPUT FOR UNIPROT #
-        assert os.path.isfile(edits_filedir / user_uniprot), f'{user_uniprot} does not exist'
+        filename = os.path.basename(user_uniprot)
+        shutil.copy2(user_uniprot, edits_filedir / filename)        
+        assert os.path.isfile(edits_filedir / filename), f'{user_uniprot} does not exist'
         uFasta_file = edits_filedir / user_uniprot
     else: # QUERY DATABASE #
         uFasta_file = query_uniprot(edits_filedir, input_uniprot)
     parse_uniprot(uFasta_file, out_fasta)
 
-    af_filename = f"AF_{input_uniprot}.pdb"
+    pdb_filename = f"AF_{input_uniprot}.pdb"
     if len(user_pdb) > 0: # USER INPUT FOR ALPHAFOLD #
-        assert os.path.isfile(edits_filedir / user_pdb), f'{user_pdb} does not exist'
-        if str(user_pdb) != str(af_filename): 
-            shutil.copy2(edits_filedir / user_pdb, edits_filedir / af_filename)
+        filename = os.path.basename(user_pdb)
+        pdb_filename = filename
+        shutil.copy2(user_pdb, edits_filedir / filename)                
+        assert os.path.isfile(edits_filedir / filename), f'{filename} does not exist'
     else: # QUERY DATABASE #
-        query_af(edits_filedir, af_filename, structureid)
+        query_af(edits_filedir, pdb_filename, structureid)
 
     fastalist_filename = f"{input_gene}_{input_uniprot}.tsv"
-    af_processed_filename = f"{structureid}_processed.pdb"
+    pdb_processed_filename = f"{structureid}_processed.pdb"
     coord_filename = f"{structureid}_coord.tsv"
-    parse_af(edits_filedir, af_filename, af_processed_filename)
-    parse_coord(edits_filedir, af_processed_filename, fastalist_filename, coord_filename)
+    parse_af(edits_filedir, pdb_filename, pdb_processed_filename)
+    parse_coord(edits_filedir, pdb_processed_filename, fastalist_filename, coord_filename)
 
     dssp_filename = f"{structureid}_processed.dssp"
     if len(user_dssp) > 0: # USER INPUT FOR DSSP #
@@ -451,7 +454,7 @@ def af_structural_features(
         if str(user_dssp) != str(dssp_filename): 
             shutil.copy2(edits_filedir / user_dssp, edits_filedir / dssp_filename)
     else: # QUERY DATABASE #
-        run_dssp(edits_filedir, af_filename, dssp_filename)
+        run_dssp(edits_filedir, pdb_filename, dssp_filename)
     alphafold_dssp_filename = f"{structureid}_processed.dssp"
     dssp_parsed_filename = f"{structureid}_dssp_parsed.tsv"
     parse_dssp(edits_filedir, alphafold_dssp_filename, fastalist_filename, dssp_parsed_filename)
