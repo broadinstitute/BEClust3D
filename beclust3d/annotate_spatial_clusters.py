@@ -195,7 +195,7 @@ def clustering_union(
             np_META_hits_coord = np.array(df_pvals_temp[['x_coord', 'y_coord', 'z_coord']].copy())
             if np_META_hits_coord.shape[0] < 2: # NO DATA TO CLUSTER ON #
                 warnings.warn(f"Not enough data to perform agglomerative clustering")
-                _list = [0] * max_distances            
+                _list = [0] * (max_distances-2)
                 arr.extend(_list)
                 continue
 
@@ -257,6 +257,7 @@ def clustering_union(
  
     # PLOT #
     yvals = list(columns_dict.values())
+    print('yvals',yvals)
 
     plot_cluster_distance(arr_d_thr, yvals, directions, edits_filedir, 
                           input_gene, screen_name, score_type, subplots_kwargs, str(pthr_cutoff))
@@ -367,6 +368,7 @@ def plot_cluster_distance(
     dist_dict = {'clust_dist': x}
     for n, y in zip(names, ys): 
         dist_dict[n] = y
+    print(dist_dict)
     dist_stat = pd.DataFrame(dist_dict)
 
     fig, ax = plt.subplots(**subplots_kwargs)
