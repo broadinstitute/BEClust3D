@@ -191,7 +191,7 @@ def main(**kwargs):
             conservation =False,
         )
     ## Calculate BEClust3D
-    from BEClust3D.beclust3d.calculate_lfc3d import calculate_lfc3d
+    from BEClust3D.beclust3d.calculate_lfc3d import calculate_lfc3d, scatterplot_by_residue_LFC3D
 
     df_str_cons = pd.read_csv(f"{output_dir}/{structureid}_coord_struc_features.tsv", sep = "\t")
     str_cons_dfs,str_cons_rand_dfs = [],[]
@@ -210,7 +210,7 @@ def main(**kwargs):
 
     from BEClust3D.beclust3d.average_split_bin_lfc3d import average_split_bin
     from BEClust3D.beclust3d.annotate_spatial_clusters import clustering_union
-
+    from BEClust3D.beclust3d.characterization_plots import lfc_vs_lfc3d_scatterplot
     df_LFC_LFC3D_rand_tsv = os.path.join(workdir,'LFC3D',f'{input_gene}_LFC_LFC3D_LFC3Dr.tsv')
     df_LFC_LFC3D_rand = pd.read_csv(df_LFC_LFC3D_rand_tsv, sep='\t')
 
@@ -228,7 +228,8 @@ def main(**kwargs):
         df_LFC_psig = pd.read_csv(os.path.join(workdir,f'screendata/{input_gene}_{each_screen_name}_proteinedits.tsv'),sep='\t')
         df_LFC3D_psig_tsv = f"{output_dir}/LFC3D/{input_gene}_NonAggr_LFC3D.tsv" # for LFC3D
         df_LFC3D_psig = pd.read_csv(df_LFC3D_psig_tsv, sep = "\t")
-        
+        df_LFC3D_dis_wght_tsv = f"{output_dir}/LFC3D/{input_gene}_LFC3D_dis_wght.tsv" # for LFC3D
+        df_LFC3D_dis_wght_pd = pd.read_csv(df_LFC3D_dis_wght_tsv, sep = '\t')
         clustering_union(
             df_str_cons[["x_coord", "y_coord", "z_coord"]],
             df_LFC_psig, df_LFC3D_psig,
@@ -255,7 +256,10 @@ def main(**kwargs):
             score_type='union',
             max_distances=6,
             pthr_cutoff=float(pthr_LFC))
-
+        
+        # Plotting LFC3D scatterplot
+        scatterplot_by_residue_LFC3D(df_LFC3D_dis_wght_pd,output_dir,input_gene,each_screen_name)
+        lfc_vs_lfc3d_scatterplot(df_LFC3D_dis_wght_pd, df_LFC3D_psig, output_dir, input_gene, each_screen_name, f'{workdir}/plots/{each_screen_name}_lfc_vs_lfc3d.png')
     # Meta-aggregation Clustering for LFC and LFC3D
     from BEClust3D.beclust3d.average_split_bin_metaaggregation import average_split_meta, bin_meta, znorm_meta
     from BEClust3D.beclust3d.average_split_bin_plot import average_split_bin_plots
@@ -291,7 +295,7 @@ def main(**kwargs):
 
         average_split_bin_plots(
             df_meta_Z,
-            workdir = output_dir, input_gene = input_gene, name='',
+            workdir = output_dir, input_gene = input_gene, name='Meta',
             func='SUM', 
             pthr=each_pthr,
             score_type=score_type,
