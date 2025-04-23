@@ -191,7 +191,7 @@ def main(**kwargs):
             conservation =False,
         )
     ## Calculate BEClust3D
-    from BEClust3D.beclust3d.calculate_lfc3d import calculate_lfc3d, scatterplot_by_residue_LFC3D
+    from BEClust3D.beclust3d.calculate_lfc3d import calculate_lfc3d
 
     df_str_cons = pd.read_csv(f"{output_dir}/{structureid}_coord_struc_features.tsv", sep = "\t")
     str_cons_dfs,str_cons_rand_dfs = [],[]
@@ -211,6 +211,7 @@ def main(**kwargs):
     from BEClust3D.beclust3d.average_split_bin_lfc3d import average_split_bin
     from BEClust3D.beclust3d.annotate_spatial_clusters import clustering_union
     from BEClust3D.beclust3d.characterization_plots import lfc_vs_lfc3d_scatterplot
+    from BEClust3D.beclust3d._average_split_bin_helpers_ import scatterplot_by_residue_LFC3D
     df_LFC_LFC3D_rand_tsv = os.path.join(workdir,'LFC3D',f'{input_gene}_LFC_LFC3D_LFC3Dr.tsv')
     df_LFC_LFC3D_rand = pd.read_csv(df_LFC_LFC3D_rand_tsv, sep='\t')
 
