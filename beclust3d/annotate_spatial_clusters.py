@@ -252,7 +252,7 @@ def clustering_union(
             df_hits_clust = df_hits_clust.merge(pd.DataFrame(dict_hits), how='left', on=['unipos'])            
         
     df_hits_clust.fillna('-')
-    hits_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits.tsv"
+    hits_filename = edits_filedir / 'metaaggregation' / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits.tsv"
     df_hits_clust.to_csv(hits_filename, sep='\t', index=False)
  
     # PLOT #
