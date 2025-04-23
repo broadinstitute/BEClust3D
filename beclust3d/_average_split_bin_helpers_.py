@@ -230,3 +230,33 @@ def metaaggregation_scatterplot(
     plt.subplots_adjust(wspace=0.3)
     plt.savefig(outname, dpi=300)
     plt.close()
+
+def scatterplot_by_residue_LFC3D(
+    df_LFC3D_dis_wght, 
+    edits_filedir, input_gene, screen_name, 
+): 
+    # PREP DATA #
+    x_list = df_LFC3D_dis_wght['unipos'].tolist()
+    y_list = df_LFC3D_dis_wght[f'{screen_name}_LFC3D'].tolist()
+    x_vals = [x for x, y in zip(x_list, y_list) if y!='-']
+    y_vals = [float(y) for y in y_list if y!='-']
+
+    # PLOT #
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.set_facecolor('#EBEBEB')
+    [ax.spines[side].set_visible(False) for side in ax.spines]
+    ax.grid(which='major', color='white', linewidth=0.5)
+    ax.set_axisbelow(True)
+
+    ax.axhline(-1.0, c="red", linestyle="--")
+    ax.axhline(1.0, c="blue", linestyle="--")
+    ax.axhline(0.0, c="gray", linestyle="--")
+    sns.scatterplot(ax=ax, x=x_vals, y=y_vals, color='steelblue', edgecolor='steelblue')
+    ax.set_ylabel(f"{screen_name} LFC3D Score")
+    ax.set_xlabel(f"unipos")
+    ax.set_title(f'{input_gene} LFC3D Score By Residue {screen_name}')
+    plt.xticks(np.arange(0, len(df_LFC3D_dis_wght), 50), rotation = 90)
+
+    scatter_filename = f"plots/{input_gene}_{screen_name}_lfc3D_score_by_res.png"
+    plt.savefig(os.path.join(edits_filedir,scatter_filename), dpi=300)
+    plt.close(fig)
