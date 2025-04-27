@@ -151,7 +151,7 @@ def clustering_union(
             np_META_hits_coord = np.array(df_pvals_temp[['x_coord', 'y_coord', 'z_coord']].copy())
             if np_META_hits_coord.shape[0] < 2: # NO DATA TO CLUSTER ON #
                 warnings.warn(f"Not enough data to perform agglomerative clustering")
-                _list = [0] * max_distances            
+                _list = [0] * (max_distances-2)
                 arr.extend(_list)
                 continue
 
@@ -252,7 +252,14 @@ def clustering_union(
             df_hits_clust = df_hits_clust.merge(pd.DataFrame(dict_hits), how='left', on=['unipos'])            
         
     df_hits_clust.fillna('-')
+<<<<<<< HEAD
     hits_filename = edits_filedir / 'metaaggregation' / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits.tsv"
+=======
+    if meta_aggregation:
+        hits_filename = edits_filedir / 'metaaggregation' / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits.tsv"
+    else:
+        hits_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits.tsv"
+>>>>>>> Bugfix/union_clustering
     df_hits_clust.to_csv(hits_filename, sep='\t', index=False)
  
     # PLOT #
