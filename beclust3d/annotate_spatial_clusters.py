@@ -71,18 +71,18 @@ def clustering_union(
         lfc_pos_col = 'SUM_LFC_pos'
         lfc_z_neg_col = f'SUM_LFC_neg_{str(pthr_cutoff).replace(".","")}_z'
         lfc_z_pos_col = f'SUM_LFC_pos_{str(pthr_cutoff).replace(".","")}_z'
-        
-        lfc3d_neg_col = 'SUM_LFC3D_neg'
-        lfc3d_pos_col = 'SUM_LFC3D_pos'
-        lfc3d_z_neg_col = f'SUM_LFC3D_neg_{str(pthr_cutoff).replace(".","")}_z'
-        lfc3d_z_pos_col = f'SUM_LFC3D_pos_{str(pthr_cutoff).replace(".","")}_z'
+        df_hits_clust = df_hits_clust[['unipos',"x_coord", "y_coord", "z_coord",lfc_neg_col, lfc_pos_col, lfc_z_neg_col, lfc_z_pos_col]]
         df_hits_clust[lfc_neg_col] = df_hits_clust[lfc_neg_col].astype(float)
         df_hits_clust[lfc_pos_col] = df_hits_clust[lfc_pos_col].astype(float)
         df_hits_clust[lfc_z_neg_col] = df_hits_clust[lfc_z_neg_col].astype(float)
         df_hits_clust[lfc_z_pos_col] = df_hits_clust[lfc_z_pos_col].astype(float)
         
+        lfc3d_neg_col = 'SUM_LFC3D_neg'
+        lfc3d_pos_col = 'SUM_LFC3D_pos'
+        lfc3d_z_neg_col = f'SUM_LFC3D_neg_{str(pthr_cutoff).replace(".","")}_z'
+        lfc3d_z_pos_col = f'SUM_LFC3D_pos_{str(pthr_cutoff).replace(".","")}_z'
         df_LFC3D_pvals = df_LFC3D_pvals.replace('-', None)
-        df_LFC3D_pvals = df_LFC3D_pvals.filter(regex=fr'{screen_name}_.+_z$|{lfc3d_neg_col}$|{lfc3d_z_neg_col}$|{lfc3d_pos_col}$|{lfc3d_z_pos_col}$')
+        df_LFC3D_pvals = df_LFC3D_pvals.filter(regex=fr'{lfc3d_neg_col}$|{lfc3d_z_neg_col}$|{lfc3d_pos_col}$|{lfc3d_z_pos_col}$')
         df_LFC3D_pvals = df_LFC3D_pvals.astype(float)
                 
     else:
@@ -97,7 +97,7 @@ def clustering_union(
         lfc3d_neg_col = f'{screen_name}_LFC3D_neg'
         lfc3d_pos_col = f'{screen_name}_LFC3D_pos'
         lfc3d_z_neg_col = f'{screen_name}_LFC3D_neg_z'
-        lfc3d_z_pos_col = f'{screen_name}_LFC3D_pos_z'        
+        lfc3d_z_pos_col = f'{screen_name}_LFC3D_pos_z'      
         
         df_hits_clust[lfc_original_col] = df_hits_clust[lfc_original_col].astype(float)
         df_hits_clust[lfc_z_original_col] = df_hits_clust[lfc_z_original_col].astype(float)
@@ -251,19 +251,20 @@ def clustering_union(
                         name, input_gene, screen_name, score_type, dist, meta_aggregation, subplots_kwargs)
             df_hits_clust = df_hits_clust.merge(pd.DataFrame(dict_hits), how='left', on=['unipos'])            
         
-    df_hits_clust.fillna('-')
+    df_hits_clust.fillna('-', inplace=True)
+    df_hits_clust.drop(["x_coord", "y_coord", "z_coord"],axis=1,inplace=True)
     if meta_aggregation:
-        hits_filename = edits_filedir / 'metaaggregation' / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits.tsv"
+        hits_filename = edits_filedir / 'metaaggregation' / f"cluster_{score_type}/{screen_name}_Aggr_Hits.tsv"
     else:
-        hits_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits.tsv"
+        hits_filename = edits_filedir / f"cluster_{score_type}/{screen_name}_Aggr_Hits.tsv"
     df_hits_clust.to_csv(hits_filename, sep='\t', index=False)
  
     # PLOT #
     yvals = list(columns_dict.values())
-    print('yvals',yvals)
+    print(f'{screen_name}_{score_type}_yvals',yvals)
 
     plot_cluster_distance(arr_d_thr, yvals, directions, edits_filedir, 
-                          input_gene, screen_name, score_type, subplots_kwargs, str(pthr_cutoff))
+                          input_gene, screen_name, score_type, subplots_kwargs, str(pthr_cutoff),meta=meta_aggregation)
 
     return df_hits_clust, arr_d_thr, yvals
 
@@ -383,19 +384,19 @@ def plot_cluster_distance(
     plt.title(f'Positive vs Negative Clusters {input_gene}')
     if pthr:
         if meta:
-            plot_filename = edits_filedir / 'metaaggregation' /f"cluster_{score_type}/{input_gene}_{screen_name}_cluster_distance.png"
-            clust_filename = edits_filedir / 'metaaggregation'  / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits_List.tsv"
+            plot_filename = edits_filedir / 'metaaggregation' /f"cluster_{score_type}/{screen_name}_cluster_distance.png"
+            clust_filename = edits_filedir / 'metaaggregation'  / f"cluster_{score_type}/{screen_name}_Aggr_Hits_List.tsv"
 
         else:
-            plot_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_cluster_distance.png"
-            clust_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits_List.tsv"                 
+            plot_filename = edits_filedir / f"cluster_{score_type}/{screen_name}_cluster_distance.png"
+            clust_filename = edits_filedir / f"cluster_{score_type}/{screen_name}_Aggr_Hits_List.tsv"                 
     else:
         if meta:
-            plot_filename = edits_filedir / 'metaaggregation' / f"cluster_{score_type}/{input_gene}_{screen_name}_cluster_distance.png"
-            clust_filename = edits_filedir / 'metaaggregation' / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits_List.tsv"
+            plot_filename = edits_filedir / 'metaaggregation' / f"cluster_{score_type}/{screen_name}_cluster_distance.png"
+            clust_filename = edits_filedir / 'metaaggregation' / f"cluster_{score_type}/{screen_name}_Aggr_Hits_List.tsv"
         else:
-            plot_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_cluster_distance.png"
-            clust_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits_List.tsv"         
+            plot_filename = edits_filedir / f"cluster_{score_type}/{screen_name}_cluster_distance.png"
+            clust_filename = edits_filedir / f"cluster_{score_type}/{screen_name}_Aggr_Hits_List.tsv"         
         
     dist_stat.to_csv(clust_filename, sep = '\t', index=False)        
     plt.savefig(plot_filename, dpi=300)
@@ -514,9 +515,9 @@ def plot_dendrogram(
     plt.title(f'{input_gene} {score_type} {name} Clusters')
     
     if meta:
-        Dendrogram_filename = edits_filedir  / 'metaaggregation'/ f"cluster_{score_type}/{input_gene}_{screen_name}_{score_type}_{name}_Dendrogram_{str(int(dist))}A.png"
+        Dendrogram_filename = edits_filedir  / 'metaaggregation'/ f"cluster_{score_type}/{screen_name}_{score_type}_{name}_Dendrogram_{str(int(dist))}A.png"
     else:
-        Dendrogram_filename = edits_filedir / f"cluster_{score_type}/{input_gene}_{screen_name}_{score_type}_{name}_Dendrogram_{str(int(dist))}A.png"
+        Dendrogram_filename = edits_filedir / f"cluster_{score_type}/{screen_name}_{score_type}_{name}_Dendrogram_{str(int(dist))}A.png"
             
     plt.savefig(Dendrogram_filename, dpi=300)
     # plt.show()
