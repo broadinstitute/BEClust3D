@@ -151,7 +151,7 @@ def clustering_union(
             np_META_hits_coord = np.array(df_pvals_temp[['x_coord', 'y_coord', 'z_coord']].copy())
             if np_META_hits_coord.shape[0] < 2: # NO DATA TO CLUSTER ON #
                 warnings.warn(f"Not enough data to perform agglomerative clustering")
-                _list = [0] * max_distances            
+                _list = [0] * (max_distances-2)
                 arr.extend(_list)
                 continue
 
