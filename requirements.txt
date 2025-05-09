@@ -75,7 +75,7 @@ Theano==1.0.5
 threadpoolctl==3.2.0
 tokenizers==0.15.2
 torch==2.2.2
-tqdm==4.66.1
+tqdm==4.66.3
 transformers==4.39.2
 typing_extensions==4.9.0
 tzdata==2023.3
